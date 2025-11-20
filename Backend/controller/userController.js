@@ -3,7 +3,6 @@ import User from "../model/user.js";
 import "dotenv/config";
 import twilio from "twilio";
 
-console.log(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
