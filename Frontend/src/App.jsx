@@ -7,6 +7,8 @@ import Product from "./pages/product.jsx";
 import About from "./pages/about.jsx";
 import Contact from "./pages/contact.jsx";
 // import Footer from './components/user/footer.jsx';
+import Login from "./pages/login.jsx";
+import Register from './pages/register.jsx';
 
 function App() {
 
@@ -21,6 +23,8 @@ function App() {
           <Route path='/product' element={<Product />} />
           <Route path='/about' element={<About />} />
           <Route path='/contact' element={<Contact />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
         </Routes>
         </main>
         {/* <Footer /> */}

@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
 import { FaRegHeart, FaUserCircle, FaShoppingCart } from "react-icons/fa";
 
+
 const Navbar = () => {
     const navigate = useNavigate();
 
@@ -53,7 +54,7 @@ const Navbar = () => {
                 </NavLink>
 
                 {/* PRODUCT */}
-                <NavLink to="/product" className={navLinkClass}>
+                <NavLink to="/login" className={navLinkClass}>
                     PRODUCT
                     <span className="
                         absolute left-1/2 -bottom-1 h-0.5 w-0 
@@ -112,11 +113,12 @@ const Navbar = () => {
                             bg-white/90 backdrop-blur-md 
                             shadow-xl rounded-lg 
                             p-3 animate-fadeIn
-                        "
+                        " 
                     >
                         <Link className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
                         <Link className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
                         <Link className="hover:text-green-600 text-gray-600 py-1">Logout</Link>
+                        <Link to="/login" className="hover:text-green-600 text-gray-600 py-1">Login</Link>
                     </div>
                 </div>
 
