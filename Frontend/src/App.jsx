@@ -1,4 +1,5 @@
 import React from 'react'
+<<<<<<< HEAD
 import Navbar from "./components/user/Navbar.jsx";
 import { Routes, Route } from "react-router-dom";
 
@@ -10,10 +11,16 @@ import Contact from "./pages/contact.jsx";
 import Login from "./pages/login.jsx";
 import Register from './pages/register.jsx';
 
+=======
+import{Routes,Route,BrowserRouter} from "react-router-dom";
+import Footer from './components/Footer';
+import Features from './components/Features';
+>>>>>>> crew
 function App() {
 
   return (
     <>
+<<<<<<< HEAD
       <div className='min-h-screen flex flex-col'>
       <Navbar />
        <main >
@@ -30,6 +37,14 @@ function App() {
         {/* <Footer /> */}
       </div>
       
+=======
+      <BrowserRouter>
+      <Features />
+      <Footer />
+
+      </BrowserRouter>
+        
+>>>>>>> crew
     </>
   )
 }
