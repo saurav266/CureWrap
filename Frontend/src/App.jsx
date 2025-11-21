@@ -1,6 +1,11 @@
 import React from "react";
-import Navbar from "./components/user/Navbar.jsx";
 import { Routes, Route } from "react-router-dom";
+
+import Navbar from "./components/user/Navbar.jsx";
+import Footer from "./components/Footer";
+import Framer from "./components/Framer";
+import Features from "./components/Features";
+import ShopActivity from "./components/ShopActivity";
 
 import Home from "./pages/home.jsx";
 import Product from "./pages/product.jsx";
@@ -8,9 +13,6 @@ import About from "./pages/about.jsx";
 import Contact from "./pages/contact.jsx";
 import Login from "./pages/login.jsx";
 import Register from "./pages/register.jsx";
-
-import Footer from "./components/Footer";
-import Features from "./components/Features";
 
 function App() {
   return (
@@ -32,6 +34,8 @@ function App() {
 
       {/* Footer + Features always visible */}
       <Features />
+      <Framer />
+      <ShopActivity />
       <Footer />
     </div>
   );
