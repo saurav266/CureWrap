@@ -38,17 +38,6 @@ export default function ContactUs() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="text-sm text-gray-600">
-          <a href="#" className="text-teal-500 hover:underline">
-            Home
-          </a>
-          <span className="mx-2">›</span>
-          <span>Contact Us</span>
-        </div>
-      </div>
-
       {/* Hero Images Grid - Matching Original */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
