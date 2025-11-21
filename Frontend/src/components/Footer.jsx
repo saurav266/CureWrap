@@ -13,7 +13,7 @@ const Footer = () => {
             < CiLocationOn  className="text-white text-lg" />
             435 Science Dr, Moorpark CA 93021, USA</p>
           <a href='#' className="text-sm mt-2  mb-4  flex item-center underline">
-            <MdOutlineForwardToInbox className="text-white text-lg"  />support@modvel.com</a>
+            <MdOutlineForwardToInbox className="text-white text-lg"  />support@CureWrap.com</a>
           <a href='#' className="text-sm mt-2 mb-4 flex item-center underline">
              <FaWhatsapp className="text-white text-lg" />
             +1 (805) 517-4839</a>
