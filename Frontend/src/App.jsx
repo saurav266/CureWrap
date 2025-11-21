@@ -1,5 +1,4 @@
-import React from 'react'
-<<<<<<< HEAD
+import React from "react";
 import Navbar from "./components/user/Navbar.jsx";
 import { Routes, Route } from "react-router-dom";
 
@@ -7,46 +6,35 @@ import Home from "./pages/home.jsx";
 import Product from "./pages/product.jsx";
 import About from "./pages/about.jsx";
 import Contact from "./pages/contact.jsx";
-// import Footer from './components/user/footer.jsx';
 import Login from "./pages/login.jsx";
-import Register from './pages/register.jsx';
+import Register from "./pages/register.jsx";
 
-=======
-import{Routes,Route,BrowserRouter} from "react-router-dom";
-import Footer from './components/Footer';
-import Features from './components/Features';
->>>>>>> crew
+import Footer from "./components/Footer";
+import Features from "./components/Features";
+
 function App() {
-
   return (
-    <>
-<<<<<<< HEAD
-      <div className='min-h-screen flex flex-col'>
+    <div className="min-h-screen flex flex-col">
+      {/* Navbar always visible */}
       <Navbar />
-       <main >
-      {/* // className="flex-1 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] py-8" */}
+
+      {/* Main content area */}
+      <main>
         <Routes>
-          <Route path='/' element={<Home />} />
-          <Route path='/product' element={<Product />} />
-          <Route path='/about' element={<About />} />
-          <Route path='/contact' element={<Contact />} />
-          <Route path='/login' element={<Login />} />
-          <Route path='/register' element={<Register />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/product" element={<Product />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
-        </main>
-        {/* <Footer /> */}
-      </div>
-      
-=======
-      <BrowserRouter>
+      </main>
+
+      {/* Footer + Features always visible */}
       <Features />
       <Footer />
-
-      </BrowserRouter>
-        
->>>>>>> crew
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
