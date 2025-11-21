@@ -32,10 +32,7 @@ const Navbar = () => {
                     src={assets.logo}
                     alt="logo"
                     className="
-                        h-8 h-50 w-50 w-auto object-contain cursor-pointer
-                        transition-all duration-500 
-                        hover:scale-110 hover:rotate-2 hover:drop-shadow-lg
-                    "
+                        h-8 h-50 w-50 w-auto object-contain cursor-pointer"
                 />
             </Link>
 
@@ -114,9 +111,14 @@ const Navbar = () => {
                             p-3 animate-fadeIn
                         "
                     >
-                        <Link className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
-                        <Link className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
-                        <Link className="hover:text-green-600 text-gray-600 py-1">Logout</Link>
+                        <Link to="/profile" className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
+                        <Link to="/orders" className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
+                        <button
+                          onClick={() => { console.log('logout clicked'); navigate('/'); }}
+                          className="text-left hover:text-green-600 text-gray-600 py-1"
+                        >
+                          Logout
+                        </button>
                     </div>
                 </div>
 
