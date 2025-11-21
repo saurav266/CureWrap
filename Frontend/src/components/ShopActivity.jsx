@@ -1,24 +1,28 @@
 import { motion } from "framer-motion";
+import daily from "../assets/daily-use_1.webp";
+import sport from "../assets/sports_1.webp";
+import work from "../assets/work.webp";
+import wrist from "../assets/wrist.jpg";
 
 const activities = [
   { 
     name: "Gym / Workout", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
+    img: sport, 
     link: "/shop/activity/gym" 
   },
   { 
     name: "Running / Jogging", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
+    img: wrist, 
     link: "/shop/activity/running" 
   },
   { 
     name: "Yoga / Pilates", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
+    img: daily, 
     link: "/shop/activity/yoga" 
   },
   { 
     name: "Rehabilitation", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
+    img: work, 
     link: "/shop/activity/rehab" 
   },
 ];
@@ -33,17 +37,17 @@ export default function ShopByActivitySection() {
           Shop by Activity
         </h2>
         <p className="text-gray-600 text-lg md:text-xl">
-          Choose the right supportive gear based on your daily routine and activity level.
+          Discover Orthopedic Solutions Tailored to Your Lifestyle
         </p>
       </div>
 
-      {/* IMAGE GRID — EXTRA WIDE */}
-      <div className="max-w-[1700px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      {/* IMAGE GRID — WIDER & TIGHTER */}
+      <div className="max-w-[1900px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {activities.map((activity, idx) => (
           <motion.a
             key={idx}
             href={activity.link}
-            className="relative block overflow-hidden  shadow-xl group"
+            className="relative block overflow-hidden shadow-xl group"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.15, duration: 0.6 }}
@@ -52,21 +56,22 @@ export default function ShopByActivitySection() {
             <img
               src={activity.img}
               alt={activity.name}
-              className="w-full h-80 md:h-[360px] lg:h-[380px] xl:h-[400px] object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-80 md:h-[360px] lg:h-[400px] xl:h-[420px] 
+                         object-cover transition-transform duration-500 group-hover:scale-110"
             />
 
             {/* DARK OVERLAY */}
             <div className="absolute inset-0 bg-green bg-opacity-30 opacity-0 group-hover:opacity-70 transition-opacity duration-300" />
 
-            {/* LABEL (UPDATED) */}
+            {/* LABEL */}
             <div 
               className="
                 absolute bottom-0 left-0 
-                w-3/4 h-0.5/4
+                w-3/4
                 text-white text-lg md:text-xl 
                 bg-green-400 font-semibold 
                 py-3 px-4
-                drop-shadow-lgcd 
+                drop-shadow-lg
               "
             >
               {activity.name}
