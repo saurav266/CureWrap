@@ -1,68 +1,147 @@
-    import React from "react";
-    import { Link, NavLink } from "react-router-dom";
-    import { assets } from "../../assets/frontend_assets/assets.js";
-    import { FaRegHeart, FaUserCircle, FaShoppingCart } from "react-icons/fa";
+import React from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { assets } from "../../assets/frontend_assets/assets.js";
+import { FaRegHeart, FaUserCircle, FaShoppingCart } from "react-icons/fa";
 
-    const Navbar = () => {
-
+const Navbar = () => {
+    const navigate = useNavigate();
 
     const navLinkClass = ({ isActive }) =>
-        `flex flex-col items-center gap-1 transition-all duration-300 
-        ${isActive ? "text-black font-semibold" : "text-gray-600 hover:text-black"}`;
+        `relative group transition-all duration-300 font-semibold tracking-wide
+        ${isActive ? "text-green-600" : "text-gray-700 hover:text-green-500 hover:scale-110 hover:-translate-y-0.5"}
+        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]`;
 
     return (
-        <div className="flex items-center justify-between font-medium px-6 py-2 shadow-md bg-white">
+        <div className="
+            flex items-center justify-between 
+            font-medium px-6 h-16 
+            bg-white/70 backdrop-blur-xl shadow-md 
+            border-b border-gray-200/40
+        ">
 
-        {/* Logo */}
-        <img src={assets.logo} className="w-32 cursor-pointer" alt="logo" />
+            {/* Logo */}
+            <Link
+                to="/"
+                onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/");
+                }}
+                className="flex items-center"
+            >
+                <img
+                    src={assets.logo}
+                    alt="logo"
+                    className="
+                        h-8 h-50 w-50 w-auto object-contain cursor-pointer
+                        transition-all duration-500 
+                        hover:scale-110 hover:rotate-2 hover:drop-shadow-lg
+                    "
+                />
+            </Link>
 
-        {/* Desktop Menu */}
-        <ul className="hidden sm:flex gap-8 text-md">
-            <NavLink to="/" className={navLinkClass}>
-            HOME
-            <span className="block w-0 group-hover:w-full h-[2px] bg-black transition-all duration-300"></span>
-            </NavLink>
-            <NavLink to="/product" className={navLinkClass}>
-            PRODUCT
-            </NavLink>
-            <NavLink to="/about" className={navLinkClass}>
-            ABOUT
-            </NavLink>
-            <NavLink to="/contact" className={navLinkClass}>
-            CONTACT
-            </NavLink>
-        </ul>
+            {/* Desktop Menu */}
+            <ul className="hidden sm:flex gap-8 text-lg items-center font-semibold tracking-wide">
+                
+                {/* HOME */}
+                <NavLink to="/" className={navLinkClass}>
+                    HOME
+                    <span className="
+                        absolute left-1/2 -bottom-1 h-0.5 w-0 
+                        bg-green-500 transition-all duration-300 
+                        group-hover:w-full group-hover:left-0
+                    "></span>
+                </NavLink>
 
-        {/* Right Icons */}
-    
-    <div className="flex items-center gap-6">
-    <Link to="/WatchList" className="flex items-center gap-6">
-    <FaRegHeart className="text-2xl cursor-pointer hover:scale-110 transition" />
-    </Link>
+                {/* PRODUCT */}
+                <NavLink to="/product" className={navLinkClass}>
+                    PRODUCT
+                    <span className="
+                        absolute left-1/2 -bottom-1 h-0.5 w-0 
+                        bg-green-500 transition-all duration-300 
+                        group-hover:w-full group-hover:left-0
+                    "></span>
+                </NavLink>
 
-    {/* Profile Dropdown */}
-    <Link to="/profile" className="group relative">
-    <FaUserCircle className="text-2xl cursor-pointer hover:scale-110 transition" />
-    <div className="hidden group-hover:block absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg">
-        <ul className="flex flex-col gap-2 py-3 px-5 text-gray-600">
-        <li className="hover:text-black cursor-pointer">Profile</li>
-        <li className="hover:text-black cursor-pointer">Orders</li>
-        <li className="hover:text-black cursor-pointer">Logout</li>
-        </ul>
-    </div>
-    </Link>
+                {/* ABOUT */}
+                <NavLink to="/about" className={navLinkClass}>
+                    ABOUT
+                    <span className="
+                        absolute left-1/2 -bottom-1 h-0.5 w-0 
+                        bg-green-500 transition-all duration-300 
+                        group-hover:w-full group-hover:left-0
+                    "></span>
+                </NavLink>
 
-    {/* Cart */}
-    <Link to="/cart" className="relative">
-    <FaShoppingCart className="text-2xl cursor-pointer hover:scale-110 transition" />
-    <span className="absolute -right-2 -bottom-2 w-5 h-5 flex items-center justify-center bg-black text-white text-xs rounded-full">
-        0
-    </span>
-    </Link>
-            
-        </div>
+                {/* CONTACT */}
+                <NavLink to="/contact" className={navLinkClass}>
+                    CONTACT
+                    <span className="
+                        absolute left-1/2 -bottom-1 h-0.5 w-0 
+                        bg-green-500 transition-all duration-300 
+                        group-hover:w-full group-hover:left-0
+                    "></span>
+                </NavLink>
+            </ul>
+
+            {/* Right Icons */}
+            <div className="flex items-center gap-5">
+
+                {/* Wishlist */}
+                <Link to="/WatchList">
+                    <FaRegHeart className="
+                        h-8 w-8 cursor-pointer 
+                        transition-all duration-300 
+                        hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
+                        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]
+                    " />
+                </Link>
+
+                {/* Profile Dropdown */}
+                <div className="relative group">
+                    <FaUserCircle className="
+                        h-8 w-8 cursor-pointer 
+                        transition-all duration-300 
+                        hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
+                        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]
+                    " />
+
+                    <div
+                        className="
+                            hidden group-hover:flex flex-col 
+                            absolute right-0 mt-3 w-44 
+                            bg-white/90 backdrop-blur-md 
+                            shadow-xl rounded-lg 
+                            p-3 animate-fadeIn
+                        "
+                    >
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Logout</Link>
+                    </div>
+                </div>
+
+                {/* Cart */}
+                <Link to="/cart" className="relative">
+                    <FaShoppingCart className="
+                        h-8 w-8 cursor-pointer 
+                        transition-all duration-300 
+                        hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
+                        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]
+                    " />
+
+                    <span className="
+                        absolute -right-2 -bottom-2 
+                        w-5 h-5 rounded-full 
+                        bg-black text-white 
+                        text-xs flex items-center justify-center
+                        shadow-md
+                    ">
+                        0
+                    </span>
+                </Link>
+            </div>
         </div>
     );
-    };
+};
 
-    export default Navbar;  
+export default Navbar;
