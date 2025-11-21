@@ -10,16 +10,13 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
- phoneNumber:{
+  phoneNumber: {
     type: String,
     required: true,
     unique: true,
- },
+  },
   otp: {
-    type: String,
-    
-
-     // Store the actual OTP code
+    type: String, // Store the actual OTP code
   },
   isVerified: {
     type: Boolean,
@@ -28,7 +25,16 @@ const userSchema = new mongoose.Schema({
   otpExpiresAt: {
     type: Date, // Store expiry timestamp
   },
-});
+
+  // Wishlist: array of product references
+  wishlist: [
+    {
+      product_id: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+      addedAt: { type: Date, default: Date.now }
+    }
+  ]
+}, { timestamps: true });
+
 const User = mongoose.model("User", userSchema);
 
 export default User;

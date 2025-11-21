@@ -1,7 +1,7 @@
 import User from "../model/user.js";
 import twilio from "twilio";
 import "dotenv/config";
-
+import jwt from "jsonwebtoken";
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
@@ -50,7 +50,45 @@ export const createUser = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-export const otpVerification = async (req, res) => {
+
+
+
+export const login = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ message: "Phone number is required" });
+    }
+
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    user.otp = otp;
+    user.otpExpiresAt = otpExpiresAt;
+    await user.save();
+
+    // Send OTP via Twilio
+    await twilioClient.messages.create({
+      body: `Your OTP is ${otp}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phoneNumber,
+    });
+
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+export const verifyOtp = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
 
@@ -59,13 +97,8 @@ export const otpVerification = async (req, res) => {
     }
 
     const user = await User.findOne({ phoneNumber });
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.isVerified) {
-      return res.status(400).json({ message: "User already verified" });
     }
 
     if (user.otp !== otp) {
@@ -73,40 +106,42 @@ export const otpVerification = async (req, res) => {
     }
 
     if (user.otpExpiresAt < new Date()) {
-      return res.status(400).json({ message: "OTP has expired" });
+      return res.status(400).json({ message: "OTP expired" });
     }
 
+    // OTP verified → issue JWT
     user.isVerified = true;
     user.otp = null;
     user.otpExpiresAt = null;
     await user.save();
 
-    res.status(200).json({ message: "OTP verified successfully" });
+    const token = jwt.sign(
+      { userId: user._id, phoneNumber: user.phoneNumber },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: { id: user._id, name: user.name, email: user.email, phoneNumber: user.phoneNumber }
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
+};
+
+export const logout = async (req, res) => {
+  // Since JWTs are stateless, logout can be handled on the client side by deleting the token.
+  res.json({ success: true, message: "Logout successful on client side by deleting the token." });
 }
-
-
-export const exampleFunction = async (req, res) => {
+export const isUserVerified = async (userId) => {
   try {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    const message = await twilioClient.messages.create({
-      body: `Your OTP is ${otp}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: '+918409636071', // You can replace this with req.body.phoneNumber if dynamic
-    });
-
-    res.status(200).json({
-      message: "OTP sent successfully",
-      otp, // For testing only — remove in production
-      otpExpiresAt,
-      sid: message.sid,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    const user = await User.findById(userId);
+    return user ? user.isVerified : false;
+  } catch (error) {
+    console.error("Error checking user verification:", error);
+    return false;
   }
 };
