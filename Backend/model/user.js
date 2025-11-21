@@ -10,13 +10,20 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  phoneno: {
-    type: String, // Use String to preserve formatting like +91...
+ phoneNumber:{
+    type: String,
     required: true,
     unique: true,
-  },
+ },
   otp: {
-    type: String, // Store the actual OTP code
+    type: String,
+    
+
+     // Store the actual OTP code
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
   },
   otpExpiresAt: {
     type: Date, // Store expiry timestamp
