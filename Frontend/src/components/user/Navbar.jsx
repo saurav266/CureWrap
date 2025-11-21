@@ -16,7 +16,7 @@ const Navbar = () => {
             flex items-center justify-between 
             font-medium px-6 h-16 
             bg-white/70 backdrop-blur-xl shadow-md 
-            border-b border-gray-200/40
+            border-b border-gray-200/40 z-[200]
         ">
 
             {/* Logo */}
@@ -111,14 +111,9 @@ const Navbar = () => {
                             p-3 animate-fadeIn
                         "
                     >
-                        <Link to="/profile" className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
-                        <Link to="/orders" className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
-                        <button
-                          onClick={() => { console.log('logout clicked'); navigate('/'); }}
-                          className="text-left hover:text-green-600 text-gray-600 py-1"
-                        >
-                          Logout
-                        </button>
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Logout</Link>
                     </div>
                 </div>
 
@@ -145,5 +140,7 @@ const Navbar = () => {
         </div>
     );
 };
+
+
 
 export default Navbar;

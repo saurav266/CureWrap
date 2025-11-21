@@ -42,10 +42,13 @@ const HeroSection = () => {
             >
               Explore Products
             </motion.a>
+
           </div>
         </motion.div>
 
-        <motion.div
+        {/* RIGHT IMAGE — EVEN MORE BIGGER */}
+        {/* RIGHT IMAGE — MUCH BIGGER SCALE & LESS RIGHT PADDING */}
+<motion.div
   initial={{ opacity: 0, x: 130 }}
   animate={{ opacity: 1, x: 0 }}
   transition={{ duration: 1.1, ease: "easeOut" }}
@@ -67,7 +70,6 @@ const HeroSection = () => {
       scale-[1.25] md:scale-[1.32]   /* ← BIGGER SCALE */
     "
   />
-  {/* HOTSPOT 1 — SHOULDER */}
   <button
     className="absolute top-[38%] left-[53%] w-10 h-10 bg-white 
                rounded-full shadow-xl flex items-center justify-center 
@@ -103,6 +105,7 @@ const HeroSection = () => {
     +
   </button>
 </motion.div>
+
 
       </div>
     </section>
