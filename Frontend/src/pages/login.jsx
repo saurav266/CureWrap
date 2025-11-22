@@ -1,44 +1,73 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; // ✅ add Link
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext"; // ✅ import your AuthContext
+import { useAuth } from "../context/AuthContext";
 
 const LoginWithMobile = () => {
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState("request"); // request or verify
+  const [step, setStep] = useState("request");
   const [error, setError] = useState("");
-  const { login } = useAuth(); // ✅ get login from context
+  const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    let timer;
+    if (cooldown > 0) {
+      timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  // Helper to format number with +91
+  const formatMobile = (num) => {
+    if (!num) return "";
+    return num.startsWith("+91") ? num : `+91${num.replace(/^(\+91)?/, "")}`;
+  };
+
   const requestOtp = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
+    setLoading(true);
     try {
-      await axios.post("http://localhost:3000/api/users/request-otp", { mobile });
+      const formattedMobile = formatMobile(mobile);
+
+      await axios.post(
+        "http://localhost:8000/api/users/login",
+        { phoneNumber: formattedMobile },
+        { withCredentials: true }
+      );
+
       setStep("verify");
+      setError("");
+      setCooldown(30); // 30s cooldown
     } catch (err) {
       setError(err.response?.data?.message || "Server error");
+    } finally {
+      setLoading(false);
     }
   };
 
   const verifyOtp = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
+      const formattedMobile = formatMobile(mobile);
+
       const response = await axios.post(
-        "http://localhost:3000/api/users/verify-otp",
-        { mobile, otp },
+        "http://localhost:8000/api/users/verify-otp",
+        { phoneNumber: formattedMobile, otp },
         { withCredentials: true }
       );
 
-      const { user, token } = response.data;
-
-      // ✅ Call AuthContext login to persist user + token
-      login(user, token);
-
-      // ✅ Redirect to dashboard
-      navigate("/dashboard");
+      const { user } = response.data;
+      login(user); // cookie is already stored by browser
+      navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,9 +86,14 @@ const LoginWithMobile = () => {
               onChange={(e) => setMobile(e.target.value)}
               required
               className="w-full px-4 py-2 border rounded-md"
+              placeholder="Enter 10-digit number"
             />
-            <button type="submit" className="w-full mt-4 py-2 bg-blue-500 text-white rounded-md">
-              Send OTP
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-4 py-2 bg-blue-500 text-white rounded-md disabled:opacity-50"
+            >
+              {loading ? "Sending..." : "Send OTP"}
             </button>
           </form>
         ) : (
@@ -72,13 +106,26 @@ const LoginWithMobile = () => {
               required
               className="w-full px-4 py-2 border rounded-md"
             />
-            <button type="submit" className="w-full mt-4 py-2 bg-green-500 text-white rounded-md">
-              Verify & Login
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-4 py-2 bg-green-500 text-white rounded-md disabled:opacity-50"
+            >
+              {loading ? "Verifying..." : "Verify & Login"}
+            </button>
+
+            {/* Resend OTP with cooldown */}
+            <button
+              type="button"
+              onClick={requestOtp}
+              disabled={loading || cooldown > 0}
+              className="w-full mt-3 py-2 bg-yellow-500 text-white rounded-md disabled:opacity-50"
+            >
+              {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend OTP"}
             </button>
           </form>
         )}
 
-        {/* ✅ Add "Don't have an account?" */}
         <p className="mt-4 text-center text-sm text-gray-600">
           Don’t have an account?{" "}
           <Link to="/register" className="text-blue-500 hover:underline">
