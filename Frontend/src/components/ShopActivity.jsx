@@ -64,7 +64,7 @@ export default function ShopByActivitySection() {
                 absolute bottom-0 left-0 
                 w-3/4 h-0.5/4
                 text-white text-lg md:text-xl 
-                bg-green-400 font-semibold 
+                bg-green-500 font-semibold 
                 py-3 px-4
                 drop-shadow-lgcd 
               "

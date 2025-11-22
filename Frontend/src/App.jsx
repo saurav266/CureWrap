@@ -3,9 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/user/Navbar.jsx";
 import Footer from "./components/Footer";
-import Framer from "./components/Framer";
-import Features from "./components/Features";
-import ShopActivity from "./components/ShopActivity";
+
 
 import Home from "./pages/home.jsx";
 import Product from "./pages/product.jsx";
@@ -33,9 +31,6 @@ function App() {
       </main>
 
       {/* Footer + Features always visible */}
-      <Features />
-      <Framer />
-      <ShopActivity />
       <Footer />
     </div>
   );
