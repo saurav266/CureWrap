@@ -1,36 +1,39 @@
-import React from 'react'
-import Navbar from "./components/user/Navbar.jsx";
+import React from "react";
 import { Routes, Route } from "react-router-dom";
 
+import Navbar from "./components/user/Navbar.jsx";
+
+
 import Home from "./pages/home.jsx";
-import Product from "./pages/product.jsx";
 import About from "./pages/about.jsx";
 import Contact from "./pages/contact.jsx";
-import Profile from "./pages/profile.jsx";
 
-// import Footer from './components/user/footer.jsx';
-
+import ProductGrid from "./pages/Product.jsx";
+import ProductsSection from "./components/productSection.jsx";
 
 function App() {
-
   return (
-    <>
-      <div className='min-h-screen flex flex-col'>
+    <div className="min-h-screen flex flex-col">
+      {/* Navbar always visible */}
       <Navbar />
-       <main >
-      {/* // className="flex-1 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] py-8" */}
+
+      {/* Main content area */}
+      <main>
         <Routes>
-          <Route path='/' element={<Home />} />
-          <Route path='/product' element={<Product />} />
-          <Route path='/about' element={<About />} />
-          <Route path='/contact' element={<Contact />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/product" element={<ProductGrid />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+         
         </Routes>
-        </main>
-        {/* <Footer /> */}
-      </div>
+      </main>
+
+      {/* Footer + Features always visible */}
+     
+      <ProductsSection />
       
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
