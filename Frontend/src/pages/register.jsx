@@ -15,7 +15,7 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:3000/api/users/register", {
+      await axios.post("http://localhost:8000/api/users/register", {
         name,
         email,
         phone,
@@ -31,12 +31,12 @@ const Register = () => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/users/verify-otp",
+        "http://localhost:8000/api/users/verify-otp",
         { phone, otp },
         { withCredentials: true }
       );
       console.log("Registration + OTP verified:", response.data);
-      navigate("/login");
+      navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP");
     }
