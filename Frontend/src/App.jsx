@@ -8,7 +8,7 @@ import Home from "./pages/home.jsx";
 import About from "./pages/about.jsx";
 import Contact from "./pages/contact.jsx";
 
-import ProductGrid from "./pages/Product.jsx";
+import ProductGrid from "./pages/product.jsx";
 import ProductsSection from "./components/productSection.jsx";
 
 function App() {
