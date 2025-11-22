@@ -1,6 +1,7 @@
 import User from "../model/user.js";
 import twilio from "twilio";
 import "dotenv/config";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
@@ -31,7 +32,8 @@ export const createUser = async (req, res) => {
       from: process.env.TWILIO_PHONE_NUMBER,
       to: phoneNumber,
     });
-
+   
+    
     const newUser = new User({
       name,
       email,
@@ -88,6 +90,8 @@ export const login = async (req, res) => {
 };
 
 
+
+
 export const verifyOtp = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
@@ -121,10 +125,17 @@ export const verifyOtp = async (req, res) => {
       { expiresIn: "1h" }
     );
 
+    // Store JWT in HTTP-only cookie
+    res.cookie("authToken", token, {
+      httpOnly: true,   // cannot be accessed by JS
+      secure: false,    // set true in production with HTTPS
+      sameSite: "Strict",
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
+
     res.json({
       success: true,
       message: "Login successful",
-      token,
       user: { id: user._id, name: user.name, email: user.email, phoneNumber: user.phoneNumber }
     });
   } catch (error) {
@@ -143,5 +154,30 @@ export const isUserVerified = async (userId) => {
   } catch (error) {
     console.error("Error checking user verification:", error);
     return false;
+  }
+};
+
+export const testTwilio = async (req, res) => {
+  try {
+    const { to } = req.body; // recipient number
+
+    if (!to) {
+      return res.status(400).json({ message: "Recipient phone number is required" });
+    }
+
+    const message = await twilioClient.messages.create({
+      body: "Hello! Twilio test message 🚀",
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to,
+    });
+
+    res.json({
+      success: true,
+      message: "Test SMS sent successfully",
+      sid: message.sid,
+    });
+  } catch (error) {
+    console.error("Twilio test error:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
