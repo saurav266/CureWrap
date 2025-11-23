@@ -1,5 +1,5 @@
 import { loginAdmin } from "../controllers/adminController.js";
-
+import User from "../models/User.js"; // your User schema
 import { login as loginUser } from "../controllers/userController.js";
 export const unifiedLogin = async (req, res) => {
   const { email, password } = req.body;

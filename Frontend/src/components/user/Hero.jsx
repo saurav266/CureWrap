@@ -60,10 +60,9 @@ const HeroSection = () => {
               w-full max-w-[1350px]
               h-auto object-contain
               drop-shadow-2xl brightness-110 contrast-110
-              scale-[1.35] md:scale-[1.42] lg:scale-[1.48]
-              translate-x-[35px]
-              md:translate-x-[55px]
-              lg:translate-x-[75px]
+
+              scale-[1.20] md:scale-[1.28] lg:scale-[1.32]
+              translate-x-[20px] md:translate-x-[40px] lg:translate-x-[60px]
             "
           />
 
@@ -77,24 +76,24 @@ const HeroSection = () => {
           />
           {/* elbow*/}
           <Hotspot 
-            top="63%" 
-            left="80%" 
+            top="62%" 
+            left="75%" 
             title="ELBOW WEAR" 
             price="₹29.95"
             img={assets.product2}
           />
           {/* knee*/}
           <Hotspot 
-            top="99%" 
-            left="-2%" 
+            top="93%" 
+            left="3%" 
             title="KNEE CAP" 
             price="₹29.95"
             img={assets.product3}
           />
           {/* foot*/}
           <Hotspot 
-            top="98%" 
-            left="103%" 
+            top="93%" 
+            left="99%" 
             title="ANKLE WEAR" 
             price="₹95.95"
             img={assets.product4}
