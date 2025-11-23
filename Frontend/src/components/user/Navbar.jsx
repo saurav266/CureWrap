@@ -8,7 +8,7 @@ const Navbar = () => {
 
     const navLinkClass = ({ isActive }) =>
         `relative group transition-all duration-300 font-semibold tracking-wide
-        ${isActive ? "text-green-600" : "text-gray-700 hover:text-green-500 hover:scale-110 hover:-translate-y-0.5"}
+        ${isActive ? "text-green-600" : "text-gray-700 hover:text-green-500 hover:scale-100 hover:-translate-y-0.5"}
         hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]`;
 
     return (
@@ -37,7 +37,7 @@ const Navbar = () => {
             </Link>
 
             {/* Desktop Menu */}
-            <ul className="hidden sm:flex gap-8 text-lg items-center font-semibold tracking-wide">
+            <ul className="hidden sm:flex gap-16 text-lg items-center font-semibold tracking-wide">
                 
                 {/* HOME */}
                 <NavLink to="/" className={navLinkClass}>
@@ -81,7 +81,7 @@ const Navbar = () => {
             </ul>
 
             {/* Right Icons */}
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-10">
 
                 {/* Wishlist */}
                 <Link to="/WatchList">
@@ -94,28 +94,34 @@ const Navbar = () => {
                 </Link>
 
                 {/* Profile Dropdown */}
-                <div className="relative group">
-                    <FaUserCircle className="
-                        h-8 w-8 cursor-pointer 
-                        transition-all duration-300 
-                        hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
-                        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]
-                    " />
+<div className="relative group/profile inline-block">
+    <FaUserCircle className="
+        h-8 w-8 cursor-pointer 
+        transition-all duration-300 
+        hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
+        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]
+    " />
 
-                    <div
-                        className="
-                            hidden group-hover:flex flex-col 
-                            absolute right-0 mt-3 w-44 
-                            bg-white/90 backdrop-blur-md 
-                            shadow-xl rounded-lg 
-                            p-3 animate-fadeIn
-                        "
-                    >
-                        <Link className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
-                        <Link className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
-                        <Link className="hover:text-green-600 text-gray-600 py-1">Logout</Link>
-                    </div>
-                </div>
+    <div
+        className="
+            absolute right-0 top-full mt-1 w-44
+            bg-white/90 backdrop-blur-md shadow-xl rounded-lg p-3 z-50
+
+            opacity-0 translate-y-2 pointer-events-none
+            transition-all duration-300 ease-out
+
+            group-hover/profile:opacity-100 
+            group-hover/profile:translate-y-0 
+            group-hover/profile:pointer-events-auto
+        "
+    >
+        <Link to="/profile" className="hover:text-green-600 text-gray-600 py-1 block">Profile</Link>
+        <Link to="/orders" className="hover:text-green-600 text-gray-600 py-1 block">Orders</Link>
+        <Link to="/logout" className="hover:text-green-600 text-gray-600 py-1 block">Logout</Link>
+        <Link to="/login" className="hover:text-green-600 text-gray-600 py-1 block">Login</Link>
+    </div>
+</div>
+
 
                 {/* Cart */}
                 <Link to="/cart" className="relative">

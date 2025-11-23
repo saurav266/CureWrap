@@ -4,22 +4,22 @@ const activities = [
   { 
     name: "Gym / Workout", 
     img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
-    link: "/shop/activity/gym" 
+    link: "/https://share.google/images/J5AtnOEF53f0AkotV" 
   },
   { 
     name: "Running / Jogging", 
     img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
-    link: "/shop/activity/running" 
+    link: "https://share.google/images/EAK8nMNEaXgHZOLdH" 
   },
   { 
     name: "Yoga / Pilates", 
     img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
-    link: "/shop/activity/yoga" 
+    link: "https://share.google/images/Zq1fq6JtwNkzzycN2" 
   },
   { 
     name: "Rehabilitation", 
     img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
-    link: "/shop/activity/rehab" 
+    link: "https://share.google/images/ZBIyOkyEM5E92kePR" 
   },
 ];
 
