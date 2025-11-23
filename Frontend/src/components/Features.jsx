@@ -1,43 +1,98 @@
 import React from 'react';
 import { FaShoppingBag, FaHeadset, FaTruck, FaUndoAlt } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 
 const Features = () => {
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.18,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const fadeUp = {
+    hidden: { opacity: 0, y: 25 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.7, ease: "easeOut" }
+    }
+  };
+
   const items = [
     {
-      icon: <FaShoppingBag className="text-2xl text-black transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600 w-25 h-10" />,
-      title: 'FSA/HSA ELIGIBLE',
-      description: 'Accepts HSA & FSA payments',
+      icon: FaShoppingBag,
+      title: "Free Returns",
+      description: "Returns within 7 days"
     },
     {
-      icon: <FaHeadset className="text-2xl text-black transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600 w-25 h-10" />,
-      title: 'SUPPORT 24/7',
-      description: 'Chatdesk 24 hours a day, 7 days a week.',
+      icon: FaHeadset,
+      title: "Secured Payments",
+      description: "SSL encryption & trusted payments"
     },
     {
-      icon: <FaTruck className="text-2xl text-black transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600 w-25 h-10" />,
-      title: 'FREE DELIVERY',
-      description: 'on all orders from the US or Canada $99 or above.',
+      icon: FaTruck,
+      title: "Verified Sellers",
+      description: "verified and trusted sellers"
     },
     {
-      icon: <FaUndoAlt className="text-2xl text-black transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600 w-25 h-10" />,
-      title: '100-DAY RETURN',
-      description: 'Simply return it within 100 days for an exchange.',
-    },
+      icon: FaUndoAlt,
+      title: "Free Delivery",
+      description: "free delivery on all orders"
+    }
   ];
 
   return (
-    <section className="bg-white py-10 px-6 md:px-20">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center">
-        {items.map((item, index) => (
-          <div key={index} className="flex flex-col items-center space-y-3 group cursor-pointer transition-transform duration-300 hover:scale-105">
-            <div className="p-4">{item.icon}</div>
-            <h4 className="font-semibold text-sm transition-all duration-300 group-hover:text-blue-600 group-hover:tracking-wide">
-              {item.title}
-            </h4>
-            <p className="text-xs text-gray-600">{item.description}</p>
-          </div>
-        ))}
-      </div>
+    <section className="bg-white py-14 px-6 md:px-20">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.3 }}
+        className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12"
+      >
+        {items.map((item, index) => {
+          const Icon = item.icon;
+
+          return (
+            <motion.div
+              key={index}
+              variants={fadeUp}
+              className="group flex flex-col items-center text-center select-none"
+            >
+              {/* Animated Icon */}
+              <motion.div
+                whileHover={{
+                  scale: 1.25,
+                  y: -4,
+                  transition: { type: "spring", stiffness: 200 }
+                }}
+                className="mb-3"
+              >
+                <Icon className="text-4xl text-black transition-all duration-300 group-hover:text-blue-600 group-hover:drop-shadow-[0_4px_10px_rgba(59,130,246,0.35)]" />
+              </motion.div>
+
+              {/* Animated Title */}
+              <motion.h4
+                whileHover={{ x: 3 }}
+                className="font-semibold text-sm tracking-wide transition-all duration-300 group-hover:text-blue-600"
+              >
+                {item.title}
+              </motion.h4>
+
+              {/* Subtext */}
+              <p className="text-xs mt-1 text-gray-600 leading-relaxed">
+                {item.description}
+              </p>
+            </motion.div>
+          );
+        })}
+      </motion.div>
     </section>
   );
 };

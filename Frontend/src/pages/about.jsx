@@ -10,10 +10,18 @@ import whatdo2 from "../assets/Frontend_assets/about/what-we2.png";
 import ourMission from "../assets/Frontend_assets/about/ourMission.png";
 import quality from "../assets/Frontend_assets/about/quality.png";
 import quality2 from "../assets/Frontend_assets/about/quality2.png";
-
+import heroimg from "../assets/Frontend_assets/about/heroimg.png";
 export default function CureWrapAbout() {
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
+      {/* ================= HERO IMAGE (FULL WIDTH) ================= */}
+      <section className="w-full">
+        <img
+          src={heroimg} 
+          alt="Hero section"
+          className="w-full h-[70vh] md:h-[80vh] object-cover"
+        />
+      </section>
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-2 gap-12 items-center">

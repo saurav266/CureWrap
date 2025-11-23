@@ -9,10 +9,10 @@ const Navbar = () => {
   const { isAuthenticated, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navLinkClass = ({ isActive }) =>
-    `relative group transition-all duration-300 font-semibold tracking-wide
-    ${isActive ? "text-green-600" : "text-gray-700 hover:text-green-500 hover:scale-110 hover:-translate-y-0.5"}
-    hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]`;
+    const navLinkClass = ({ isActive }) =>
+        `relative group transition-all duration-300 font-semibold tracking-wide
+        ${isActive ? "text-green-600" : "text-gray-700 hover:text-green-500 hover:scale-110 hover:-translate-y-0.5"}
+        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]`;
 
   return (
     <div className="
@@ -42,36 +42,86 @@ const Navbar = () => {
                 />
             </Link>
 
-      {/* Desktop Menu */}
-      <ul className="hidden sm:flex gap-8 text-lg items-center font-semibold tracking-wide">
-        <NavLink to="/" className={navLinkClass}>HOME</NavLink>
-        <NavLink to="/product" className={navLinkClass}>PRODUCT</NavLink>
-        <NavLink to="/about" className={navLinkClass}>ABOUT</NavLink>
-        <NavLink to="/contact" className={navLinkClass}>CONTACT</NavLink>
-      </ul>
+            {/* Desktop Menu */}
+            <ul className="hidden sm:flex gap-8 text-lg items-center font-semibold tracking-wide">
+                
+                {/* HOME */}
+                <NavLink to="/" className={navLinkClass}>
+                    HOME
+                    <span className="
+                        absolute left-1/2 -bottom-1 h-0.5 w-0 
+                        bg-green-500 transition-all duration-300 
+                        group-hover:w-full group-hover:left-0
+                    "></span>
+                </NavLink>
 
-      {/* Right Icons */}
-      <div className="flex items-center gap-5">
-        {/* Wishlist */}
-        <Link to="/WatchList">
-          <FaRegHeart className="h-8 w-8 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500 hover:-translate-y-0.5 hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]" />
-        </Link>
+                {/* PRODUCT */}
+                <NavLink to="/product" className={navLinkClass}>
+                    PRODUCT
+                    <span className="
+                        absolute left-1/2 -bottom-1 h-0.5 w-0 
+                        bg-green-500 transition-all duration-300 
+                        group-hover:w-full group-hover:left-0
+                    "></span>
+                </NavLink>
 
-        {/* Profile Dropdown */}
-        <div className="relative group hidden sm:block">
-          <FaUserCircle className="h-8 w-8 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500 hover:-translate-y-0.5 hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]" />
-          <div className="hidden group-hover:flex flex-col absolute right-0 mt-3 w-44 bg-white/90 backdrop-blur-md shadow-xl rounded-lg p-3 animate-fadeIn">
-            {isAuthenticated ? (
-              <>
-                <Link to="/profile" className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
-                <Link to="/orders" className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
-                <button onClick={logout} className="hover:text-green-600 text-gray-600 py-1 text-left">Logout</button>
-              </>
-            ) : (
-              <Link to="/login" className="hover:text-green-600 text-gray-600 py-1">Login</Link>
-            )}
-          </div>
-        </div>
+                {/* ABOUT */}
+                <NavLink to="/about" className={navLinkClass}>
+                    ABOUT
+                    <span className="
+                        absolute left-1/2 -bottom-1 h-0.5 w-0 
+                        bg-green-500 transition-all duration-300 
+                        group-hover:w-full group-hover:left-0
+                    "></span>
+                </NavLink>
+
+                {/* CONTACT */}
+                <NavLink to="/contact" className={navLinkClass}>
+                    CONTACT
+                    <span className="
+                        absolute left-1/2 -bottom-1 h-0.5 w-0 
+                        bg-green-500 transition-all duration-300 
+                        group-hover:w-full group-hover:left-0
+                    "></span>
+                </NavLink>
+            </ul>
+
+            {/* Right Icons */}
+            <div className="flex items-center gap-5">
+
+                {/* Wishlist */}
+                <Link to="/WatchList">
+                    <FaRegHeart className="
+                        h-8 w-8 cursor-pointer 
+                        transition-all duration-300 
+                        hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
+                        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]
+                    " />
+                </Link>
+
+                {/* Profile Dropdown */}
+                <div className="relative group">
+                    <FaUserCircle className="
+                        h-8 w-8 cursor-pointer 
+                        transition-all duration-300 
+                        hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
+                        hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]
+                    " />
+
+                    <div
+                        className="
+                            hidden group-hover:flex flex-col 
+                            absolute right-0 mt-3 w-44 
+                            bg-white/90 backdrop-blur-md 
+                            shadow-xl rounded-lg 
+                            p-3 animate-fadeIn
+                        "
+                    >
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Profile</Link>
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Orders</Link>
+                        <Link className="hover:text-green-600 text-gray-600 py-1">Logout</Link>
+                    </div>
+                </div>
 
         {/* Cart */}
         <Link to="/cart" className="relative">

@@ -60,39 +60,42 @@ const HeroSection = () => {
               w-full max-w-[1350px]
               h-auto object-contain
               drop-shadow-2xl brightness-110 contrast-110
-              scale-[1.22] md:scale-[1.28]
+              scale-[1.35] md:scale-[1.42] lg:scale-[1.48]
+              translate-x-[35px]
+              md:translate-x-[55px]
+              lg:translate-x-[75px]
             "
           />
 
           {/* HOTSPOTS back*/}
           <Hotspot 
             top="64%" 
-            left="2%" 
+            left="8%" 
             title="BACK BELT SUPPORT" 
             price="₹39.95"
             img={assets.product1}
           />
           {/* elbow*/}
           <Hotspot 
-            top="58%" 
-            left="67%" 
+            top="63%" 
+            left="80%" 
             title="ELBOW WEAR" 
             price="₹29.95"
             img={assets.product2}
           />
           {/* knee*/}
           <Hotspot 
-            top="88%" 
-            left="-5%" 
+            top="99%" 
+            left="-2%" 
             title="KNEE CAP" 
             price="₹29.95"
             img={assets.product3}
           />
           {/* foot*/}
           <Hotspot 
-            top="90%" 
-            left="83%" 
-            title="FOOT WEAR" 
+            top="98%" 
+            left="103%" 
+            title="ANKLE WEAR" 
             price="₹95.95"
             img={assets.product4}
           />
