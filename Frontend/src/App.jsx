@@ -4,7 +4,6 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/user/Navbar.jsx";
 import Footer from "./components/Footer";
 
-
 import Home from "./pages/home.jsx";
 import Product from "./pages/product.jsx";
 import About from "./pages/about.jsx";
@@ -12,25 +11,43 @@ import Contact from "./pages/contact.jsx";
 import Login from "./pages/login.jsx";
 import Register from "./pages/register.jsx";
 
+import ProtectedRoute from "./components/protected/ProtectedRoute.jsx";
+
+
 function App() {
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Navbar always visible */}
       <Navbar />
 
-      {/* Main content area */}
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/product" element={<Product />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
-      </main>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/product" element={<Product />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      {/* Footer + Features always visible */}
+        {/* Protected routes */}
+        <Route
+          path="/about"
+          element={
+            <ProtectedRoute>
+              <About />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin route (specific email check) */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute adminEmail="admin@example.com">
+              
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+
       <Footer />
     </div>
   );
