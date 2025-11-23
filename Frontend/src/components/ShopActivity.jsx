@@ -1,10 +1,14 @@
 import { motion } from "framer-motion";
 
+// Brand gradient (use your CureWrap identity)
+const brandGradient =
+  "bg-gradient-to-r from-[#2F86D6]/80 to-[#63B46B]/80";
+
 const activities = [
   { 
     name: "Gym / Workout", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
-    link: "/https://share.google/images/J5AtnOEF53f0AkotV" 
+    img: "/mnt/data/Screenshot 2025-11-21 134354.png",
+    link: "https://share.google/images/J5AtnOEF53f0AkotV" 
   },
   { 
     name: "Running / Jogging", 
@@ -25,52 +29,96 @@ const activities = [
 
 export default function ShopByActivitySection() {
   return (
-    <section className="py-16 px-2 sm:px-6 lg:px-12 xl:px-16 bg-white">
-      
+    <section className="py-20 px-4 md:px-12 lg:px-20 bg-white">
+
       {/* TEXT HEADER */}
-      <div className="max-w-4xl mx-auto text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+      <div className="max-w-5xl mx-auto text-center mb-16">
+        <motion.h2
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-4xl md:text-5xl font-bold text-gray-900"
+        >
           Shop by Activity
-        </h2>
-        <p className="text-gray-600 text-lg md:text-xl">
-          Choose the right supportive gear based on your daily routine and activity level.
-        </p>
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.7 }}
+          className="text-gray-600 text-lg md:text-xl mt-4"
+        >
+          Choose the right supportive gear that empowers your lifestyle.
+        </motion.p>
+
+        {/* Decorative green line */}
+        <div className="mx-auto mt-6 w-24 h-1 rounded-full bg-green-500"></div>
       </div>
 
-      {/* IMAGE GRID — EXTRA WIDE */}
-      <div className="max-w-[1700px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      {/* GRID */}
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
         {activities.map((activity, idx) => (
           <motion.a
             key={idx}
             href={activity.link}
-            className="relative block overflow-hidden  shadow-xl group"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.15, duration: 0.6 }}
+            transition={{ delay: idx * 0.15, duration: 0.7 }}
+            className="group relative block overflow-hidden rounded-2xl shadow-xl"
           >
+
             {/* IMAGE */}
-            <img
+            <motion.img
               src={activity.img}
               alt={activity.name}
-              className="w-full h-80 md:h-[360px] lg:h-[380px] xl:h-[400px] object-cover transition-transform duration-500 group-hover:scale-110"
+              className="
+                w-full h-[380px] object-cover 
+                transition-all duration-700 
+                group-hover:scale-110"
             />
 
-            {/* DARK OVERLAY */}
-            <div className="absolute inset-0 bg-green bg-opacity-30 opacity-0 group-hover:opacity-70 transition-opacity duration-300" />
+            {/* GRADIENT BRAND OVERLAY */}
+            <div
+              className={`absolute inset-0 opacity-0 group-hover:opacity-80 transition-all duration-500 ${brandGradient}`}
+            />
 
-            {/* LABEL (UPDATED) */}
-            <div 
+            {/* GLASS INNER CARD */}
+            {/* <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.2, duration: 0.6 }}
               className="
-                absolute bottom-0 left-0 
-                w-3/4 h-0.5/4
-                text-white text-lg md:text-xl 
-                bg-green-500 font-semibold 
-                py-3 px-4
-                drop-shadow-lgcd 
+                absolute bottom-4 left-1/2 -translate-x-1/2
+                w-[85%] 
+                bg-white/15 backdrop-blur-xl 
+                px-6 py-4 rounded-xl
+                shadow-[0_4px_30px_rgba(0,0,0,0.18)]
+                border border-white/30
+                text-white
+                opacity-0 group-hover:opacity-100
+                translate-y-3 group-hover:translate-y-0
+                transition-all duration-500
+              "
+            >
+              <div className="text-xl font-bold tracking-wide drop-shadow-md">
+                {activity.name}
+              </div>
+            </motion.div> */}
+
+            {/* DIAGONAL LABEL STRIP (premium style) */}
+            <div
+              className="
+                absolute bottom-0 left-0 w-full 
+                bg-green-600 text-white 
+                py-2 px-4 text-lg font-semibold
+                transform -skew-y-3 
+                opacity-100 group-hover:opacity-0
+                transition-all duration-500
               "
             >
               {activity.name}
             </div>
+
           </motion.a>
         ))}
       </div>
