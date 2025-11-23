@@ -1,210 +1,306 @@
-import React, { useState } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination } from 'swiper/modules';
-
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-
-import { AiOutlineHeart, AiFillHeart, AiOutlineEye, AiOutlineClose,AiOutlineShoppingCart } from "react-icons/ai";
+// FeaturedProductsCinematicSquareModal.jsx
+import React, { useRef, useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { AiOutlineHeart, AiFillHeart, AiOutlineEye, AiOutlineClose, AiOutlineShoppingCart } from "react-icons/ai";
 import { FaStar } from "react-icons/fa";
+import { assets } from "../../assets/frontend_assets/assets.js";
 
+// Use the developer-provided uploaded image as starter thumbnail
+const uploadedImg = "/mnt/data/Screenshot 2025-11-23 at 4.50.18 AM.png";
 
-import { assets } from '../../assets/frontend_assets/assets.js';
+const brandBlue = "#2F86D6";
+const brandGreen = "#63B46B";
 
+// Add uploaded thumbnails to these arrays when you upload more images
 const products = [
-  { id: 1, title: "Curewrap Compression Knee Sleeves", price: "₹25.00", img: assets.product1, discount: "-18%", rating: 5, reviews: 6066, thumbs: [assets.product1, assets.product2, assets.product3] },
-  { id: 2, title: "Curewrap Adjustable Knee Brace", price: "₹35.00", img: assets.product2, discount: "-7%", rating: 3, reviews: 112, thumbs: [assets.product2, assets.product1, assets.product3] },
-  { id: 3, title: "Curewrap Foot & Ankle Brace Support", price: "₹40.00", img: assets.product3, discount: "-16%", rating: 4, reviews: 441, thumbs: [assets.product3, assets.product1, assets.product4] },
-  { id: 4, title: "Curewrap Reinforced Back Brace", price: "₹50.00", img: assets.product4, discount: "-25%", rating: 4, reviews: 892, thumbs: [assets.product4, assets.product2, assets.product1] },
+  { id: 1, title: "Curewrap Compression Knee Sleeves", price: "₹25.00", img: assets.product1, discount: "-18%", rating: 5, reviews: 6066, thumbs: [assets.product1, assets.product2, assets.product3, uploadedImg] },
+  { id: 2, title: "Curewrap Adjustable Knee Brace", price: "₹35.00", img: assets.product2, discount: "-7%", rating: 3, reviews: 112, thumbs: [assets.product2, assets.product1, assets.product3, uploadedImg] },
+  { id: 3, title: "Curewrap Foot & Ankle Brace Support", price: "₹40.00", img: assets.product3, discount: "-16%", rating: 4, reviews: 441, thumbs: [assets.product3, assets.product1, assets.product4, uploadedImg] },
+  { id: 4, title: "Curewrap Reinforced Back Brace", price: "₹50.00", img: assets.product4, discount: "-25%", rating: 4, reviews: 892, thumbs: [assets.product4, assets.product2, assets.product1, uploadedImg] },
 ];
 
-export default function FeaturedProducts() {
+export default function FeaturedProductsCinematicSquareModal() {
   const [quickView, setQuickView] = useState(null);
-  const [selectedThumb, setSelectedThumb] = useState("");
-  const [animateHeart, setAnimateHeart] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0); // index in quickView.thumbs
+  const [heartBurstId, setHeartBurstId] = useState(null);
+  const cardRefs = useRef({});
+
+  // prevent background scroll while modal open
+  useEffect(() => {
+    if (quickView) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [quickView]);
+
+  // keyboard accessibility for modal
+  useEffect(() => {
+    if (!quickView) return;
+
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        setQuickView(null);
+      } else if (e.key === "ArrowLeft") {
+        setSelectedIndex((s) => Math.max(0, s - 1));
+      } else if (e.key === "ArrowRight") {
+        setSelectedIndex((s) => Math.min(quickView.thumbs.length - 1, s + 1));
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [quickView]);
+
+  // heart burst
+  const triggerHeartBurst = (id) => {
+    setHeartBurstId(id);
+    setTimeout(() => setHeartBurstId(null), 900);
+  };
+
+  // tilt / pointer movement handler (same hybrid cinematic behavior)
+  const handleMove = (e, id) => {
+    const el = cardRefs.current[id];
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    const rotY = (px - 0.5) * 12;
+    const rotX = (0.5 - py) * 10;
+    const img = el.querySelector(".fp-image");
+    const shine = el.querySelector(".fp-shine");
+    const badge = el.querySelector(".fp-badge");
+    el.style.transform = `perspective(1100px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(0)`;
+    if (img) img.style.transform = `translateZ(30px) scale(1.06) translate(${(px - 0.5) * 8}px, ${(py - 0.5) * 6}px)`;
+    if (shine) shine.style.background = `linear-gradient(135deg, rgba(255,255,255,${0.12 + px * 0.18}) 0%, rgba(255,255,255,0) 40%)`;
+    if (badge) badge.style.transform = `translateZ(60px) translate(${(px - 0.5) * 10}px, ${(py - 0.5) * -6}px)`;
+  };
+
+  const handleLeave = (id) => {
+    const el = cardRefs.current[id];
+    if (!el) return;
+    const img = el.querySelector(".fp-image");
+    const shine = el.querySelector(".fp-shine");
+    const badge = el.querySelector(".fp-badge");
+    el.style.transform = `perspective(1100px) rotateX(0deg) rotateY(0deg) translateZ(0)`;
+    if (img) img.style.transform = `translateZ(0) scale(1) translate(0,0)`;
+    if (shine) shine.style.background = `linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 40%)`;
+    if (badge) badge.style.transform = `translateZ(0) translate(0,0)`;
+  };
+
+  // open quick view and default selected index
+  const openQuickView = (product) => {
+    setQuickView(product);
+    setSelectedIndex(0);
+  };
 
   return (
     <>
-      {/* SECTION */}
-      <section className="py-16 px-6 md:px-12 bg-white">
+      <section className="py-14 md:py-20 px-4 md:px-12 bg-white">
         <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">Featured Products</h2>
+              <p className="text-sm text-gray-500 mt-1">Hand-picked top-rated support essentials</p>
+            </div>
 
-          {/* TITLE */}
-          <h2 className="text-center text-4xl font-bold text-gray-900">
-            FEATURED PRODUCTS
-          </h2>
-          <p className="text-center text-lg text-gray-600 mt-3 mb-10">
-            Explore Our Top-Rated Orthopedic Essentials
-          </p>
-
-          {/* CUSTOM ARROWS */}
-          <div className="flex justify-end gap-4 mb-4">
-            <button className="swiper-prev bg-gray-200 p-3 rounded-full hover:bg-green-600 hover:text-white transition">❮</button>
-            <button className="swiper-next bg-gray-200 p-3 rounded-full hover:bg-green-600 hover:text-white transition">❯</button>
+            <div className="flex items-center gap-3">
+              {/* Keep your custom arrows or let the Swiper provide them; for this component you may wire these up to Swiper navigation if needed */}
+              <div className="text-sm text-gray-500">Premium selection</div>
+            </div>
           </div>
 
-          <Swiper
-            modules={[Navigation, Pagination]}
-            spaceBetween={30}
-            slidesPerView={1}
-            navigation={{ nextEl: '.swiper-next', prevEl: '.swiper-prev' }}
-            pagination={{ clickable: true }}
-            breakpoints={{
-              640: { slidesPerView: 2 },
-              1024: { slidesPerView: 3 },
-              1280: { slidesPerView: 4 },
-            }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {products.map((p) => (
-              <SwiperSlide key={p.id}>
-                <div className="relative bg-white shadow-md hover:shadow-xl transition p-3 pb-5 overflow-hidden">
+              <div key={p.id} className="relative">
+                <div
+                  ref={(el) => (cardRefs.current[p.id] = el)}
+                  onMouseMove={(e) => handleMove(e, p.id)}
+                  onMouseLeave={() => handleLeave(p.id)}
+                  className="relative w-full h-[420px] lg:h-[480px] rounded-2xl bg-white/30 backdrop-blur-md shadow-2xl overflow-hidden transition-transform duration-500"
+                  style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 pointer-events-none" />
 
-                  {/* Discount Badge */}
-                  <div className="absolute top-3 left-3 z-20 bg-blue-600 text-white text-sm font-bold px-2 py-1 rounded-full">
-                    {p.discount}
-                  </div>
-
-                  {/* Floating ❤️ animation */}
-                  {animateHeart && (
-                    <AiFillHeart className="text-red-500 text-4xl absolute top-5 right-8 animate-floatUp opacity-0" />
-                  )}
-
-                  {/* IMAGE */}
-                  <div className="relative w-full h-[330px] overflow-hidden group">
-
-                    <img
-                      src={p.img}
-                      alt={p.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-
-                    {/* ACTION BUTTONS (hover only) */}
-                    <div className="absolute top-3 right-3 flex flex-col gap-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-30">
-
-                      {/* WISHLIST BUTTON + TOOLTIP */}
-                      <div className="relative group/icon">
-                        <button
-                          onClick={() => {
-                            setAnimateHeart(true);
-                            setTimeout(() => setAnimateHeart(false), 800);
-                          }}
-                          className="bg-white p-2 rounded-full shadow hover:scale-110 transition"
-                        >
-                          <AiOutlineHeart size={24} className="text-gray-800" />
-                        </button>
-
-                        <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-white shadow px-2 py-1 rounded text-xs opacity-0 group-hover/icon:opacity-100 transition whitespace-nowrap">
-                          Add to Wishlist
-                        </span>
-                      </div>
-
-                      {/* QUICK VIEW ICON + TOOLTIP */}
-                      <div className="relative group/icon">
-                        <button
-                          onClick={() => { setQuickView(p); setSelectedThumb(p.img); }}
-                          className="bg-white p-2 rounded-full shadow hover:scale-110 transition"
-                        >
-                          <AiOutlineEye size={24} className="text-gray-800" />
-                        </button>
-
-                        <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-white shadow px-2 py-1 rounded text-xs opacity-0 group-hover/icon:opacity-100 transition whitespace-nowrap">
-                          Quick View
-                        </span>
-                      </div>
-
+                  {/* badge */}
+                  <div className="absolute top-4 left-4 z-20">
+                    <div className="fp-badge inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ background: `linear-gradient(90deg, ${brandBlue}, ${brandGreen})`, boxShadow: "0 6px 26px rgba(0,0,0,0.18)" }}>
+                      {p.discount}
                     </div>
                   </div>
 
-                  {/* RATING */}
-                  <div className="flex items-center gap-1 mt-2">
-                    {Array.from({ length: p.rating }).map((_, i) => (
-                      <FaStar key={i} className="text-yellow-400 text-lg" />
-                    ))}
-                    <span className="text-sm text-gray-500 ml-1">({p.reviews})</span>
+                  {/* heart burst */}
+                  {heartBurstId === p.id && (
+                    <div className="absolute top-6 right-6 z-40 pointer-events-none">
+                      <motion.div initial={{ scale: 0, y: 0, opacity: 1 }} animate={{ scale: 1.6, y: -36, opacity: 0 }} transition={{ duration: 0.9 }} className="text-red-500">
+                        <AiFillHeart size={30} />
+                      </motion.div>
+                    </div>
+                  )}
+
+                  {/* image layer */}
+                  <div className="absolute inset-0 flex items-start justify-center p-6">
+                    <div className="relative w-full h-full rounded-xl overflow-hidden">
+                      <img src={p.img} alt={p.title} loading="lazy" className="fp-image w-full h-full object-cover transition-transform duration-700" />
+                      <div className="fp-shine absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0))" }} />
+
+                      {/* quick actions (visible on hover) */}
+                      <div className="absolute top-4 right-4 flex flex-col gap-3 z-40 opacity-0 scale-95 group-hover:opacity-100 transition-all duration-300">
+                        <button onClick={() => triggerHeartBurst(p.id)} className="bg-white p-3 rounded-full shadow hover:scale-110 transition" title="Add to wishlist">
+                          <AiOutlineHeart className="text-gray-800" size={18} />
+                        </button>
+
+                        <button onClick={() => openQuickView(p)} className="bg-white p-3 rounded-full shadow hover:scale-110 transition" title="Quick view">
+                          <AiOutlineEye className="text-gray-800" size={18} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* TITLE */}
-                  <h3 className="font-semibold text-gray-800 text-lg mt-1">
-                    {p.title}
-                  </h3>
+                  {/* bottom info */}
+                  <div className="absolute left-0 right-0 bottom-0 p-6 z-40">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg md:text-xl font-semibold text-gray-900">{p.title}</h3>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: p.rating }).map((_, i) => <FaStar key={i} className="text-yellow-400" />)}
+                          </div>
+                          <span className="text-sm text-gray-500">({p.reviews})</span>
+                        </div>
+                      </div>
 
-                  {/* PRICE */}
-                  <p className="text-green-600 font-bold text-xl mt-2">
-                    {p.price}
-                  </p>
-
-                  {/* SHOP NOW */}
-                  <button className="mt-3 w-full py-2 rounded-full border border-green-600 text-green-600 font-semibold hover:bg-green-600 hover:text-white transition">
-                    <AiOutlineShoppingCart size={24} className="inline mr-2" /> SHOP NOW
-                  </button>
-
+                      <div className="text-right">
+                        <div className="text-green-600 font-extrabold text-2xl">{p.price}</div>
+                        <button className="mt-3 inline-flex items-center gap-2 bg-gradient-to-r from-[#2F86D6] to-[#63B46B] text-white px-4 py-2 rounded-full font-semibold shadow hover:scale-105 transition transform">
+                          <AiOutlineShoppingCart /> Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </SwiperSlide>
+              </div>
             ))}
-          </Swiper>
-
+          </div>
         </div>
       </section>
 
-      {/* QUICK VIEW MODAL */}
+      {/* =================== SQUARE MODAL (Option C) =================== */}
       {quickView && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[2000]">
-          <div className="bg-white p-6 rounded-xl shadow-2xl w-[90%] max-w-4xl relative">
-
-            <button
-              onClick={() => setQuickView(null)}
-              className="absolute top-4 right-4 text-gray-700 hover:text-black"
-            >
-              <AiOutlineClose size={28} />
-            </button>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <img
-                  src={selectedThumb}
-                  className="w-full h-[420px] object-cover rounded-xl"
-                />
-
-                <div className="grid grid-cols-4 gap-3 mt-4">
-                  {quickView.thumbs.map((t, i) => (
-                    <img
-                      key={i}
-                      src={t}
-                      onClick={() => setSelectedThumb(t)}
-                      className={`w-full h-20 object-cover rounded-lg border cursor-pointer ${
-                        selectedThumb === t ? "border-green-600" : "border-gray-300"
-                      }`}
-                    />
-                  ))}
+        <div className="fixed inset-0 z-[4000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
+          <motion.div
+            initial={{ y: 16, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ duration: 0.36 }}
+            className="bg-white/6 backdrop-blur-xl shadow-2xl w-full max-w-[980px] h-[820px] rounded-3xl overflow-hidden relative"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${quickView.title} quick view`}
+            onClick={(e) => {
+              // close if backdrop clicked (but not if clicking inside content)
+              if (e.target === e.currentTarget) setQuickView(null);
+            }}
+          >
+            {/* Left: Main image (takes ~65% of height) */}
+            <div className="h-full grid grid-rows-[65%_auto]">
+              <div className="px-6 pt-6">
+                <div className="rounded-xl overflow-hidden w-full h-full shadow-inner">
+                  <img
+                    src={quickView.thumbs[selectedIndex] || quickView.img}
+                    alt={quickView.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                    onLoad={(e) => { e.currentTarget.style.opacity = 1; }}
+                    style={{ opacity: 0, transition: "opacity 260ms ease-in" }}
+                  />
                 </div>
               </div>
 
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">{quickView.title}</h2>
-
-                <div className="flex items-center gap-1 mt-2">
-                  {Array.from({ length: quickView.rating }).map((_, i) => (
-                    <FaStar key={i} className="text-yellow-400" />
-                  ))}
-                  <span className="text-gray-600 ml-2">
-                    ({quickView.reviews} reviews)
-                  </span>
+              {/* Thumbnail ribbon */}
+              <div className="px-6 pb-6">
+                <div className="w-full flex items-center justify-center">
+                  <div className="w-full max-w-[860px]">
+                    <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2">
+                      {quickView.thumbs.map((t, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setSelectedIndex(i)}
+                          className={`flex-shrink-0 rounded-lg overflow-hidden border-2 ${selectedIndex === i ? "border-green-600 scale-105" : "border-transparent"} transition-transform duration-300`}
+                          style={{ width: 110, height: 70 }}
+                        >
+                          <img src={t} alt={`thumb-${i}`} loading="lazy" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-
-                <p className="text-green-600 font-bold text-3xl mt-3">
-                  {quickView.price}
-                </p>
-
-                <button className="mt-6 w-full py-3 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition">
-                  Add to Cart
-                </button>
               </div>
             </div>
 
-          </div>
+            {/* Right-side overlay panel (floating info box) */}
+            <div className="absolute top-8 right-8 w-80 bg-white/8 backdrop-blur-md p-4 rounded-xl shadow-lg">
+              <div className="flex items-start justify-between">
+                <h3 className="text-lg font-bold text-white/95">{quickView.title}</h3>
+                <button onClick={() => setQuickView(null)} className="text-white/90 hover:text-white" aria-label="Close">
+                  <AiOutlineClose size={20} />
+                </button>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
+                {Array.from({ length: quickView.rating }).map((_, i) => <FaStar key={i} className="text-yellow-400" />)}
+                <span className="text-sm text-white/80">({quickView.reviews} reviews)</span>
+              </div>
+
+              <div className="mt-4">
+                <div className="text-2xl font-extrabold text-green-400">{quickView.price}</div>
+                <p className="text-sm text-white/80 mt-2">Comfortable, breathable, and engineered for everyday support.</p>
+
+                <div className="mt-4 flex gap-3">
+                  <button className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#2F86D6] to-[#63B46B] text-white px-4 py-2 rounded-full font-semibold shadow hover:scale-105 transition transform">
+                    Add to Cart
+                    <AiOutlineShoppingCart />
+                  </button>
+
+                  <button className="px-4 py-2 rounded-full border border-white/10 text-white/90 hover:bg-white/6 transition">
+                    View Product
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 text-xs text-white/70">
+                <div className="flex items-center gap-2">
+                  <img src={uploadedImg} alt="logo" className="w-8 h-8 rounded-md object-contain" />
+                  <div>
+                    <div className="font-semibold">CureWrap Quality</div>
+                    <div>Tested & Verified</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </motion.div>
         </div>
       )}
+
+      <style>{`
+        /* helper: hide default scrollbar for the thumbnail ribbon */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* cinematic helpers */
+        .fp-image { transform-origin: center; will-change: transform; }
+        .fp-shine { transition: background 220ms linear; }
+
+        /* heart float (fallback class) */
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-48px) scale(1.6); opacity: 0; } }
+        .animate-floatUp { animation: floatUp 0.9s ease forwards; }
+
+        /* make modal more glassy on small screens */
+        @media (max-width: 1024px) {
+          .backdrop-blur-xl { backdrop-filter: blur(8px); }
+        }
+      `}</style>
     </>
   );
 }
