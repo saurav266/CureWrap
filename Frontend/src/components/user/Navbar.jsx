@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
-import { FaRegHeart, FaUserCircle, FaShoppingCart, FaBars, FaTimes } from "react-icons/fa";
+
+import { FaBars, FaTimes } from "react-icons/fa";
 import { RiPokerHeartsLine } from "react-icons/ri";
 import { FiUser } from "react-icons/fi";
 import { AiOutlineShoppingCart } from "react-icons/ai";
+
 import { useAuth } from "../../context/AuthContext.jsx";
 
 // shared link class
@@ -23,23 +25,19 @@ const Navbar = () => {
 
       {/* LOGO */}
       <Link
-                to="/"
-                onClick={(e) => {
-                    e.preventDefault();
-                    navigate("/");
-                }}
-                className="flex items-center"
-            >
-                <img
-                    src={assets.logo}
-                    alt="logo"
-                    className="
-                        h-8 h-50 w-50 w-auto object-contain cursor-pointer
-                        transition-all duration-500 
-                        hover:scale-110 hover:rotate-2 hover:drop-shadow-lg
-                    "
-                />
-            </Link>
+        to="/"
+        onClick={(e) => {
+          e.preventDefault();
+          navigate("/");
+        }}
+        className="flex items-center"
+      >
+        <img
+          src={assets.logo}
+          alt="logo"
+          className="h-8 w-auto object-contain cursor-pointer transition-all duration-500 hover:scale-110 hover:rotate-2 hover:drop-shadow-lg"
+        />
+      </Link>
 
       {/* ================== DESKTOP MENU ================== */}
       <ul className="hidden sm:flex gap-10 text-lg items-center font-semibold tracking-wide">
@@ -57,7 +55,7 @@ const Navbar = () => {
             <span className="absolute left-1/2 -bottom-1 h-0.5 w-0 bg-green-500 transition-all duration-300 group-hover:w-full group-hover:left-0" />
           </NavLink>
 
-          {/* MEGA MENU */}
+          {/* Mega Menu */}
           <div
             className="
               absolute left-1/2 top-[115%] -translate-x-1/2
@@ -75,17 +73,11 @@ const Navbar = () => {
                   className="bg-gray-50 shadow-sm hover:shadow-md transition p-2 flex gap-2 h-24 w-48 shrink-0"
                 >
                   <div className="w-[40%] h-full">
-                    <img
-                      src="https://via.placeholder.com/200x200"
-                      className="w-full h-full object-cover rounded-md"
-                    />
+                    <img src="https://via.placeholder.com/200x200" className="w-full h-full object-cover rounded-md" />
                   </div>
 
                   <div className="w-[60%] flex flex-col justify-between">
-                    <h3 className="font-semibold text-xs text-gray-900 leading-tight">
-                      Product {num}
-                    </h3>
-
+                    <h3 className="font-semibold text-xs text-gray-900 leading-tight">Product {num}</h3>
                     <p className="text-green-600 font-bold text-xs mt-1">₹{num * 10}.00</p>
 
                     <button className="bg-green-600 text-white text-[11px] py-1 rounded-md w-full hover:bg-green-700 transition">
@@ -122,7 +114,6 @@ const Navbar = () => {
         {/* Profile Dropdown */}
         <div className="relative group">
           <FiUser className="h-7 w-7 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500" />
-
           <div
             className="
               absolute right-0 top-full mt-2 w-44 bg-white/90 backdrop-blur-md shadow-xl rounded-lg p-3 z-50
@@ -145,9 +136,7 @@ const Navbar = () => {
         {/* Cart */}
         <Link to="/cart" className="relative">
           <AiOutlineShoppingCart className="h-7 w-7 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500" />
-          <span className="absolute -right-2 -bottom-2 w-5 h-5 rounded-full bg-black text-white text-xs flex items-center justify-center">
-            0
-          </span>
+          <span className="absolute -right-2 -bottom-2 w-5 h-5 rounded-full bg-black text-white text-xs flex items-center justify-center">0</span>
         </Link>
 
         {/* Mobile Menu Button */}
