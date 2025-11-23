@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { assets } from "../../assets/frontend_assets/assets.js";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -58,39 +59,41 @@ const HeroSection = () => {
               w-full max-w-[1350px]
               h-auto object-contain
               drop-shadow-2xl brightness-110 contrast-110
-              scale-[1.22] md:scale-[1.28]
+
+              scale-[1.20] md:scale-[1.28] lg:scale-[1.32]
+              translate-x-5 md:translate-x-10 lg:translate-x-[60px]
             "
           />
 
           {/* HOTSPOTS back*/}
           <Hotspot
             top="64%"
-            left="2%"
+            left="8%"
             title="BACK BELT SUPPORT"
             price="₹39.95"
             img={assets.product1}
           />
           {/* elbow*/}
           <Hotspot
-            top="58%"
-            left="67%"
+            top="62%"
+            left="75%"
             title="ELBOW WEAR"
             price="₹29.95"
             img={assets.product2}
           />
           {/* knee*/}
           <Hotspot
-            top="88%"
-            left="-5%"
+            top="93%"
+            left="3%"
             title="KNEE CAP"
             price="₹29.95"
             img={assets.product3}
           />
           {/* foot*/}
           <Hotspot
-            top="90%"
-            left="83%"
-            title="FOOT WEAR"
+            top="93%"
+            left="99%"
+            title="ANKLE WEAR"
             price="₹95.95"
             img={assets.product4}
           />
@@ -164,7 +167,7 @@ const Hotspot = ({ top, left, title, price, img }) => {
                 top-1/2 -translate-y-1/2
                 -right-3
                 w-0 h-0
-                border-t-[10px] border-b-[10px] border-l-[12px]
+                border-t-10 border-b-10 border-l-12
                 border-t-transparent border-b-transparent border-l-white
               "
             />
@@ -175,7 +178,7 @@ const Hotspot = ({ top, left, title, price, img }) => {
                 top-1/2 -translate-y-1/2
                 -left-3
                 w-0 h-0
-                border-t-[10px] border-b-[10px] border-r-[12px]
+                border-t-10 border-b-10 border-r-12
                 border-t-transparent border-b-transparent border-r-white
               "
             />

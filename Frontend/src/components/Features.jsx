@@ -1,43 +1,129 @@
 import React from 'react';
-import { FaShoppingBag, FaHeadset, FaTruck, FaUndoAlt } from 'react-icons/fa';
+import { FaUndoAlt } from 'react-icons/fa';
+import { TbTruckDelivery } from "react-icons/tb";
+import { motion } from 'framer-motion';
+import { RiSecurePaymentFill } from "react-icons/ri";
+import { MdVerified } from "react-icons/md";
 
 const Features = () => {
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.20,
+        delayChildren: 0.25,
+      },
+    },
+  };
+
+  const fadeUp = {
+    hidden: { opacity: 0, y: 35 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.8, ease: "easeOut" }
+    }
+  };
+
   const items = [
     {
-      icon: <FaShoppingBag className="text-2xl text-black transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600 w-25 h-10" />,
-      title: 'FSA/HSA ELIGIBLE',
-      description: 'Accepts HSA & FSA payments',
+      icon: FaUndoAlt,
+      title: "Free Returns",
+      description: "Returns within 7 days"
     },
     {
-      icon: <FaHeadset className="text-2xl text-black transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600 w-25 h-10" />,
-      title: 'SUPPORT 24/7',
-      description: 'Chatdesk 24 hours a day, 7 days a week.',
+      icon: RiSecurePaymentFill,
+      title: "Secured Payments",
+      description: "SSL encrypted & trusted payments"
     },
     {
-      icon: <FaTruck className="text-2xl text-black transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600 w-25 h-10" />,
-      title: 'FREE DELIVERY',
-      description: 'on all orders from the US or Canada $99 or above.',
+      icon: MdVerified,
+      title: "Verified Sellers",
+      description: "Quality-checked & trusted sellers"
     },
     {
-      icon: <FaUndoAlt className="text-2xl text-black transition-transform duration-300 group-hover:scale-125 group-hover:text-blue-600 w-25 h-10" />,
-      title: '100-DAY RETURN',
-      description: 'Simply return it within 100 days for an exchange.',
-    },
+      icon: TbTruckDelivery,
+      title: "Free Delivery",
+      description: "Free delivery on all orders"
+    }
   ];
 
   return (
-    <section className="bg-white py-10 px-6 md:px-20">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center">
-        {items.map((item, index) => (
-          <div key={index} className="flex flex-col items-center space-y-3 group cursor-pointer transition-transform duration-300 hover:scale-105">
-            <div className="p-4">{item.icon}</div>
-            <h4 className="font-semibold text-sm transition-all duration-300 group-hover:text-blue-600 group-hover:tracking-wide">
-              {item.title}
-            </h4>
-            <p className="text-xs text-gray-600">{item.description}</p>
-          </div>
-        ))}
-      </div>
+    <section className="bg-white py-16 px-6 md:px-20">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.3 }}
+        className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-14"
+      >
+        {items.map((item, index) => {
+          const Icon = item.icon;
+
+          return (
+            <motion.div
+              key={index}
+              variants={fadeUp}
+              className="group flex flex-col items-center text-center select-none"
+            >
+              {/* Animated Icon */}
+              <motion.div
+                whileHover={{
+                  scale: 1.35,
+                  y: -6,
+                  rotate: 2,
+                  transition: { type: "spring", stiffness: 180 }
+                }}
+                className="mb-4"
+              >
+                <Icon
+                  size={48}   // 👈 Ensures all icons are EXACT same size
+                  className="
+                    text-black 
+                    transition-all duration-300 
+                    group-hover:text-blue-600 
+                    group-hover:drop-shadow-[0_6px_18px_rgba(59,130,246,0.45)]
+                  "
+                />
+              </motion.div>
+
+              {/* Animated Title */}
+              <motion.h4
+                whileHover={{
+                  y: -3,
+                  letterSpacing: "1.5px",
+                  transition: { duration: 0.3 }
+                }}
+                className="
+                  font-bold 
+                  text-base 
+                  md:text-lg 
+                  transition-all duration-300 
+                  group-hover:text-blue-600
+                "
+              >
+                {item.title}
+              </motion.h4>
+
+              {/* Subtext */}
+              <motion.p
+                whileHover={{ y: -2, opacity: 1 }}
+                className="
+                  text-sm 
+                  mt-1 
+                  text-gray-600 
+                  leading-relaxed 
+                  transition-all duration-300
+                "
+              >
+                {item.description}
+              </motion.p>
+            </motion.div>
+          );
+        })}
+      </motion.div>
     </section>
   );
 };

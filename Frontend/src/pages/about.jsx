@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+// CureWrapAboutV2.jsx
+import React from "react";
+import { Link } from "react-router-dom";
+import { motion, useViewportScroll, useTransform } from "framer-motion";
 import { Award, Heart, Target, CheckCircle } from "lucide-react";
-import { motion } from "framer-motion";
-
+import { assets } from "../assets/admin_assets/assets.js";
+// images (keep your existing imports)
 import vision from "../assets/Frontend_assets/about/visiom.jpg";
 import begining from "../assets/Frontend_assets/about/begining.jpg";
 import dumbell from "../assets/Frontend_assets/about/dumbell.png";
@@ -11,321 +14,366 @@ import whatdo2 from "../assets/Frontend_assets/about/what-we2.png";
 import ourMission from "../assets/Frontend_assets/about/ourMission.png";
 import quality from "../assets/Frontend_assets/about/quality.png";
 import quality2 from "../assets/Frontend_assets/about/quality2.png";
-import Hero from "../assets/Frontend_assets/about/hero.png";
-import kneeOld from "../assets/Frontend_assets/about/kneeOld.jpg";
-import Hero2 from "../assets/Frontend_assets/about/Hero2-Photoroom.png";
+import heroimg from "../assets/Frontend_assets/about/women.jpg";
 
-export default function CureWrapAbout() {
-  const [heroVisible, setHeroVisible] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setHeroVisible(true), 80);
-    return () => clearTimeout(t);
-  }, []);
+// use the local uploaded logo image path (developer-provided)
+const logoUrl = assets.logo;
+
+/* -----------------------
+   AutoCollage (keeps previous behavior)
+   - adapts to any number of images
+------------------------ */
+const AutoCollage = ({ images = [] }) => {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
+      {images.map((img, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, scale: 0.98, y: 18 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: i * 0.08 }}
+          viewport={{ once: true }}
+          className={`overflow-hidden ${i === 0 ? "md:col-span-2" : ""}`}
+        >
+          <img
+            src={img}
+            alt={`collage-${i}`}
+            className="w-full h-64 md:h-72 object-cover transform transition-all duration-500 hover:scale-105"
+          />
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
+export default function CureWrapAboutV2() {
+  // parallax: move image a small amount on scroll
+  const { scrollYProgress } = useViewportScroll();
+  // translateY small negative so image moves slower (parallax)
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "-12%"]);
+
+  // brand colors approximated from your uploaded logo:
+  const brandBlue = "#2F86D6"; // Cure
+  const brandGreen = "#63B46B"; // Wrap
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white ">
-      {/* Hero Section */}
-      <section className="w-full bg-linear-to-t from-white to-[#C3D8E6] pt-12 pb-24 md:pb-32">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-linear-to-br from-blue-50 via-blue-100 to-white pointer-events-none" />
+    <div className="bg-white text-gray-800 antialiased">
+      {/* ================= HERO (Parallax + Visible bottom) ================= */}
+      <section className="relative w-full h-[68vh] md:h-[80vh] lg:h-[88vh] overflow-hidden">
+        {/* parallax image */}
+        <motion.img
+          src={heroimg}
+          style={{ y }}
+          initial={{ scale: 1.02, opacity: 0.98 }}
+          animate={{ scale: 1.0, opacity: 1 }}
+          transition={{ duration: 1.1, ease: "easeOut" }}
+          className="absolute inset-0 w-full h-full object-cover object-bottom" /* object-bottom keeps bottom visible */
+        />
 
-        {/* Layout Grid */}
-        <div className="relative max-w-7xl mx-auto px-4 w-full grid grid-cols-1 md:grid-cols-[0.55fr_0.45fr] items-center gap-8">
-          {/* LEFT TEXT */}
+        {/* soft gradient overlay to ensure text legibility */}
+        <div className="absolute inset-0 bg-linear-to-b from-black/10 via-black/4 to-transparent pointer-events-none" />
+
+        {/* floating badges (icons) */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.9 }}
+          className="absolute left-8 top-12 md:left-16 md:top-20 flex flex-col gap-6 z-30"
+        >
+          <div className="bg-white/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+            <Award className="w-6 h-6 text-teal-600" />
+            <div>
+              <div className="text-sm text-gray-600">Trusted</div>
+              <div className="font-semibold text-gray-900">100k+ Reviews</div>
+            </div>
+          </div>
+
+          <div className="bg-white/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+            <Heart className="w-6 h-6 text-pink-500" />
+            <div>
+              <div className="text-sm text-gray-600">Loved by</div>
+              <div className="font-semibold text-gray-900">12M Customers</div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* centered brand text with logo */}
+        <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
           <motion.div
-            initial={{ opacity: 0, x: -60 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="space-y-6 z-10 pt-8" // Added 'pt-8' to push the text down a little
+            initial={{ y: 20, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, duration: 0.9 }}
+            className="flex items-center gap-6 backdrop-blur-sm bg-white/10 px-6 py-4 rounded-3xl"
+            style={{ pointerEvents: "none" }}
           >
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <span className="text-gray-800">WHO ARE </span>
-              <span className="text-teal-600">WE</span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-700 mb-8 leading-relaxed">
-              At <span className="font-semibold text-teal-600">CureWrap</span>,
-              we are not just a business but a family bound by a shared purpose.
-              Nestled in the heart of Los Angeles, California, our family-run
-              operation seeks to extend the joy of pain-free living, amplified
-              productivity, and the simple pleasure of everyday life to you and
-              yours. My name is Dave, the founder of CureWrap, and I am
-              delighted to share our journey with you.
-            </p>
+            {/* small logo */}
+            {/* <img src={logoUrl} alt="CureWrap logo" className="h-10 w-auto object-contain" /> */}
+            <motion.span
+              initial={{ x: -8, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.45, duration: 0.6 }}
+              className="inline-block text-white font-light tracking-[0.15em] text-xl md:text-2xl"
+            >
+              ABOUT
+            </motion.span>
+            {/* animated CureWrap words (two colors + shimmer) */}
+            <div className="text-3xl md:text-4xl font-semibold tracking-tight">
+              <motion.span
+                initial={{ x: -8, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.45, duration: 0.6 }}
+                style={{ color: brandBlue }}
+                className="inline-block"
+              >
+                Cure
+              </motion.span>
 
-            {/* cards (Moved here to be under the text on small screens, and occupy the card space on desktop) */}
-            <div className="relative mt-12 md:mt-20">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-linear-to-br from-[#2BA468] to-[#57AF82] rounded-xl p-3 text-white shadow-xl">
-                  <Award className="w-8 h-8 mb-2" />
-                  <div className="text-4xl font-bold mb-2">10,000+</div>
-                  <div className="text-sm">5-STAR REVIEWS</div>
-                </div>
-                <div className="bg-linear-to-br from-[#077BD1] to-[#3D98DA] rounded-xl p-3 text-white shadow-xl mt-8">
-                  <Heart className="w-8 h-8 mb-2" />
-                  <div className="text-4xl font-bold mb-2">1 Lakh+</div>
-                  <div className="text-sm">Indian CUSTOMERS</div>
-                </div>
+              <motion.span
+                initial={{ x: 8, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.55, duration: 0.6 }}
+                style={{ color: brandGreen }}
+                className="inline-block ml-1"
+              >
+                Wrap
+              </motion.span>
+
+              {/* subtle shimmer overlay */}
+              <motion.div
+                aria-hidden
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.7 }}
+                transition={{ delay: 1.2, duration: 1.1, repeat: 0 }}
+                className="absolute inset-0 pointer-events-none"
+                style={{ mixBlendMode: "overlay" }}
+              />
+            </div>
+          </motion.div>
+        </div>
+
+        {/* curved wave separator at bottom of hero */}
+        <div className="absolute left-0 right-0 bottom-0">
+          <svg
+            viewBox="0 0 1440 120"
+            className="w-full h-[120px] block"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0,40 C200,120 400,0 720,24 C1040,48 1240,120 1440,80 L1440 120 L0 120 Z"
+              fill="#ffffff"
+            />
+          </svg>
+        </div>
+      </section>
+
+      {/* ================= PAGE CONTENT ================= */}
+
+      {/* WHO WE ARE */}
+      <section className="max-w-7xl mx-auto px-6 py-20 -mt-6">
+        {" "}
+        {/* negative top to tuck under the wave */}
+        <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div>
+            <motion.h2
+              initial={{ x: -30, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
+            >
+              Who We Are
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="text-gray-700 text-lg leading-relaxed"
+            >
+              At{" "}
+              <span className="font-semibold" style={{ color: brandGreen }}>
+                CureWrap
+              </span>
+              , we design clean, effective orthotic support that empowers
+              everyday movement. We combine deep research with premium materials
+              so comfort becomes the background of life—not the focus.
+            </motion.p>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="bg-white rounded-2xl p-8 shadow-lg"
+          >
+            <div className="grid grid-cols-2 gap-6 text-center">
+              <div>
+                <Award className="w-10 h-10 mx-auto text-teal-600 mb-2" />
+                <div className="text-2xl font-bold text-gray-900">100k+</div>
+                <div className="text-sm text-gray-600">5-Star Reviews</div>
               </div>
-              <div className="mt-4 text-center">
-                <p className="text-teal-600 font-semibold text-xl">
-                  7 YEARS OF MAKING LIVES EASIER
-                </p>
+
+              <div>
+                <Heart className="w-10 h-10 mx-auto text-pink-500 mb-2" />
+                <div className="text-2xl font-bold text-gray-900">12M+</div>
+                <div className="text-sm text-gray-600">Customers</div>
               </div>
             </div>
           </motion.div>
+        </div>
+      </section>
 
-          {/* RIGHT SIDE IMAGE + HOTSPOTS */}
+      {/* soft wave (divider) */}
+      <div className="w-full">
+        <svg
+          viewBox="0 0 1440 80"
+          className="w-full h-20"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0,24 C300,120 600,0 720,24 C840,48 1140,0 1440,24 L1440 80 L0 80 Z"
+            fill="#f8fafc"
+          />
+        </svg>
+      </div>
+
+      {/* BEGINNINGS */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
+        <motion.h2
+          className="text-3xl md:text-4xl font-bold text-gray-900 mb-8"
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          Our Beginnings
+        </motion.h2>
+
+        <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div
-            initial={{ opacity: 0, x: 130 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1.1, ease: "easeOut" }}
-            className="relative flex justify-end pr-0 md:pr-2 lg:pr-4 pt-10" // Added 'pt-10' to push the image down
+            initial={{ x: -20, opacity: 0 }}
+            whileInView={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
           >
-            <motion.img
-              src={Hero2}
-              alt="Hero Image"
-              className="
-                w-full max-w-[1350px]
-                h-auto object-contain
-                drop-shadow-2xl brightness-110 contrast-110
-                scale-[1.28] md:scale-[1.4] lg:scale-[1.6] 
-                hover:scale-[1.35] md:hover:scale-[1.45] lg:hover:scale-[1.65] 
-                transition-transform duration-500 ease-out
-              " // Increased scale for bigger size and added hover scale up
-            />
+            <p className="text-gray-700 text-lg leading-relaxed">
+              CureWrap started from a simple need: a comfortable, effective
+              brace that actually helped people move better. That led to months
+              of research, prototypes and real-world testing.
+            </p>
           </motion.div>
 
-          {/* cards (Original card section removed as it was moved into the left div for better layout control) */}
+          <motion.img
+            src={begining}
+            initial={{ opacity: 0, scale: 0.98 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="rounded-2xl shadow-lg w-full h-80 object-cover"
+          />
         </div>
       </section>
 
-      {/* Our Beginnings Section */}
-      <section className="bg-white py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-5xl font-bold text-teal-600 text-center mb-12">
-            OUR BEGINNINGS
-          </h2>
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <p className="text-gray-700 text-lg leading-relaxed mb-6">
-                My personal struggle with persistent knee pain and the quest for
-                a solution marked the genesis of CureWrap. Despite trying
-                various solutions to ease the discomfort and reclaim my life, I
-                was unable to find a knee brace that was both effective and
-                comfortable. Frustrated but determined, I embarked on a journey
-                of innovation, teaming up with leading orthopedic experts. After
-                months of diligent research and development, the inaugural
-                CureWrap knee brace was born.
-              </p>
-            </div>
-            <div className="relative h-96">
-              {/* Main large image */}
-              <img
-                src={kneeOld}
-                alt="Active lifestyle"
-                className="rounded-2xl shadow-2xl w-full h-full object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-              />
-
-              {/* Small overlay images - collage style */}
-              <div className="absolute top-4 right-4 w-36 h-28 overflow-hidden rounded-xl border-2 border-white shadow-xl">
-                <img
-                  src={dumbell}
-                  alt="Woman exercising"
-                  className="w-full h-full object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-                />
-              </div>
-
-              <div className="absolute top-34 right-4 w-36 h-28 overflow-hidden rounded-xl border-2 border-white shadow-xl">
-                <img
-                  src={whatdo}
-                  alt="Running woman"
-                  className="w-full h-full object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-                />
-              </div>
-
-              <div className="absolute bottom-4 right-4 w-36 h-28 overflow-hidden rounded-xl border-2 border-white shadow-xl">
-                <img
-                  src={whatdo2}
-                  alt="Man training"
-                  className="w-full h-full object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      {/* Our Uniqueness Section */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <h2 className="text-5xl font-bold text-teal-600 mb-12">
-          OUR UNIQUENESS
-        </h2>
+      {/* UNIQUENESS / COLLAGE */}
+      <section className="max-w-7xl mx-auto px-6 py-20 bg-white">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <p className="text-gray-700 text-lg leading-relaxed">
-              Every CureWrap product, at its core, is designed to deliver pain
-              relief, unparalleled comfort, and convenience. We take immense
-              pride in our comprehensive design process. Months of painstaking
-              design, development, and testing go into each of our products. Our
-              commitment to superior quality extends to our material selection,
-              as we only use premium materials to ensure that you feel
-              comfortable and confident in every step you take, whether it be
-              walking your dog, playing with your children, or powering through
-              an intense workout.
+            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              Our Uniqueness
+            </h3>
+            <p className="text-gray-700 text-lg leading-relaxed mb-6">
+              Every CureWrap product is engineered with human biomechanics in
+              mind — durable materials, precise fit, and everyday comfort.
             </p>
-          </div>
-          <div className="grid grid-cols-2 gap-4 items-stretch">
-            <div className="overflow-hidden rounded-lg">
-              <img
-                src={dumbell}
-                alt="Woman exercising"
-                className="rounded-lg shadow-lg w-full max-w-full h-56 md:h-64 lg:h-72 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-              />
-            </div>
-            <div className="overflow-hidden rounded-lg">
-              <img
-                src={uniq}
-                alt="Man exercising"
-                className="rounded-lg shadow-lg w-full max-w-full h-56 md:h-64 lg:h-72 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-              />
+            <div className="flex gap-3">
+              <div className="bg-white/90 rounded-xl p-4 shadow">
+                <CheckCircle className="w-6 h-6 text-teal-600 mb-2" />
+                <div className="font-semibold">Quality Materials</div>
+              </div>
+              <div className="bg-white/90 rounded-xl p-4 shadow">
+                <Target className="w-6 h-6 text-emerald-500 mb-2" />
+                <div className="font-semibold">Precision Fit</div>
+              </div>
             </div>
           </div>
+
+          <AutoCollage images={[dumbell, uniq, vision, whatdo]} />
         </div>
       </section>
-      {/* Why We Do What We Do Section */}
-      <section className="bg-linear-to-r from-teal-50 to-cyan-50 py-16">
+
+      {/* WHY WE DO IT */}
+      <section className="bg-teal-50 py-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="grid grid-cols-2 gap-4 items-stretch">
-              <div className="overflow-hidden rounded-lg">
-                <img
-                  src={whatdo}
-                  alt="Running woman"
-                  className="rounded-lg shadow-lg w-full max-w-full h-48 md:h-56 lg:h-64 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-                />
-              </div>
-              <div className="overflow-hidden rounded-lg">
-                <img
-                  src={whatdo2}
-                  alt="Man training"
-                  className="rounded-lg shadow-lg w-full max-w-full h-48 md:h-56 lg:h-64 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-                />
-              </div>
-            </div>
+            <AutoCollage images={[whatdo, whatdo2, begining]} />
             <div>
-              <h2 className="text-5xl font-bold text-teal-600 mb-6">
-                WHY WE DO WHAT WE DO
-              </h2>
+              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Why We Do What We Do
+              </h3>
               <p className="text-gray-700 text-lg leading-relaxed">
-                My personal struggle with persistent knee pain and the quest for
-                a solution marked the genesis of CureWrap. Despite trying
-                various solutions to ease the discomfort and reclaim my life, I
-                was unable to find a knee brace that was both effective and
-                comfortable. Frustrated but determined, I embarked on a journey
-                of innovation, teaming up with leading orthopedic experts. After
-                months of diligent research and development, the inaugural
-                CureWrap knee brace was born.
+                We design for the long run — to make motion pain-free for people
+                who want a life in motion, not paused by aches.
               </p>
             </div>
           </div>
         </div>
       </section>
-      {/* Our Mission Section */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
+
+      {/* MISSION */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className="text-5xl font-bold text-teal-600 mb-6">
-              OUR MISSION
-            </h2>
+            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Our Mission
+            </h3>
             <p className="text-gray-700 text-lg leading-relaxed">
-              Our mission at CureWrap is to create innovative, high-quality
-              health solutions that help our customers achieve their peak
-              performance. We are fueled by a passion for providing solutions
-              that not only relieve pain but also allow you to push your limits
-              and realize your full potential.
+              To craft supportive products that help people stay active, built
+              on research and real feedback.
             </p>
           </div>
-          <div>
-            <img
-              src={ourMission}
-              alt="Happy couple"
-              className="rounded-2xl shadow-2xl w-full h-64 md:h-80 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-            />
-          </div>
+          <motion.img
+            src={ourMission}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="rounded-2xl shadow-lg w-full h-80 object-cover"
+          />
         </div>
       </section>
-      {/* Our Vision Section */}
-      <section className="bg-white py-16">
+
+      {/* QUALITY CHECK */}
+      <section className="bg-teal-600 text-white py-20">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="relative">
-              <img
-                src={vision}
-                alt="Family time"
-                className="rounded-2xl shadow-2xl w-full h-80 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-              />
-            </div>
-            <div>
-              <h2 className="text-5xl font-bold text-teal-600 mb-6">
-                OUR VISION
-              </h2>
-              <p className="text-gray-700 text-lg leading-relaxed">
-                Our vision is to become a globally recognized and beloved brand,
-                synonymous with pain relief, support, comfort, and safety. We
-                strive towards a future where the mention of enhancing one's
-                fitness routine or comfort immediately brings to mind the name
-                "CureWrap".
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-      {/* Quality Check Section */}
-      <section className="bg-linear-to-r from-teal-600 to-cyan-600 py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-5xl font-bold text-white mb-12">
+          <h3 className="text-3xl md:text-4xl font-bold mb-6">
             Preparation & Initial Quality Check
-          </h2>
+          </h3>
           <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <p className="text-white text-lg leading-relaxed">
-                Our vision is to become a globally recognized and beloved brand,
-                synonymous with pain relief, support, comfort and safety. We
-                strive towards a future where the mention of enhancing one's
-                fitness routine or comfort immediately brings to mind the name
-                "CureWrap".
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4 items-stretch">
-              <div className="overflow-hidden rounded-lg">
-                <img
-                  src={quality}
-                  alt="Quality measurement"
-                  className="rounded-lg shadow-xl w-full max-w-full h-48 md:h-56 lg:h-64 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-                />
-              </div>
-              <div className="overflow-hidden rounded-lg">
-                <img
-                  src={quality2}
-                  alt="Product testing"
-                  className="rounded-lg shadow-xl w-full max-w-full h-48 md:h-56 lg:h-64 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
-                />
-              </div>
-            </div>
+            <p className="text-lg leading-relaxed">
+              We test everything — durability, fit, sweat-resistance, and
+              function.
+            </p>
+            <AutoCollage images={[quality, quality2, whatdo]} />
           </div>
         </div>
       </section>
-      {/* Footer CTA */}
-      <section className="max-w-7xl mx-auto px-6 py-16 text-center">
-        <h3 className="text-4xl font-bold text-teal-600 mb-6">
+
+      {/* CTA */}
+      <section className="text-center py-20 px-6 max-w-7xl mx-auto">
+        <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
           Join the CureWrap Family
         </h3>
         <p className="text-gray-700 text-lg mb-8 max-w-2xl mx-auto">
-          Experience the difference that quality, comfort, and innovation can
-          make in your daily life.
+          Discover how premium support can change your day-to-day life.
         </p>
-        <button className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+        <Link
+          to="/product"
+          className="bg-linear-to-r from-[#2F86D6] to-[#63B46B] text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:scale-[1.03] transition transform"
+        >
           Shop Now
-        </button>
+        </Link>
       </section>
     </div>
   );
