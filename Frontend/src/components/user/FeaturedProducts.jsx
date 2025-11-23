@@ -13,10 +13,10 @@ import { FaStar } from "react-icons/fa";
 import { assets } from '../../assets/frontend_assets/assets.js';
 
 const products = [
-  { id: 1, title: "Curewrap Compression Knee Sleeves", price: "$25.00", img: assets.product1, discount: "-18%", rating: 5, reviews: 6066, thumbs: [assets.product1, assets.product2, assets.product3] },
-  { id: 2, title: "Curewrap Adjustable Knee Brace", price: "$35.00", img: assets.product2, discount: "-7%", rating: 3, reviews: 112, thumbs: [assets.product2, assets.product1, assets.product3] },
-  { id: 3, title: "Curewrap Foot & Ankle Brace Support", price: "$40.00", img: assets.product3, discount: "-16%", rating: 4, reviews: 441, thumbs: [assets.product3, assets.product1, assets.product4] },
-  { id: 4, title: "Curewrap Reinforced Back Brace", price: "$50.00", img: assets.product4, discount: "-25%", rating: 4, reviews: 892, thumbs: [assets.product4, assets.product2, assets.product1] },
+  { id: 1, title: "Curewrap Compression Knee Sleeves", price: "₹25.00", img: assets.product1, discount: "-18%", rating: 5, reviews: 6066, thumbs: [assets.product1, assets.product2, assets.product3] },
+  { id: 2, title: "Curewrap Adjustable Knee Brace", price: "₹35.00", img: assets.product2, discount: "-7%", rating: 3, reviews: 112, thumbs: [assets.product2, assets.product1, assets.product3] },
+  { id: 3, title: "Curewrap Foot & Ankle Brace Support", price: "₹40.00", img: assets.product3, discount: "-16%", rating: 4, reviews: 441, thumbs: [assets.product3, assets.product1, assets.product4] },
+  { id: 4, title: "Curewrap Reinforced Back Brace", price: "₹50.00", img: assets.product4, discount: "-25%", rating: 4, reviews: 892, thumbs: [assets.product4, assets.product2, assets.product1] },
 ];
 
 export default function FeaturedProducts() {

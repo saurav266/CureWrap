@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { assets } from "../../assets/frontend_assets/assets.js";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
