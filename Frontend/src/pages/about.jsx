@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Award, Heart, Target, CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 import vision from "../assets/Frontend_assets/about/visiom.jpg";
 import begining from "../assets/Frontend_assets/about/begining.jpg";
@@ -10,46 +11,91 @@ import whatdo2 from "../assets/Frontend_assets/about/what-we2.png";
 import ourMission from "../assets/Frontend_assets/about/ourMission.png";
 import quality from "../assets/Frontend_assets/about/quality.png";
 import quality2 from "../assets/Frontend_assets/about/quality2.png";
+import Hero from "../assets/Frontend_assets/about/hero.png";
+import kneeOld from "../assets/Frontend_assets/about/kneeOld.jpg";
+import Hero2 from "../assets/Frontend_assets/about/Hero2-Photoroom.png";
 
 export default function CureWrapAbout() {
+  const [heroVisible, setHeroVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setHeroVisible(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white ">
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <h1 className="text-5xl font-bold text-teal-600 mb-6">
-              WHO ARE WE
+      <section className="w-full bg-linear-to-t from-white to-[#C3D8E6] pt-12 pb-24 md:pb-32">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-linear-to-br from-blue-50 via-blue-100 to-white pointer-events-none" />
+
+        {/* Layout Grid */}
+        <div className="relative max-w-7xl mx-auto px-4 w-full grid grid-cols-1 md:grid-cols-[0.55fr_0.45fr] items-center gap-8">
+          {/* LEFT TEXT */}
+          <motion.div
+            initial={{ opacity: 0, x: -60 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-6 z-10 pt-8" // Added 'pt-8' to push the text down a little
+          >
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
+              <span className="text-gray-800">WHO ARE </span>
+              <span className="text-teal-600">WE</span>
             </h1>
-            <p className="text-gray-700 text-lg leading-relaxed">
-              At <span className="font-semibold">CureWrap</span>, we are not
-              just a business but a family bound by a shared purpose. Nestled in
-              the heart of Los Angeles, California, our family-run operation
-              seeks to extend the joy of pain-free living, amplified
+            <p className="text-lg md:text-xl text-gray-700 mb-8 leading-relaxed">
+              At <span className="font-semibold text-teal-600">CureWrap</span>,
+              we are not just a business but a family bound by a shared purpose.
+              Nestled in the heart of Los Angeles, California, our family-run
+              operation seeks to extend the joy of pain-free living, amplified
               productivity, and the simple pleasure of everyday life to you and
               yours. My name is Dave, the founder of CureWrap, and I am
               delighted to share our journey with you.
             </p>
-          </div>
-          <div className="relative">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-linear-to-br from-teal-400 to-teal-600 rounded-2xl p-6 text-white shadow-xl">
-                <Award className="w-12 h-12 mb-3" />
-                <div className="text-4xl font-bold mb-2">100,000+</div>
-                <div className="text-sm">5-STAR REVIEWS</div>
+
+            {/* cards (Moved here to be under the text on small screens, and occupy the card space on desktop) */}
+            <div className="relative mt-12 md:mt-20">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-linear-to-br from-[#2BA468] to-[#57AF82] rounded-xl p-3 text-white shadow-xl">
+                  <Award className="w-8 h-8 mb-2" />
+                  <div className="text-4xl font-bold mb-2">10,000+</div>
+                  <div className="text-sm">5-STAR REVIEWS</div>
+                </div>
+                <div className="bg-linear-to-br from-[#077BD1] to-[#3D98DA] rounded-xl p-3 text-white shadow-xl mt-8">
+                  <Heart className="w-8 h-8 mb-2" />
+                  <div className="text-4xl font-bold mb-2">1 Lakh+</div>
+                  <div className="text-sm">Indian CUSTOMERS</div>
+                </div>
               </div>
-              <div className="bg-linear-to-br from-cyan-400 to-cyan-600 rounded-2xl p-6 text-white shadow-xl mt-8">
-                <Heart className="w-12 h-12 mb-3" />
-                <div className="text-4xl font-bold mb-2">12 MILLION</div>
-                <div className="text-sm">US CUSTOMERS</div>
+              <div className="mt-4 text-center">
+                <p className="text-teal-600 font-semibold text-xl">
+                  7 YEARS OF MAKING LIVES EASIER
+                </p>
               </div>
             </div>
-            <div className="mt-4 text-center">
-              <p className="text-teal-600 font-semibold text-xl">
-                7 YEARS OF MAKING LIVES EASIER
-              </p>
-            </div>
-          </div>
+          </motion.div>
+
+          {/* RIGHT SIDE IMAGE + HOTSPOTS */}
+          <motion.div
+            initial={{ opacity: 0, x: 130 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1.1, ease: "easeOut" }}
+            className="relative flex justify-end pr-0 md:pr-2 lg:pr-4 pt-10" // Added 'pt-10' to push the image down
+          >
+            <motion.img
+              src={Hero2}
+              alt="Hero Image"
+              className="
+                w-full max-w-[1350px]
+                h-auto object-contain
+                drop-shadow-2xl brightness-110 contrast-110
+                scale-[1.28] md:scale-[1.4] lg:scale-[1.6] 
+                hover:scale-[1.35] md:hover:scale-[1.45] lg:hover:scale-[1.65] 
+                transition-transform duration-500 ease-out
+              " // Increased scale for bigger size and added hover scale up
+            />
+          </motion.div>
+
+          {/* cards (Original card section removed as it was moved into the left div for better layout control) */}
         </div>
       </section>
 
@@ -72,17 +118,42 @@ export default function CureWrapAbout() {
                 CureWrap knee brace was born.
               </p>
             </div>
-            <div className="relative">
+            <div className="relative h-96">
+              {/* Main large image */}
               <img
-                src={begining}
+                src={kneeOld}
                 alt="Active lifestyle"
-                className="rounded-2xl shadow-2xl w-full h-80 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+                className="rounded-2xl shadow-2xl w-full h-full object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
               />
+
+              {/* Small overlay images - collage style */}
+              <div className="absolute top-4 right-4 w-36 h-28 overflow-hidden rounded-xl border-2 border-white shadow-xl">
+                <img
+                  src={dumbell}
+                  alt="Woman exercising"
+                  className="w-full h-full object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
+                />
+              </div>
+
+              <div className="absolute top-34 right-4 w-36 h-28 overflow-hidden rounded-xl border-2 border-white shadow-xl">
+                <img
+                  src={whatdo}
+                  alt="Running woman"
+                  className="w-full h-full object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
+                />
+              </div>
+
+              <div className="absolute bottom-4 right-4 w-36 h-28 overflow-hidden rounded-xl border-2 border-white shadow-xl">
+                <img
+                  src={whatdo2}
+                  alt="Man training"
+                  className="w-full h-full object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
+                />
+              </div>
             </div>
           </div>
         </div>
       </section>
-
       {/* Our Uniqueness Section */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         <h2 className="text-5xl font-bold text-teal-600 mb-12">
@@ -107,20 +178,19 @@ export default function CureWrapAbout() {
               <img
                 src={dumbell}
                 alt="Woman exercising"
-                className="rounded-lg shadow-lg w-full max-w-full h-56 md:h-64 lg:h-72 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+                className="rounded-lg shadow-lg w-full max-w-full h-56 md:h-64 lg:h-72 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
               />
             </div>
             <div className="overflow-hidden rounded-lg">
               <img
                 src={uniq}
                 alt="Man exercising"
-                className="rounded-lg shadow-lg w-full max-w-full h-56 md:h-64 lg:h-72 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+                className="rounded-lg shadow-lg w-full max-w-full h-56 md:h-64 lg:h-72 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
               />
             </div>
           </div>
         </div>
       </section>
-
       {/* Why We Do What We Do Section */}
       <section className="bg-linear-to-r from-teal-50 to-cyan-50 py-16">
         <div className="max-w-7xl mx-auto px-6">
@@ -130,14 +200,14 @@ export default function CureWrapAbout() {
                 <img
                   src={whatdo}
                   alt="Running woman"
-                  className="rounded-lg shadow-lg w-full max-w-full h-48 md:h-56 lg:h-64 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+                  className="rounded-lg shadow-lg w-full max-w-full h-48 md:h-56 lg:h-64 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
                 />
               </div>
               <div className="overflow-hidden rounded-lg">
                 <img
                   src={whatdo2}
                   alt="Man training"
-                  className="rounded-lg shadow-lg w-full max-w-full h-48 md:h-56 lg:h-64 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+                  className="rounded-lg shadow-lg w-full max-w-full h-48 md:h-56 lg:h-64 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
                 />
               </div>
             </div>
@@ -159,7 +229,6 @@ export default function CureWrapAbout() {
           </div>
         </div>
       </section>
-
       {/* Our Mission Section */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -179,12 +248,11 @@ export default function CureWrapAbout() {
             <img
               src={ourMission}
               alt="Happy couple"
-              className="rounded-2xl shadow-2xl w-full h-64 md:h-80 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+              className="rounded-2xl shadow-2xl w-full h-64 md:h-80 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
             />
           </div>
         </div>
       </section>
-
       {/* Our Vision Section */}
       <section className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-6">
@@ -193,7 +261,7 @@ export default function CureWrapAbout() {
               <img
                 src={vision}
                 alt="Family time"
-                className="rounded-2xl shadow-2xl w-full h-80 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+                className="rounded-2xl shadow-2xl w-full h-80 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
               />
             </div>
             <div>
@@ -211,7 +279,6 @@ export default function CureWrapAbout() {
           </div>
         </div>
       </section>
-
       {/* Quality Check Section */}
       <section className="bg-linear-to-r from-teal-600 to-cyan-600 py-16">
         <div className="max-w-7xl mx-auto px-6">
@@ -233,21 +300,20 @@ export default function CureWrapAbout() {
                 <img
                   src={quality}
                   alt="Quality measurement"
-                  className="rounded-lg shadow-xl w-full max-w-full h-48 md:h-56 lg:h-64 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+                  className="rounded-lg shadow-xl w-full max-w-full h-48 md:h-56 lg:h-64 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
                 />
               </div>
               <div className="overflow-hidden rounded-lg">
                 <img
                   src={quality2}
                   alt="Product testing"
-                  className="rounded-lg shadow-xl w-full max-w-full h-48 md:h-56 lg:h-64 object-cover transform transition-all duration-500 hover:scale-105 hover:rotate-1 hover:shadow-2xl cursor-pointer"
+                  className="rounded-lg shadow-xl w-full max-w-full h-48 md:h-56 lg:h-64 object-cover hover:scale-110 cursor-pointer transition-transform duration-300"
                 />
               </div>
             </div>
           </div>
         </div>
       </section>
-
       {/* Footer CTA */}
       <section className="max-w-7xl mx-auto px-6 py-16 text-center">
         <h3 className="text-4xl font-bold text-teal-600 mb-6">

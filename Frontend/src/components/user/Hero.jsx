@@ -5,13 +5,11 @@ import { assets } from "../../assets/frontend_assets/assets.js";
 const HeroSection = () => {
   return (
     <section className="relative w-full min-h-[90vh] flex items-center px-6 md:px-12">
-
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-green-100 to-white pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-br from-green-50 via-green-100 to-white pointer-events-none" />
 
       {/* Layout Grid */}
       <div className="relative max-w-7xl w-full grid grid-cols-1 md:grid-cols-[0.45fr_0.55fr] items-center gap-8">
-
         {/* LEFT TEXT */}
         <motion.div
           initial={{ opacity: 0, x: -60 }}
@@ -65,46 +63,44 @@ const HeroSection = () => {
           />
 
           {/* HOTSPOTS back*/}
-          <Hotspot 
-            top="64%" 
-            left="2%" 
-            title="BACK BELT SUPPORT" 
+          <Hotspot
+            top="64%"
+            left="2%"
+            title="BACK BELT SUPPORT"
             price="₹39.95"
             img={assets.product1}
           />
           {/* elbow*/}
-          <Hotspot 
-            top="58%" 
-            left="67%" 
-            title="ELBOW WEAR" 
+          <Hotspot
+            top="58%"
+            left="67%"
+            title="ELBOW WEAR"
             price="₹29.95"
             img={assets.product2}
           />
           {/* knee*/}
-          <Hotspot 
-            top="88%" 
-            left="-5%" 
-            title="KNEE CAP" 
+          <Hotspot
+            top="88%"
+            left="-5%"
+            title="KNEE CAP"
             price="₹29.95"
             img={assets.product3}
           />
           {/* foot*/}
-          <Hotspot 
-            top="90%" 
-            left="83%" 
-            title="FOOT WEAR" 
+          <Hotspot
+            top="90%"
+            left="83%"
+            title="FOOT WEAR"
             price="₹95.95"
             img={assets.product4}
           />
         </motion.div>
-
       </div>
     </section>
   );
 };
 
 export default HeroSection;
-
 
 /* -----------------------------------------------------------
    PREMIUM HOTSPOT — WITH AUTO ARROW DIRECTION
@@ -184,7 +180,6 @@ const Hotspot = ({ top, left, title, price, img }) => {
               "
             />
           )}
-
 
           {/* IMAGE */}
           <img
