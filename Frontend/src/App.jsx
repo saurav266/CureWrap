@@ -24,15 +24,16 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/product" element={<Product />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* Protected routes */}
         <Route
-          path="/about"
+         
           element={
             <ProtectedRoute>
-              <About />
+              
             </ProtectedRoute>
           }
         />
