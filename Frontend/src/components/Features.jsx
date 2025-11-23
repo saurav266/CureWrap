@@ -1,6 +1,9 @@
 import React from 'react';
-import { FaShoppingBag, FaHeadset, FaTruck, FaUndoAlt } from 'react-icons/fa';
+import { FaUndoAlt } from 'react-icons/fa';
+import { TbTruckDelivery } from "react-icons/tb";
 import { motion } from 'framer-motion';
+import { RiSecurePaymentFill } from "react-icons/ri";
+import { MdVerified } from "react-icons/md";
 
 const Features = () => {
 
@@ -9,52 +12,52 @@ const Features = () => {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.18,
-        delayChildren: 0.2,
+        staggerChildren: 0.20,
+        delayChildren: 0.25,
       },
     },
   };
 
   const fadeUp = {
-    hidden: { opacity: 0, y: 25 },
+    hidden: { opacity: 0, y: 35 },
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.7, ease: "easeOut" }
+      transition: { duration: 0.8, ease: "easeOut" }
     }
   };
 
   const items = [
     {
-      icon: FaShoppingBag,
+      icon: FaUndoAlt,
       title: "Free Returns",
       description: "Returns within 7 days"
     },
     {
-      icon: FaHeadset,
+      icon: RiSecurePaymentFill,
       title: "Secured Payments",
-      description: "SSL encryption & trusted payments"
+      description: "SSL encrypted & trusted payments"
     },
     {
-      icon: FaTruck,
+      icon: MdVerified,
       title: "Verified Sellers",
-      description: "verified and trusted sellers"
+      description: "Quality-checked & trusted sellers"
     },
     {
-      icon: FaUndoAlt,
+      icon: TbTruckDelivery,
       title: "Free Delivery",
-      description: "free delivery on all orders"
+      description: "Free delivery on all orders"
     }
   ];
 
   return (
-    <section className="bg-white py-14 px-6 md:px-20">
+    <section className="bg-white py-16 px-6 md:px-20">
       <motion.div
         variants={container}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, amount: 0.3 }}
-        className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12"
+        className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-14"
       >
         {items.map((item, index) => {
           const Icon = item.icon;
@@ -68,27 +71,55 @@ const Features = () => {
               {/* Animated Icon */}
               <motion.div
                 whileHover={{
-                  scale: 1.25,
-                  y: -4,
-                  transition: { type: "spring", stiffness: 200 }
+                  scale: 1.35,
+                  y: -6,
+                  rotate: 2,
+                  transition: { type: "spring", stiffness: 180 }
                 }}
-                className="mb-3"
+                className="mb-4"
               >
-                <Icon className="text-4xl text-black transition-all duration-300 group-hover:text-blue-600 group-hover:drop-shadow-[0_4px_10px_rgba(59,130,246,0.35)]" />
+                <Icon
+                  size={48}   // 👈 Ensures all icons are EXACT same size
+                  className="
+                    text-black 
+                    transition-all duration-300 
+                    group-hover:text-blue-600 
+                    group-hover:drop-shadow-[0_6px_18px_rgba(59,130,246,0.45)]
+                  "
+                />
               </motion.div>
 
               {/* Animated Title */}
               <motion.h4
-                whileHover={{ x: 3 }}
-                className="font-semibold text-sm tracking-wide transition-all duration-300 group-hover:text-blue-600"
+                whileHover={{
+                  y: -3,
+                  letterSpacing: "1.5px",
+                  transition: { duration: 0.3 }
+                }}
+                className="
+                  font-bold 
+                  text-base 
+                  md:text-lg 
+                  transition-all duration-300 
+                  group-hover:text-blue-600
+                "
               >
                 {item.title}
               </motion.h4>
 
               {/* Subtext */}
-              <p className="text-xs mt-1 text-gray-600 leading-relaxed">
+              <motion.p
+                whileHover={{ y: -2, opacity: 1 }}
+                className="
+                  text-sm 
+                  mt-1 
+                  text-gray-600 
+                  leading-relaxed 
+                  transition-all duration-300
+                "
+              >
                 {item.description}
-              </p>
+              </motion.p>
             </motion.div>
           );
         })}
