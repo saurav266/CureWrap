@@ -12,6 +12,8 @@ import Login from "./pages/login.jsx";
 import Register from "./pages/register.jsx";
 import AdminDashboard from "./components/admin/AdminDashBoard.jsx";
 import ProtectedRoute from "./components/protected/ProtectedRoute.jsx";
+import ProductViewPage from "./pages/ViewPage.jsx";
+import CartPage from "./pages/CartPage.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
 function App() {
@@ -41,10 +43,12 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/product" element={<Product />} />
+        <Route path="/product/:id" element={<ProductViewPage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/cart" element={<CartPage />} />
       </Routes>
 
       <Footer />

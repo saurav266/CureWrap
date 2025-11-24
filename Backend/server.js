@@ -4,7 +4,7 @@ import { connectDB } from "./db/db.js";
 import userRoute from "./route/userRoute.js";
 import cors from "cors";
 import { testTwilio } from "./controller/userController.js";
-
+import cartRoute from "./route/cartRoute.js";
 
 connectDB();
 
@@ -13,14 +13,16 @@ const PORT = process.env.PORT || 8000;
 
 app.use(cors({
   origin: "http://localhost:5173",
-  credentials: true
+  credentials: true,
 }));
 
-
 app.use(express.json());
+
+// All routes start with /api/users
 app.use("/api/users", userRoute);
+app.use("/api/cart", cartRoute);
 
-
+// Test route
 app.post("/test-twilio", testTwilio);
 
 app.get("/", (req, res) => {
@@ -28,5 +30,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
