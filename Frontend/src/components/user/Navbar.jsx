@@ -6,7 +6,7 @@ import { FiUser } from "react-icons/fi";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 
 const Navbar = () => {
-    const navigate = useNavigate();
+    const navigate = useNavigate(); 
 
     const navLinkClass = ({ isActive }) =>
         `relative group transition-all duration-300 font-semibold tracking-wide
