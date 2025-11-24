@@ -25,19 +25,23 @@ const Navbar = () => {
 
       {/* LOGO */}
       <Link
-        to="/"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate("/");
-        }}
-        className="flex items-center"
-      >
-        <img
-          src={assets.logo}
-          alt="logo"
-          className="h-8 w-auto object-contain cursor-pointer transition-all duration-500 hover:scale-110 hover:rotate-2 hover:drop-shadow-lg"
-        />
-      </Link>
+                to="/"
+                onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/");
+                }}
+                className="flex items-center"
+            >
+                <img
+                    src={assets.logo}
+                    alt="logo"
+                    className="
+                        h-8 h-50 w-50 w-auto object-contain cursor-pointer
+                        transition-all duration-500 
+                        hover:scale-110 hover:rotate-2 hover:drop-shadow-lg
+                    "
+                />
+            </Link>
 
       {/* ================== DESKTOP MENU ================== */}
       <ul className="hidden sm:flex gap-10 text-lg items-center font-semibold tracking-wide">
