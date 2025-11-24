@@ -1,1 +1,24 @@
 @import "tailwindcss";
+.
+/* premium styles */
+:root {
+  --glass: rgba(255,255,255,0.6);
+}
+
+.dark .glass {
+  --glass: rgba(17,24,39,0.6);
+}
+
+/* reusable input */
+.input {
+  @apply w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200;
+}
+
+/* premium card glass */
+.card-glass {
+  background: linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+  backdrop-filter: blur(8px);
+}
+.dark .card-glass {
+  background: linear-gradient(135deg, rgba(17,24,39,0.6), rgba(17,24,39,0.45));
+}
