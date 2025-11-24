@@ -1,26 +1,31 @@
-import { loginAdmin } from "../controllers/adminController.js";
-import User from "../models/User.js"; // your User schema
-import { login as loginUser } from "../controllers/userController.js";
+import { loginAdmin } from "../controller/adminController.js";
+import { login } from "../controller/userController.js";
+import User from "../model/user.js";
+
 export const unifiedLogin = async (req, res) => {
-  const { email, password } = req.body;
+  const { phone} = req.body;
 
   try {
-    // 🔑 Check if email is admin
-    if (email.endsWith("@admin")) {
-      return loginAdmin(req, res); // <-- your admin login handler
+    // 🔎 Find user by phone number
+    const user = await User.findOne({ phone });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this phone number." });
     }
 
-   
-    
+    // ✅ Verify password (optional, if you’re not using OTP yet)
+    // const isMatch = await bcrypt.compare(password, user.password);
+    // if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
-    // Check if email belongs to a user
-    const user = await User.findOne({ email });
-    if (user) {
-      return loginUser(req, res);
+    // 📧 Select specific email from user record
+    const email = user.email;
+
+    // 🔑 Decide login type based on email
+    if (email.endsWith("@example.com") || email === "saurav@example.com") {
+      return loginAdmin(req, res);
+    } else {
+      return login(req, res);
     }
 
-    // If no match found
-    return res.status(404).json({ message: "No account found with this email." });
   } catch (error) {
     return res.status(500).json({ message: "Login failed", error: error.message });
   }

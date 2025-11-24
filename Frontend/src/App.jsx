@@ -10,43 +10,41 @@ import About from "./pages/about.jsx";
 import Contact from "./pages/contact.jsx";
 import Login from "./pages/login.jsx";
 import Register from "./pages/register.jsx";
-
+import AdminDashboard from "./components/admin/AdminDashBoard.jsx";
 import ProtectedRoute from "./components/protected/ProtectedRoute.jsx";
-
+import { useAuth } from "./context/AuthContext.jsx";
 
 function App() {
+  const { user } = useAuth();
+
+  // ✅ If logged in as admin → show only AdminDashboard
+  if (user?.email === "saurav@example.com") {
+    return (
+      <Routes>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute adminEmail="saurav@example.com">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    );
+  }
+
+  // ✅ Otherwise → normal user layout
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
       <Routes>
-        {/* Public routes */}
         <Route path="/" element={<Home />} />
         <Route path="/product" element={<Product />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
-        {/* Protected routes */}
-        <Route
-         
-          element={
-            <ProtectedRoute>
-              
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Admin route (specific email check) */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute adminEmail="admin@example.com">
-              
-            </ProtectedRoute>
-          }
-        />
       </Routes>
 
       <Footer />

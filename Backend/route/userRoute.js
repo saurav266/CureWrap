@@ -2,10 +2,11 @@ import { Router } from "express";
 import { createUser,verifyOtp ,login,logout} from "../controller/userController.js";
 import { createProduct } from "../controller/prodcutController.js";
 import { addWishlist, getWishlist } from "../controller/wishListController.js";
+import { unifiedLogin } from "../middleware/authMiddleware.js";
 const router = Router();
 
 router.post("/register", createUser);
-router.post("/login", login);
+router.post("/login", unifiedLogin);
 router.post("/verify-otp", verifyOtp);
 router.post("/logout", logout);
 

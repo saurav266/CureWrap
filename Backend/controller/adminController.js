@@ -1,87 +1,48 @@
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import Admin from "../models/Admin.js"; // your Admin schema
+import twilio from "twilio";
+import 'dotenv/config';
+import User from "../model/user.js";
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
-// Admin login handler
-
-
-// Admin creation handler
-export const createAdmin = async (req, res) => {
-  const { name, email, password } = req.body;
-
-  try {
-    // Check if admin already exists
-    const existingAdmin = await Admin.findOne({ email });
-    if (existingAdmin) {
-      return res.status(400).json({ message: "Admin account already exists." });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create new admin
-    const newAdmin = new Admin({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
-    await newAdmin.save();
-
-    // Create JWT token
-    const token = jwt.sign(
-      { id: newAdmin._id, email: newAdmin.email, role: "admin" },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    return res.status(201).json({
-      message: "Admin account created successfully",
-      token,
-      admin: {
-        id: newAdmin._id,
-        email: newAdmin.email,
-        name: newAdmin.name,
-      },
-    });
-  } catch (error) {
-    return res.status(500).json({ message: "Admin creation failed", error: error.message });
-  }
-};
 export const loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
+  const { phoneNumber } = req.body; // 👈 expect phone + otp
 
   try {
-    // Find admin by email
-    const admin = await Admin.findOne({ email });
-    if (!admin) {
-      return res.status(404).json({ message: "Admin account not found." });
+    // Find user by phone
+    const user = await User.findOne({  phoneNumber });
+    if (!user) {
+      return res.status(404).json({ message: "Account not found." });
     }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials." });
+    // ✅ Check if this user is the admin (by email)
+    if (user.email !== "saurav@example.com") {
+      return res.status(403).json({ message: "Not an admin account." });
     }
+
+    // ✅ Verify OTP
+    
+
+    // Clear OTP after successful login
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    user.otp = otp;
+    user.otpExpiresAt = otpExpiresAt;
+    await user.save();
+   
 
     // Create JWT token
-    const token = jwt.sign(
-      { id: admin._id, email: admin.email, role: "admin" },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    return res.status(200).json({
-      message: "Admin login successful",
-      token,
-      admin: {
-        id: admin._id,
-        email: admin.email,
-        name: admin.name,
-      },
+     await twilioClient.messages.create({
+      body: `Your OTP is ${otp}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phoneNumber,
     });
+
+     res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
-    return res.status(500).json({ message: "Admin login failed", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
