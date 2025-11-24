@@ -1,24 +1,28 @@
 import { Router } from "express";
-import { createUser,verifyOtp ,login,logout} from "../controller/userController.js";
-import { createProduct } from "../controller/prodcutController.js";
+import { createUser, verifyOtp, login, logout } from "../controller/userController.js";
+import { createProduct, getProductById, getProducts } from "../controller/prodcutController.js";
 import { addWishlist, getWishlist } from "../controller/wishListController.js";
 import { unifiedLogin } from "../middleware/authMiddleware.js";
+
+
 const router = Router();
 
+// Auth routes
 router.post("/register", createUser);
 router.post("/login", unifiedLogin);
 router.post("/verify-otp", verifyOtp);
 router.post("/logout", logout);
 
+// Product routes
+router.post("/add-product", createProduct);
+router.get("/products", getProducts);
+router.get("/products/:id", getProductById);
 
-// for product routes, you can create a separate router file like productRoute.js
-
-router.post("/products", createProduct);
-
-
-// for wishlist routes, you can create a separate router file like wishListRoute.js
-
+// Wishlist routes
 router.post("/wishlist", addWishlist);
 router.get("/wishlist/:userId", getWishlist);
+
+// Cart routes
+
 
 export default router;

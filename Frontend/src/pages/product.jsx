@@ -1,29 +1,39 @@
-import React, { useState } from "react";
-import { AiOutlineHeart, AiFillHeart, AiOutlineEye, AiOutlineShoppingCart } from "react-icons/ai";
-import { FaStar } from "react-icons/fa";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
-// Animation Variants
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.15 },
-  },
-};
+export default function ProductSection() {
+  const [products, setProducts] = useState([]);
 
-const cardAnimation = {
-  hidden: { opacity: 0, y: 40 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
-  },
-};
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/users/products");
+        const data = await res.json();
 
-export default function ProductSection({ products = [] }) {
-  const [quickView, setQuickView] = useState(null);
-  const [animateHeart, setAnimateHeart] = useState(null);
+        if (Array.isArray(data.products)) {
+          setProducts(data.products);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const addToCart = (product) => {
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const existing = cart.find((item) => item._id === product._id);
+
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({ ...product, quantity: 1 });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("storage"));
+    alert("Product added to cart!");
+  };
 
   return (
     <>
@@ -45,7 +55,7 @@ export default function ProductSection({ products = [] }) {
           >
             {products.map((p) => (
               <motion.div
-                key={p._id}
+                key={p.id}
                 variants={cardAnimation}
                 className="relative bg-white shadow-md hover:shadow-xl transition p-3 pb-5 overflow-hidden"
               >
@@ -58,7 +68,7 @@ export default function ProductSection({ products = [] }) {
                 )}
 
                 {/* Floating Heart Animation */}
-                {animateHeart === p._id && (
+                {animateHeart === p.id && (
                   <AiFillHeart className="text-red-500 text-4xl absolute top-8 right-10 animate-floatUp opacity-0" />
                 )}
 
@@ -113,39 +123,37 @@ export default function ProductSection({ products = [] }) {
 
                   </div>
                 </div>
-
-                {/* RATING */}
-                <div className="flex items-center gap-1 mt-2">
-                  {Array.from({ length: p.rating || 0 }).map((_, i) => (
-                    <FaStar key={i} className="text-yellow-400 text-lg" />
-                  ))}
-                  {p.reviews && (
-                    <span className="text-sm text-gray-500 ml-1 font-productBody">({p.reviews})</span>
-                  )}
-                </div>
-
-                {/* TITLE */}
-                <h3 className="font-productTitle text-gray-800 text-lg mt-1 font-semibold">
-                  {p.title}
+                <h3 className="text-xl font-semibold hover:text-green-600">
+                  {p.name}
                 </h3>
+              </Link>
 
-                {/* PRICE */}
-                <p className="font-productPrice text-green-600 font-bold text-xl mt-2">
-                  {p.price}
-                </p>
+              <p className="text-gray-600 mt-1">
+                {p.description || "No description available."}
+              </p>
 
-                {/* SHOP NOW */}
-                <button className="mt-3 w-full py-2 rounded-full border border-green-600 
-                  text-green-600 font-semibold hover:bg-green-600 hover:text-white transition font-productBody">
-                  <AiOutlineShoppingCart size={22} className="inline mr-2" /> SHOP NOW
+              <p className="text-green-600 font-bold text-lg mt-3">
+                ₹{p.price} {p.currency}
+              </p>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => addToCart(p)}
+                  className="w-1/2 py-2 border rounded bg-yellow-500 text-white font-semibold"
+                >
+                  Add to Cart
                 </button>
-
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-    </>
+                <Link
+                  to={`/product/${p._id}`}
+                  className="w-1/2 py-2 border rounded bg-green-600 text-white font-semibold text-center"
+                >
+                  View
+                </Link>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
-
