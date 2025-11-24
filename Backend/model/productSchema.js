@@ -6,7 +6,6 @@ export const ProductSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   currency: { type: String, default: "INR" },
   stock_quantity: { type: Number, default: 0 },
-  sku: { type: String, unique: true, required: true },
 
   // Embedded category info
   category: {
@@ -15,7 +14,7 @@ export const ProductSchema = new mongoose.Schema({
   },
 
   // Embedded brand info
-  
+  // (you can add brand fields here if needed)
 
   // Embedded images
   images: [

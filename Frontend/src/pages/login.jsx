@@ -61,9 +61,19 @@ const LoginWithMobile = () => {
         { withCredentials: true }
       );
 
-      const { user } = response.data;
-      login(user); // cookie is already stored by browser
-      navigate("/");
+      const { user, token } = response.data;
+
+      // Save user + token
+      login(user);
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // ✅ Decide navigation based on email
+      if (user.email === "saurav@example.com") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP");
     } finally {

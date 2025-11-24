@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
-import Product from "../model/productSchema.js";  // fixed typo: Prodcut → Product
+import Product from "../model/productSchema.js";  // fixed typo: Product
 
 // Create Product
 export const createProduct = async (req, res) => {
-  const { name, description, price, currency, stock_quantity, sku, category, images, attributes } = req.body;
+  const { name, description, price, currency, stock_quantity, category, images, attributes } = req.body;
 
   // Basic validation
-  if (!name || !price || !sku || !category || !category.name) {
+  if (!name || !price || !category || !category.name) {
     return res.status(400).json({ 
-      message: "Missing required fields: name, price, sku, and category.name are mandatory." 
+      message: "Missing required fields: name, price, and category.name are mandatory." 
     });
   }
 
@@ -19,7 +19,6 @@ export const createProduct = async (req, res) => {
       price,
       currency,
       stock_quantity,
-      sku,
       category,
       images,
       attributes
@@ -51,3 +50,25 @@ export const getProducts = async (req, res) => {
     });
   }
 };
+
+// Get Product by ID
+export const getProductById = async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid product ID" });
+  }
+
+  try {
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    res.status(200).json({ product });
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Server error", 
+      error: error.message 
+    });
+  }
+}
