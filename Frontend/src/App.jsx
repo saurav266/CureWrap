@@ -13,7 +13,6 @@ import Register from "./pages/register.jsx";
 
 import ProtectedRoute from "./components/protected/ProtectedRoute.jsx";
 
-
 function App() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -29,22 +28,13 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         {/* Protected routes */}
-        <Route
-         
-          element={
-            <ProtectedRoute>
-              
-            </ProtectedRoute>
-          }
-        />
+        <Route element={<ProtectedRoute></ProtectedRoute>} />
 
         {/* Admin route (specific email check) */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute adminEmail="admin@example.com">
-              
-            </ProtectedRoute>
+            <ProtectedRoute adminEmail="admin@example.com"></ProtectedRoute>
           }
         />
       </Routes>

@@ -22,7 +22,7 @@ export default function HeroSection() {
           className="space-y-6 z-10 pl-4 md:pl-10 lg:pl-14"
         >
           <h1 className="text-5xl md:text-6xl font-bold leading-tight text-gray-900">
-            Stay Safe. <span className="text-green-600">Stay Aware.</span>
+            Stay Safe. <span className="text-green-600  ">Stay Aware.</span>
           </h1>
 
           <p className="text-lg md:text-xl text-gray-700 max-w-lg">
