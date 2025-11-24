@@ -45,7 +45,7 @@ export default function ProductSection({ products = [] }) {
           >
             {products.map((p) => (
               <motion.div
-                key={p.id}
+                key={p._id}
                 variants={cardAnimation}
                 className="relative bg-white shadow-md hover:shadow-xl transition p-3 pb-5 overflow-hidden"
               >
@@ -58,7 +58,7 @@ export default function ProductSection({ products = [] }) {
                 )}
 
                 {/* Floating Heart Animation */}
-                {animateHeart === p.id && (
+                {animateHeart === p._id && (
                   <AiFillHeart className="text-red-500 text-4xl absolute top-8 right-10 animate-floatUp opacity-0" />
                 )}
 

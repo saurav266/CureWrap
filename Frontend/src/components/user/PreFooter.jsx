@@ -1,26 +1,29 @@
 import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-
+import img1 from "../../assets/Frontend_assets/preFooter/img1.png";
+import img2 from "../../assets/Frontend_assets/preFooter/img2.png";
+import img3 from "../../assets/Frontend_assets/preFooter/img3.png";
+import img4 from "../../assets/Frontend_assets/preFooter/img4.png";
 // Use uploaded images directly
 const images = [
   {
     id: 1,
-    src: "/mnt/data/Screenshot 2025-11-23 at 4.50.18 AM.png",
+    src: img1,
     alt: "Stretch exercise",
   },
   {
     id: 2,
-    src: "/mnt/data/Screenshot 2025-11-21 134354.png",
+    src: img2,
     alt: "Workout session",
   },
   {
     id: 3,
-    src: "/mnt/data/Screenshot 2025-11-21 134354.png",
+    src: img3,
     alt: "Young boy training",
   },
   {
     id: 4,
-    src: "/mnt/data/Screenshot 2025-11-21 134354.png",
+    src: img4,
     alt: "Man exercising",
   },
 ];
