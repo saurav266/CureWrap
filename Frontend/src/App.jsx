@@ -20,6 +20,7 @@ import AdminHome from "./pages/AdminPages/Home.jsx";
 import OrderManagement from "./pages/AdminPages/Order.jsx";
 import ProductManagement from "./pages/AdminPages/Product.jsx";
 import UserManagement from "./pages/AdminPages/User.jsx";
+import AdminNavbar from "./components/admin/AdminNavbar.jsx";
 
 function App() {
   const { user } = useAuth();
@@ -35,6 +36,7 @@ function App() {
           path="/admin"
           element={
             <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+              <AdminNavbar />
               <AdminHome />
             </ProtectedRoute>
           }
@@ -44,6 +46,7 @@ function App() {
           path="/admin/orders"
           element={
             <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+              <AdminNavbar />
               <OrderManagement />
             </ProtectedRoute>
           }
@@ -53,6 +56,7 @@ function App() {
           path="/admin/products"
           element={
             <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+              <AdminNavbar />
               <ProductManagement />
             </ProtectedRoute>
           }
@@ -62,6 +66,7 @@ function App() {
           path="/admin/users"
           element={
             <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+              <AdminNavbar />
               <UserManagement />
             </ProtectedRoute>
           }

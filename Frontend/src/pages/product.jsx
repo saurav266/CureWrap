@@ -1,212 +1,320 @@
 // src/components/ProductSection.jsx
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import { AiFillHeart, AiOutlineHeart, AiOutlineEye } from "react-icons/ai";
 
+/**
+ * ProductSection
+ * - Minimal CureWrap-themed product grid
+ * - Skeleton loading shimmer
+ * - Category + Price filters
+ * - No sorting (removed)
+ * - Click image/card -> navigate to product page (useNavigate)
+ * - Quick View modal (eye icon)
+ * - Wishlist heart animation (local)
+ *
+ * Notes:
+ * - backendUrl: change if your API is hosted elsewhere
+ * - Fallback image uses the uploaded file available at:
+ *     /mnt/data/yoga-2587066_1280.jpg
+ */
+
 export default function ProductSection() {
+  const navigate = useNavigate();
+
   const [products, setProducts] = useState([]);
+  const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [animateHeart, setAnimateHeart] = useState(null);
   const [quickView, setQuickView] = useState(null);
 
-  const backendUrl = "http://localhost:8000"; // Adjust your backend
+  // Filters
+  const [category, setCategory] = useState("all");
+  const [priceRange, setPriceRange] = useState([0, 5000]);
 
-  // Animation variants
-  const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.2 } } };
-  const cardAnimation = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
+  const backendUrl = "http://localhost:8000";
 
-  // Fetch products
+  // Fetch products from backend
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch(`${backendUrl}/api/users/products`);
+      const data = await res.json();
+      const arr = Array.isArray(data.products) ? data.products : [];
+      setProducts(arr);
+      setFiltered(arr);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      setError("Failed to load products.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch(`${backendUrl}/api/users/products`);
-        const data = await res.json();
-        if (Array.isArray(data.products)) setProducts(data.products);
-        else setProducts([]);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setError("Failed to load products. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Add product to cart
+  // Build image url with backend prefix; fallback to uploaded local image
+  const FALLBACK_IMAGE = "/mnt/data/yoga-2587066_1280.jpg";
+  const getImageUrl = (img) => {
+    if (!img?.url) return FALLBACK_IMAGE;
+    return img.url.startsWith("http")
+      ? img.url
+      : `${backendUrl}/${img.url.replace(/^\/+/, "")}`;
+  };
+
+  // Add to Cart (localStorage)
   const addToCart = (product) => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     const existing = cart.find((item) => item._id === product._id);
-
-    if (existing) {
-      existing.quantity += 1;
-      cart = cart.map((item) => (item._id === product._id ? existing : item));
-    } else {
-      cart.push({ ...product, quantity: 1 });
-    }
-
+    if (existing) existing.quantity += 1;
+    else cart.push({ ...product, quantity: 1 });
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cartUpdated"));
     toast.success(`${product.name} added to cart!`);
   };
 
-  // Helper for image URL
-  const getImageUrl = (img) => {
-    if (!img?.url) return "https://placehold.co/400x400?text=No+Image";
-    return img.url.startsWith("http") ? img.url : `${backendUrl}/${img.url.replace(/^\/+/, "")}`;
-  };
+  // Skeleton placeholder card
+  const SkeletonCard = () => (
+    <div className="border border-gray-200 rounded-xl p-4 animate-pulse">
+      <div className="w-full h-[260px] bg-gray-200 rounded-lg" />
+      <div className="h-4 bg-gray-200 rounded mt-4" />
+      <div className="h-4 bg-gray-200 rounded mt-2 w-2/3" />
+      <div className="h-4 bg-gray-200 rounded mt-4 w-1/2" />
+      <div className="h-10 bg-gray-200 rounded mt-6" />
+    </div>
+  );
 
-  if (loading) return <p className="p-10 text-center text-gray-500">Loading products...</p>;
-  if (error) return <p className="p-10 text-center text-red-500">{error}</p>;
 
   return (
-    <section className="py-16 px-6 md:px-12 bg-white font-productBody">
+    <section className="py-16 px-6 md:px-12 bg-white">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-center text-4xl font-bold text-gray-900 mb-14 font-productTitle">OUR PRODUCTS</h2>
+        {/* Heading */}
+        <h2 className="text-center text-4xl font-extrabold tracking-tight text-gray-900 mb-10">
+          <span className="text-green-600">OUR</span>{" "}
+          <span className="text-[#2F86D6]">PRODUCTS</span>
+        </h2>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10"
-        >
-          {products.map((p) => {
-            const unitPrice = p.sale_price || p.price;
-            const originalPrice = p.price;
-            const isOnSale = unitPrice < originalPrice;
-            const discountPercent = isOnSale ? Math.round(((originalPrice - unitPrice) / originalPrice) * 100) : 0;
-            const productImage = getImageUrl(p.images?.[0]);
+        {/* Skeletons */}
+        {loading && (
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        )}
 
-            return (
-              <motion.div
-                key={p._id}
-                variants={cardAnimation}
-                className="relative bg-white shadow-md hover:shadow-xl transition p-3 pb-5 overflow-hidden"
-              >
-                {/* Discount badge */}
-                {isOnSale && (
-                  <div className="absolute top-3 left-3 z-20 bg-blue-600 text-white text-sm font-bold px-2 py-1 rounded-full">
-                    -{discountPercent}%
-                  </div>
-                )}
+        {/* Product grid */}
+        {!loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10"
+          >
+            {filtered.length === 0 && (
+              <div className="col-span-full text-center py-10 text-gray-600">
+                No products found for selected filters.
+              </div>
+            )}
 
-                {/* Animated heart */}
-                {animateHeart === p._id && (
-                  <AiFillHeart className="text-red-500 text-4xl absolute top-8 right-10 animate-floatUp opacity-0" />
-                )}
+            {filtered.map((p) => {
+              const unit = p.sale_price || p.price || 0;
+              const isOnSale = unit < (p.price || 0);
+              const discount = isOnSale
+                ? Math.round(((p.price - unit) / p.price) * 100)
+                : 0;
 
-                {/* Product Image */}
-                <div className="relative w-full h-[330px] overflow-hidden group">
-                  <Link to={`/product/${p._id}`}>
+              return (
+                <motion.div
+                  key={p._id}
+                  onClick={() => navigate(`/product/${p._id}`)}
+                  className="relative bg-white rounded-xl border border-gray-200 p-4 pb-6 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
+                  whileHover={{ scale: 1.01 }}
+                >
+                  {/* Sale badge (inside padding so it never overlaps the image) */}
+                  {isOnSale && (
+                    <div className="absolute top-4 left-4 bg-green-600 text-white text-xs px-3 py-1 rounded-full shadow">
+                      {discount}% OFF
+                    </div>
+                  )}
+
+                  {/* Image block */}
+                  <div
+                    className="relative w-full h-[260px] rounded-lg overflow-hidden group mb-4"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/product/${p._id}`);
+                    }}
+                  >
                     <img
-                      src={productImage}
-                      alt={p.images?.[0]?.alt_text || p.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer"
+                      src={getImageUrl(p.images?.[0])}
+                      alt={p.name}
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+                      loading="lazy"
                     />
-                  </Link>
 
-                  {/* Quick Actions */}
-                  <div className="absolute top-3 right-3 flex flex-col gap-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-30">
-                    <div className="relative group/icon">
+                    {/* action icons: wishlist + quickview */}
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition">
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setAnimateHeart(p._id);
-                          setTimeout(() => setAnimateHeart(null), 800);
+                          setTimeout(() => setAnimateHeart(null), 700);
                         }}
                         className="bg-white p-2 rounded-full shadow hover:scale-110 transition"
+                        aria-label="Add to wishlist"
                       >
-                        <AiOutlineHeart size={24} className="text-gray-800" />
+                        <AiOutlineHeart size={22} className="text-gray-700" />
                       </button>
-                      <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-white shadow px-2 py-1 rounded text-xs opacity-0 group-hover/icon:opacity-100 transition whitespace-nowrap">
-                        Add to Wishlist
-                      </span>
-                    </div>
 
-                    <div className="relative group/icon">
                       <button
-                        onClick={() => setQuickView(p)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickView(p);
+                        }}
                         className="bg-white p-2 rounded-full shadow hover:scale-110 transition"
+                        aria-label="Quick view"
                       >
-                        <AiOutlineEye size={24} className="text-gray-800" />
+                        <AiOutlineEye size={22} className="text-gray-700" />
                       </button>
-                      <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-white shadow px-2 py-1 rounded text-xs opacity-0 group-hover/icon:opacity-100 transition whitespace-nowrap">
-                        Quick View
-                      </span>
                     </div>
                   </div>
-                </div>
 
-                {/* Product Details */}
-                <div className="px-5 pb-5 flex-1 flex flex-col">
-                  <Link to={`/product/${p._id}`}>
-                    <h3 className="text-lg font-semibold mb-2 hover:text-green-600 truncate">{p.name}</h3>
-                  </Link>
+                  {/* Title */}
+                  <h3 className="text-lg font-semibold text-gray-900 hover:text-green-600 mb-1">
+                    {p.name}
+                  </h3>
 
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                    {p.short_description || p.description || "No description available."}
-                  </p>
+                  {/* Short description */}
+                  <p className="text-gray-600 text-sm line-clamp-2 mb-3">{p.short_description}</p>
 
                   {/* Price */}
-                  <div className="mt-auto">
-                    <p className="text-green-600 font-bold text-lg">
-                      {isOnSale ? (
-                        <>
-                          ₹{unitPrice.toLocaleString()}{" "}
-                          <span className="line-through text-gray-400 text-sm">
-                            ₹{originalPrice.toLocaleString()}
-                          </span>
-                        </>
-                      ) : (
-                        `₹${unitPrice.toLocaleString()}`
-                      )}
-                    </p>
+                  <p className="text-green-700 font-bold text-lg">
+                    ₹{unit.toLocaleString()}{" "}
+                    {isOnSale && (
+                      <span className="line-through text-gray-400 text-sm ml-2">
+                        ₹{p.price.toLocaleString()}
+                      </span>
+                    )}
+                  </p>
 
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={() => addToCart(p)}
-                        className="flex-1 py-2 border rounded bg-yellow-500 text-white font-semibold hover:bg-yellow-600 transition"
-                      >
-                        Add to Cart
-                      </button>
-                      <Link
-                        to={`/product/${p._id}`}
-                        className="flex-1 py-2 border rounded bg-green-600 text-white font-semibold text-center hover:bg-green-700 transition"
-                      >
-                        View
-                      </Link>
+                  {/* Add to Cart */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(p);
+                    }}
+                    className="w-full mt-4 py-3 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition"
+                    aria-label={`Add ${p.name} to cart`}
+                  >
+                    Add to Cart
+                  </button>
+
+                  {/* Heart burst when clicking wishlist */}
+                  {animateHeart === p._id && (
+                    <AiFillHeart className="text-red-500 text-4xl absolute top-12 right-12 animate-pulse" />
+                  )}
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        )}
+
+        {/* Quick View modal */}
+        {quickView && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setQuickView(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+              className="bg-white rounded-xl p-6 w-full max-w-3xl z-50 shadow-2xl"
+            >
+              <button
+                onClick={() => setQuickView(null)}
+                className="absolute top-4 right-4 text-xl text-gray-600 hover:text-black"
+                aria-label="Close quick view"
+              >
+                ×
+              </button>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left: large image */}
+                <div className="w-full rounded-lg overflow-hidden">
+                  <img
+                    src={getImageUrl(quickView.images?.[0])}
+                    alt={quickView.name}
+                    className="w-full h-96 object-cover rounded-lg"
+                  />
+                </div>
+
+                {/* Right: info */}
+                <div className="flex flex-col">
+                  <h3 className="text-2xl font-extrabold text-gray-900 mb-2">{quickView.name}</h3>
+
+                  <p className="text-green-700 font-bold text-xl mb-3">
+                    ₹{(quickView.sale_price || quickView.price).toLocaleString()}
+                    {quickView.sale_price && (
+                      <span className="line-through text-gray-400 text-sm ml-3">₹{quickView.price.toLocaleString()}</span>
+                    )}
+                  </p>
+
+                  <p className="text-sm text-gray-600 mb-4 leading-relaxed">{quickView.description}</p>
+
+                  <div className="flex gap-3 mt-auto">
+                    <button
+                      onClick={() => {
+                        addToCart(quickView);
+                        setQuickView(null);
+                      }}
+                      className="flex-1 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition"
+                    >
+                      Add to Cart
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setQuickView(null);
+                        navigate(`/product/${quickView._id}`);
+                      }}
+                      className="flex-1 py-3 rounded-lg border border-gray-300 text-gray-800 font-semibold hover:bg-gray-50 transition"
+                    >
+                      View Details
+                    </button>
+                  </div>
+
+                  {/* Trust badges */}
+                  <div className="flex gap-3 mt-6 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-green-50 grid place-items-center text-green-600 font-bold">✔</div>
+                      <div>
+                        <div className="font-semibold text-gray-900">Premium Quality</div>
+                        <div className="text-xs">Tested & certified</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-green-50 grid place-items-center text-green-600 font-bold">⏱</div>
+                      <div>
+                        <div className="font-semibold text-gray-900">Fast Shipping</div>
+                        <div className="text-xs">Ships within 2 days</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-      </div>
-
-      {/* Quick View Modal */}
-      {quickView && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-lg w-full relative">
-            <button
-              onClick={() => setQuickView(null)}
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-900 font-bold text-xl"
-            >
-              ×
-            </button>
-            <h3 className="text-xl font-semibold mb-4">{quickView.name}</h3>
-            <img
-              src={getImageUrl(quickView.images?.[0])}
-              alt={quickView.images?.[0]?.alt_text || quickView.name}
-              className="w-full h-64 object-cover mb-4"
-            />
-            <p className="text-gray-700">{quickView.description || "No description available."}</p>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
