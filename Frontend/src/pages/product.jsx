@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { AiOutlineHeart, AiFillHeart, AiOutlineEye } from "react-icons/ai";
 
 export default function ProductSection() {
   const [products, setProducts] = useState([]);
