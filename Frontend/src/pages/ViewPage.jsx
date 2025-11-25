@@ -1,3 +1,4 @@
+// src/pages/ProductViewPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast";
@@ -11,50 +12,56 @@ export default function ProductViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Review form state
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  const backendUrl = "http://localhost:8000";
+
+  // Helper to get full image URL with fallback
+  const getImageUrl = (img) => {
+    if (!img?.url) return "https://placehold.co/400x400?text=No+Image";
+    return img.url.startsWith("http") ? img.url : `${backendUrl}/${img.url.replace(/^\/+/, "")}`;
+  };
+
+  // Fetch product
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/users/products/${id}`);
+        const res = await fetch(`${backendUrl}/api/users/products/${id}`);
         const data = await res.json();
 
-        if (res.status === 400) setError("Invalid product ID.");
-        else if (res.status === 404) setError("Product not found.");
-        else if (!res.ok) setError("Failed to load product. Please try again later.");
-        else if (data?.product) {
+        if (!res.ok || !data?.product) {
+          setError(data?.message || "Product not found");
+        } else {
           setProduct(data.product);
           setSelectedVariant(data.product.variants?.[0] || null);
-        } else setError("Product data is empty.");
+        }
       } catch (err) {
         console.error(err);
-        setError("Failed to load product. Please try again later.");
+        setError("Failed to load product. Try again later.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchProduct();
   }, [id]);
 
   const addToCart = () => {
-    const itemToAdd = selectedVariant || product;
-    const maxStock = selectedVariant?.stock || product.stock_quantity;
+    const item = selectedVariant || product;
+    const maxStock = selectedVariant?.stock || product.stock_quantity || 10;
 
     if (quantity < 1) return toast.error("Quantity must be at least 1");
-    if (quantity > maxStock) return toast.error("Not enough stock available");
+    if (quantity > maxStock) return toast.error("Not enough stock");
 
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existing = cart.find((item) => item._id === itemToAdd._id);
+    const existing = cart.find((i) => i._id === item._id);
 
     if (existing) {
       existing.quantity += quantity;
-      cart = cart.map((item) => (item._id === itemToAdd._id ? existing : item));
+      cart = cart.map((i) => (i._id === item._id ? existing : i));
     } else {
-      cart.push({ ...itemToAdd, quantity });
+      cart.push({ ...item, quantity });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
@@ -66,20 +73,19 @@ export default function ProductViewPage() {
     if (!reviewComment.trim()) return toast.error("Comment cannot be empty");
     setSubmittingReview(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/users/products/${id}/review`, {
+      const res = await fetch(`${backendUrl}/api/users/products/${id}/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating: reviewRating, comment: reviewComment }),
       });
-
       const data = await res.json();
 
       if (!res.ok) toast.error(data.message || "Failed to submit review");
       else {
-        toast.success("Review submitted successfully!");
+        toast.success("Review submitted!");
         setProduct((prev) => ({
           ...prev,
-          reviews: [...prev.reviews, data.review],
+          reviews: [...(prev.reviews || []), data.review],
           total_reviews: (prev.total_reviews || 0) + 1,
           average_rating:
             ((prev.average_rating || 0) * (prev.total_reviews || 0) + reviewRating) /
@@ -90,23 +96,18 @@ export default function ProductViewPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to submit review. Try again.");
+      toast.error("Failed to submit review");
     } finally {
       setSubmittingReview(false);
     }
   };
 
-  const renderStars = (rating) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <span key={i} className={i <= rating ? "text-yellow-400" : "text-gray-300"}>
-          ★
-        </span>
-      );
-    }
-    return stars;
-  };
+  const renderStars = (rating) =>
+    Array.from({ length: 5 }, (_, i) => (
+      <span key={i} className={i < rating ? "text-yellow-400" : "text-gray-300"}>
+        ★
+      </span>
+    ));
 
   if (loading)
     return (
@@ -130,25 +131,18 @@ export default function ProductViewPage() {
       </div>
     );
 
-  // Dynamic values based on selected variant
-  const maxStock = selectedVariant?.stock || product.stock_quantity;
-  const unitPrice = selectedVariant?.sale_price || product.sale_price || product.price;
-  const originalUnitPrice = selectedVariant?.price || product.price;
-  const isOnSale = unitPrice < originalUnitPrice;
+  const primaryImageObj = selectedVariant?.images?.[0] || product.images?.[0];
+  const primaryImage = getImageUrl(primaryImageObj);
 
-  const discountAmountPerUnit = isOnSale ? originalUnitPrice - unitPrice : 0;
-  const discountPercentPerUnit = isOnSale ? Math.round((discountAmountPerUnit / originalUnitPrice) * 100) : 0;
+  const displayPrice = selectedVariant?.sale_price || product.sale_price || product.price;
+  const originalPrice = selectedVariant?.price || product.price;
+  const maxStock = selectedVariant?.stock || product.stock_quantity || 10;
+  const isOnSale = displayPrice < originalPrice;
+  const discountPercent = isOnSale ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100) : 0;
 
-  const totalPrice = unitPrice * quantity;
-  const totalOriginalPrice = originalUnitPrice * quantity;
-  const totalDiscountAmount = discountAmountPerUnit * quantity;
-
-  const primaryImage =
-    selectedVariant?.images?.[0]?.url ||
-    product.images?.[0]?.url ||
-    "https://placehold.co/400x400?text=No+Image";
-
-  const avgRating = product.average_rating || 0;
+  // Total price according to quantity
+  const totalPrice = displayPrice * quantity;
+  const totalOriginalPrice = originalPrice * quantity;
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -158,28 +152,25 @@ export default function ProductViewPage() {
         {/* Images */}
         <div>
           <div className="w-full h-96 mb-4 relative">
-            <img
-              src={primaryImage}
-              alt={product.name || "Product image"}
-              className="w-full h-full object-cover rounded-lg shadow"
-            />
+            <img src={primaryImage} alt={product.name} className="w-full h-full object-cover rounded-lg shadow" />
             {isOnSale && (
               <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-sm font-bold rounded">
-                -{discountPercentPerUnit}% OFF
+                -{discountPercent}% OFF
               </div>
             )}
           </div>
+
           {product.images?.length > 1 && (
             <div className="flex gap-2 overflow-x-auto mt-2">
               {product.images.map((img, idx) => (
                 <img
                   key={idx}
-                  src={img.url}
+                  src={getImageUrl(img)}
                   alt={img.alt_text || product.name}
                   className={`w-20 h-20 object-cover rounded cursor-pointer border ${
-                    primaryImage === img.url ? "border-green-600" : "border-gray-300"
+                    primaryImage === getImageUrl(img) ? "border-green-600" : "border-gray-300"
                   }`}
-                  onClick={() => setSelectedVariant((prev) => ({ ...prev, images: [img] }))}
+                  onClick={() => setSelectedVariant({ ...selectedVariant, images: [img] })}
                 />
               ))}
             </div>
@@ -189,9 +180,8 @@ export default function ProductViewPage() {
         {/* Product Details */}
         <div className="flex flex-col">
           <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-
           <div className="flex items-center mb-4">
-            <span className="flex">{renderStars(Math.round(avgRating))}</span>
+            <span className="flex">{renderStars(Math.round(product.average_rating || 0))}</span>
             <span className="ml-2 text-gray-600 text-sm">
               ({product.total_reviews || 0} review{product.total_reviews === 1 ? "" : "s"})
             </span>
@@ -199,7 +189,7 @@ export default function ProductViewPage() {
 
           <p className="text-gray-700 mb-4">{product.description}</p>
 
-          {/* Size / Variant Selector */}
+          {/* Variants */}
           {product.variants?.length > 0 && (
             <div className="mb-4">
               <label className="font-semibold mr-2">Size:</label>
@@ -209,27 +199,21 @@ export default function ProductViewPage() {
                   const price = variant.price;
                   const sale = variant.sale_price;
                   const isVariantOnSale = sale && sale < price;
-                  const variantDiscountAmount = isVariantOnSale ? price - sale : 0;
-                  const variantDiscountPercent = isVariantOnSale ? Math.round((variantDiscountAmount / price) * 100) : 0;
+                  const discount = isVariantOnSale ? Math.round(((price - sale) / price) * 100) : 0;
 
                   return (
                     <div key={variant.sku} className="flex flex-col items-center">
                       <button
-                        onClick={() => {
-                          setSelectedVariant(variant);
-                          setQuantity(1);
-                        }}
+                        onClick={() => setSelectedVariant(variant)}
                         className={`px-4 py-2 rounded border ${
-                          selectedVariant?.sku === variant.sku
-                            ? "border-green-600 bg-green-100"
-                            : "border-gray-300"
+                          selectedVariant?.sku === variant.sku ? "border-green-600 bg-green-100" : "border-gray-300"
                         }`}
                       >
                         {size}
                       </button>
                       {isVariantOnSale && (
                         <div className="text-red-500 text-xs mt-1 text-center">
-                          -{variantDiscountPercent}% | ₹{variantDiscountAmount * quantity}
+                          -{discount}% | ₹{price - sale}
                         </div>
                       )}
                     </div>
@@ -254,22 +238,10 @@ export default function ProductViewPage() {
           </div>
 
           {/* Price */}
-          <div className="mb-6">
-            <p className="text-gray-500 mb-1">Unit Price: ₹{unitPrice.toLocaleString()}</p>
-            {isOnSale && (
-              <p className="text-red-500 text-sm mb-1">
-                Discount: -₹{discountAmountPerUnit.toLocaleString()} ({discountPercentPerUnit}%)
-              </p>
-            )}
-            <p className="text-green-600 font-bold text-2xl">
-              Total: ₹{totalPrice.toLocaleString()}{" "}
-              {isOnSale && (
-                <span className="line-through text-gray-400 text-lg ml-2">
-                  ₹{totalOriginalPrice.toLocaleString()}
-                </span>
-              )}
-            </p>
-          </div>
+          <p className="text-green-600 font-bold text-2xl mb-6">
+            ₹{totalPrice.toLocaleString()}{" "}
+            {isOnSale && <span className="line-through text-gray-400 text-lg ml-2">₹{totalOriginalPrice.toLocaleString()}</span>}
+          </p>
 
           {/* Buttons */}
           <div className="flex gap-4 mb-8">
@@ -306,7 +278,7 @@ export default function ProductViewPage() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 mb-6">No reviews yet. Be the first to review this product!</p>
+          <p className="text-gray-500 mb-6">No reviews yet. Be the first to review!</p>
         )}
 
         {/* Submit Review */}
