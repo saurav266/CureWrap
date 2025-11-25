@@ -1,13 +1,27 @@
 // src/components/ProductSection.jsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
+import { motion } from "framer-motion";
+import { AiFillHeart, AiOutlineHeart, AiOutlineEye } from "react-icons/ai";
 
 export default function ProductSection() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cartCount, setCartCount] = useState(0);
+  const [animateHeart, setAnimateHeart] = useState(null);
+  const [quickView, setQuickView] = useState(null);
+
+  // Animation variants
+  const container = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.2 } },
+  };
+  const cardAnimation = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
 
   // Fetch products
   useEffect(() => {
@@ -34,7 +48,6 @@ export default function ProductSection() {
     setCartCount(totalItems);
   };
 
-  // Initialize cart count and listen for cart updates
   useEffect(() => {
     updateCartCount();
     window.addEventListener("cartUpdated", updateCartCount);
@@ -61,61 +74,71 @@ export default function ProductSection() {
   if (error) return <p className="p-10 text-center text-red-500">{error}</p>;
 
   return (
-    <section className="p-10 bg-gray-50 relative">
-      <Toaster position="top-right" reverseOrder={false} />
+    <section className="py-16 px-6 md:px-12 bg-white font-productBody">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-center text-4xl font-bold text-gray-900 mb-14 font-productTitle">
+          OUR PRODUCTS
+        </h2>
 
-      {/* Cart Icon */}
-      <div className="fixed top-5 right-5 z-50">
-        <Link to="/cart" className="relative">
-          <svg
-            className="w-8 h-8 text-gray-700 hover:text-green-600 transition"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M3 3h2l.4 2M7 13h14l-1.35 6H6.35L5 6H21" />
-          </svg>
-          {cartCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
-              {cartCount}
-            </span>
-          )}
-        </Link>
-      </div>
-
-      <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
-        Our Products
-      </h2>
-
-      {products.length === 0 && <p className="text-center text-gray-500">No products available</p>}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        {products.map((p) => {
-          const primaryImage =
-            p?.images?.find((img) => img.is_primary)?.url ||
-            p?.images?.[0]?.url ||
-            "https://placehold.co/400x400?text=No+Image";
-
-          const isOnSale = p.sale_price && p.sale_price < p.price;
-
-          return (
-            <div
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10"
+        >
+          {products.map((p) => (
+            <motion.div
               key={p._id}
-              className="border rounded-lg shadow bg-white hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col"
+              variants={cardAnimation}
+              className="relative bg-white shadow-md hover:shadow-xl transition p-3 pb-5 overflow-hidden"
             >
-              <Link to={`/product/${p._id}`}>
-                <div className="w-full h-56 bg-gray-100 mb-4 relative overflow-hidden">
-                  <img
-                    src={primaryImage}
-                    alt={p.name}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                  />
-                  {isOnSale && (
-                    <span className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-xs font-bold rounded">
-                      SALE
-                    </span>
-                  )}
+              {p.discount && (
+                <div className="absolute top-3 left-3 z-20 bg-blue-600 text-white text-sm font-bold px-2 py-1 rounded-full font-productBody">
+                  {p.discount}
                 </div>
-              </Link>
+              )}
+
+              {animateHeart === p._id && (
+                <AiFillHeart className="text-red-500 text-4xl absolute top-8 right-10 animate-floatUp opacity-0" />
+              )}
+
+              <div className="relative w-full h-[330px] overflow-hidden group">
+                <img
+                  src={p.img}
+                  alt={p.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+
+                <div className="absolute top-3 right-3 flex flex-col gap-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-30">
+                  <div className="relative group/icon">
+                    <button
+                      onClick={() => {
+                        setAnimateHeart(p._id);
+                        setTimeout(() => setAnimateHeart(null), 800);
+                      }}
+                      className="bg-white p-2 rounded-full shadow hover:scale-110 transition"
+                    >
+                      <AiOutlineHeart size={24} className="text-gray-800" />
+                    </button>
+                    <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-white shadow px-2 py-1 rounded text-xs opacity-0 font-productBody group-hover/icon:opacity-100 transition whitespace-nowrap">
+                      Add to Wishlist
+                    </span>
+                  </div>
+
+                  <div className="relative group/icon">
+                    <button
+                      onClick={() => setQuickView(p)}
+                      className="bg-white p-2 rounded-full shadow hover:scale-110 transition"
+                    >
+                      <AiOutlineEye size={24} className="text-gray-800" />
+                    </button>
+                    <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 bg-white shadow px-2 py-1 rounded text-xs opacity-0 font-productBody group-hover/icon:opacity-100 transition whitespace-nowrap">
+                      Quick View
+                    </span>
+                  </div>
+                </div>
+              </div>
 
               <div className="px-5 pb-5 flex-1 flex flex-col">
                 <Link to={`/product/${p._id}`}>
@@ -130,7 +153,7 @@ export default function ProductSection() {
 
                 <div className="mt-auto">
                   <p className="text-green-600 font-bold text-lg">
-                    {isOnSale ? (
+                    {p.sale_price ? (
                       <>
                         ₹{p.sale_price.toLocaleString()}{" "}
                         <span className="line-through text-gray-400 text-sm">
@@ -158,9 +181,9 @@ export default function ProductSection() {
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </section>
   );
