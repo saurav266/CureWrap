@@ -56,9 +56,7 @@ const Navbar = () => {
         <img
           src={assets.logo}
           alt="logo"
-          className="h-50 w-auto object-contain cursor-pointer 
-                     transition-all duration-500 
-                     hover:scale-110 hover:rotate-2 hover:drop-shadow-lg"
+          className="h-50 w-auto object-contain cursor-pointer"
         />
       </Link>
 

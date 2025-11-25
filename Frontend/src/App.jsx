@@ -10,24 +10,59 @@ import About from "./pages/about.jsx";
 import Contact from "./pages/contact.jsx";
 import Login from "./pages/login.jsx";
 import Register from "./pages/register.jsx";
-import AdminDashboard from "./components/admin/AdminDashBoard.jsx";
 import ProtectedRoute from "./components/protected/ProtectedRoute.jsx";
 import ProductViewPage from "./pages/ViewPage.jsx";
 import CartPage from "./pages/CartPage.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
+// Admin Pages
+import AdminHome from "./pages/AdminPages/Home.jsx";
+import OrderManagement from "./pages/AdminPages/Order.jsx";
+import ProductManagement from "./pages/AdminPages/Product.jsx";
+import UserManagement from "./pages/AdminPages/User.jsx";
+
 function App() {
   const { user } = useAuth();
 
-  // ✅ If logged in as admin → show only AdminDashboard
-  if (user?.email === "saurav@example.com") {
+  // SECURITY: Only THIS email can access admin panel
+  const ADMIN_EMAIL = "saurav@example.com";
+
+  // If logged in as admin → render admin routes ONLY
+  if (user?.email === ADMIN_EMAIL) {
     return (
       <Routes>
         <Route
           path="/admin"
           element={
-            <ProtectedRoute adminEmail="saurav@example.com">
-              <AdminDashboard />
+            <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+              <AdminHome />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/orders"
+          element={
+            <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+              <OrderManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/products"
+          element={
+            <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+              <ProductManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+              <UserManagement />
             </ProtectedRoute>
           }
         />
@@ -35,7 +70,7 @@ function App() {
     );
   }
 
-  // ✅ Otherwise → normal user layout
+  // Regular users → normal website
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />

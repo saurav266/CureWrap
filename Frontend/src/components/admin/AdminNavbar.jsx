@@ -11,8 +11,8 @@ const Navbar = () => {
 
   const navLinkClass = ({ isActive }) =>
     `relative group transition-all duration-300 font-semibold tracking-wide
-    ${isActive ? "text-green-600" : "text-gray-700 hover:text-green-500 hover:scale-110 hover:-translate-y-0.5"}
-    hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]`;
+   ${isActive ? "text-green-600" : "text-gray-700 hover:text-green-500 hover:scale-100 hover:-translate-y-0.5"}
+   hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]`;
 
   return (
     <div
@@ -36,19 +36,17 @@ const Navbar = () => {
           src={assets.logo}
           alt="logo"
           className="
-            h-8 w-auto object-contain cursor-pointer
-            transition-all duration-500 
-            hover:scale-110 hover:rotate-2 hover:drop-shadow-lg
+            h-50 w-auto object-contain cursor-pointer
           "
         />
       </Link>
 
       {/* Desktop Menu */}
-      <ul className="hidden sm:flex gap-8 text-lg items-center font-semibold tracking-wide">
-        <NavLink to="/" className={navLinkClass}>HOME</NavLink>
-        <NavLink to="/product" className={navLinkClass}>PRODUCT</NavLink>
-        <NavLink to="/order" className={navLinkClass}>ORDER</NavLink>
-        <NavLink to="/user" className={navLinkClass}>USER</NavLink>
+      <ul className="hidden sm:flex gap-16 text-lg items-center font-semibold tracking-wide">
+        <NavLink to="/admin" className={navLinkClass}>DASHBOARD</NavLink>
+        <NavLink to="/admin/products" className={navLinkClass}>PRODUCT</NavLink>
+        <NavLink to="/admin/orders" className={navLinkClass}>ORDER</NavLink>
+        <NavLink to="/admin/users" className={navLinkClass}>USER</NavLink>
       </ul>
 
       {/* Right Icons */}
@@ -81,7 +79,7 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="absolute top-16 left-0 w-full bg-white/95 backdrop-blur-md shadow-md flex flex-col items-center gap-6 py-6 sm:hidden animate-fadeIn">
-          <NavLink to="/" className={navLinkClass} onClick={() => setMobileOpen(false)}>HOME</NavLink>
+          <NavLink to="/admin" className={navLinkClass} onClick={() => setMobileOpen(false)}>DASHBOARD</NavLink>
           <NavLink to="/product" className={navLinkClass} onClick={() => setMobileOpen(false)}>PRODUCT</NavLink>
           <NavLink to="/order" className={navLinkClass} onClick={() => setMobileOpen(false)}>ORDER</NavLink>
           <NavLink to="/user" className={navLinkClass} onClick={() => setMobileOpen(false)}>USER</NavLink>
