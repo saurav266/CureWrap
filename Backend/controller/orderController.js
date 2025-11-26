@@ -203,7 +203,7 @@
 // };
 
 
-import { Order } from "../models/Order.js";
+import {Order}  from "../model/orderSchema.js";
 
 // Place order (COD + Razorpay)
 export const placeOrder = async (req, res) => {

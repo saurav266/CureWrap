@@ -13,6 +13,7 @@ export default function ProductViewPage() {
   // ------------------------------
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,6 +25,7 @@ export default function ProductViewPage() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [zoom, setZoom] = useState(false);
 
+  const [touchStartX, setTouchStartX] = useState(null); // swipe
   const [related, setRelated] = useState([]);
 
   // AUTH & PURCHASE STATE
@@ -57,11 +59,28 @@ export default function ProductViewPage() {
           setError(data?.message || "Product not found");
           setProduct(null);
         } else {
-          setProduct(data.product);
-          setSelectedVariant(data.product.variants?.[0] || null);
+          const p = data.product;
+          setProduct(p);
+
+          // Default colour & size selection
+          if (Array.isArray(p.colors) && p.colors.length > 0) {
+            setSelectedColorIndex(0);
+            const firstColor = p.colors[0];
+            if (Array.isArray(firstColor.sizes) && firstColor.sizes.length > 0) {
+              setSelectedVariant(firstColor.sizes[0]);
+            } else {
+              setSelectedVariant(null);
+            }
+          } else if (Array.isArray(p.variants) && p.variants.length > 0) {
+            setSelectedVariant(p.variants[0]);
+          } else {
+            setSelectedVariant(null);
+          }
+
+          setGalleryIndex(0);
         }
 
-        // Fetch related products (optional)
+        // Related products
         try {
           const relRes = await fetch(`${backendUrl}/api/users/products?limit=4`);
           const relData = await relRes.json();
@@ -73,21 +92,15 @@ export default function ProductViewPage() {
           setRelated([]);
         }
 
-        // ------------------------------
-        // AUTH CHECK (localStorage token)
-        // ------------------------------
+        // AUTH CHECK
         const token = localStorage.getItem("user");
         setIsLoggedIn(!!token);
 
-        // ------------------------------
-        // PURCHASE CHECK (frontend dummy)
-        // ------------------------------
+        // PURCHASE CHECK
         const orders = JSON.parse(localStorage.getItem("orders")) || [];
-
         const purchased = orders.some((order) =>
           order.items?.some((item) => item.productId === id)
         );
-
         setHasPurchased(purchased);
       } catch (err) {
         console.error(err);
@@ -100,21 +113,75 @@ export default function ProductViewPage() {
   }, [id]);
 
   // ------------------------------
-  // PRICE & STOCK CALCULATION
+  // COLOR & VARIANT DERIVED DATA
   // ------------------------------
-  const primaryImageObj = useMemo(() => {
-    const variantImg = selectedVariant?.images?.[0];
-    if (variantImg) return variantImg;
-    return product?.images?.[galleryIndex] || product?.images?.[0] || null;
-  }, [product, selectedVariant, galleryIndex]);
+  const selectedColor = useMemo(
+    () => product?.colors?.[selectedColorIndex] || null,
+    [product, selectedColorIndex]
+  );
 
+  const sizeOptions = useMemo(() => {
+    if (selectedColor?.sizes?.length) return selectedColor.sizes;
+    if (product?.variants?.length) return product.variants;
+    return [];
+  }, [selectedColor, product]);
+
+  // ------------------------------
+  // MAIN IMAGE SLIDER (product.images ONLY)
+  // ------------------------------
+  const images = product?.images || [];
+
+  const primaryImageObj = images[galleryIndex] || images[0] || null;
   const primaryImage = getImageUrl(primaryImageObj);
 
+  const handleNextImage = () => {
+    if (!images.length) return;
+    setGalleryIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrevImage = () => {
+    if (!images.length) return;
+    setGalleryIndex((prev) =>
+      prev - 1 < 0 ? images.length - 1 : prev - 1
+    );
+  };
+
+  // Reset slider when product changes
+  useEffect(() => {
+    setGalleryIndex(0);
+  }, [id]);
+
+  // Autoplay slider
+  useEffect(() => {
+    if (!images.length || images.length === 1) return;
+    const interval = setInterval(() => {
+      setGalleryIndex((prev) => (prev + 1) % images.length);
+    }, 3000); // 3 seconds
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  // Swipe handlers (mobile)
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartX;
+    const threshold = 50; // min swipe distance
+    if (diff > threshold) {
+      handlePrevImage();
+    } else if (diff < -threshold) {
+      handleNextImage();
+    }
+    setTouchStartX(null);
+  };
+
+  // ------------------------------
+  // PRICE & STOCK CALCULATION
+  // ------------------------------
   const displayPrice =
-    selectedVariant?.sale_price ??
-    product?.sale_price ??
-    product?.price ??
-    0;
+    selectedVariant?.sale_price ?? product?.sale_price ?? product?.price ?? 0;
 
   const originalPrice =
     selectedVariant?.price ?? product?.price ?? displayPrice;
@@ -127,13 +194,23 @@ export default function ProductViewPage() {
   const totalPrice = displayPrice * quantity;
   const totalOriginalPrice = originalPrice * quantity;
 
-  const maxStock =
-    selectedVariant?.stock ?? product?.stock_quantity ?? 10;
+  const maxStock = selectedVariant?.stock ?? product?.stock_quantity ?? 10;
+
+  const hasColourSizeOptions =
+    (product?.colors && product.colors.length > 0) ||
+    (product?.variants && product.variants.length > 0);
+
+  const canBuy = !hasColourSizeOptions || !!selectedVariant;
 
   // ------------------------------
   // ADD TO CART
   // ------------------------------
   const addToCart = () => {
+    if (hasColourSizeOptions && !selectedVariant) {
+      toast.error("Please select a size first.");
+      return;
+    }
+
     const item = selectedVariant || product;
     if (!item) return toast.error("No product selected.");
 
@@ -141,13 +218,30 @@ export default function ProductViewPage() {
     if (quantity > maxStock) return toast.error("Not enough stock");
 
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existing = cart.find((i) => i._id === item._id);
+
+    const existing = cart.find(
+      (i) =>
+        i.productId === product._id &&
+        i.size === item.size &&
+        i.color === (selectedColor?.color || i.color)
+    );
 
     if (existing) {
       existing.quantity += quantity;
-      cart = cart.map((i) => (i._id === item._id ? existing : i));
+      cart = cart.map((i) =>
+        i.productId === product._id &&
+        i.size === item.size &&
+        i.color === selectedColor?.color
+          ? existing
+          : i
+      );
     } else {
-      cart.push({ ...item, quantity });
+      cart.push({
+        ...item,
+        productId: product._id,
+        color: selectedColor?.color || item.color,
+        quantity,
+      });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
@@ -204,9 +298,7 @@ export default function ProductViewPage() {
     Array.from({ length: 5 }, (_, i) => (
       <span
         key={i}
-        className={`text-xl ${
-          i < rating ? "text-yellow-400" : "text-gray-300"
-        }`}
+        className={`text-xl ${i < (rating || 0) ? "text-yellow-400" : "text-gray-300"}`}
       >
         ★
       </span>
@@ -244,9 +336,7 @@ export default function ProductViewPage() {
     <div className="max-w-7xl mx-auto p-6">
       <Toaster position="top-right" />
 
-      {/* ---------------------------------- */}
       {/* GALLERY + BUY AREA */}
-      {/* ---------------------------------- */}
       <div className="grid lg:grid-cols-12 gap-10">
         {/* LEFT: Gallery */}
         <div className="lg:col-span-7">
@@ -257,64 +347,60 @@ export default function ProductViewPage() {
               </div>
             )}
 
+            {/* MAIN IMAGE SLIDER ONLY */}
             <div
-              className="w-full h-[500px] bg-gray-100 overflow-hidden grid place-items-center"
+              className="relative w-full h-[500px] bg-gray-100 overflow-hidden grid place-items-center"
               onMouseEnter={() => setZoom(true)}
               onMouseLeave={() => setZoom(false)}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
             >
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-10 h-10 grid place-items-center shadow"
+                  >
+                    ‹
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleNextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-10 h-10 grid place-items-center shadow"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+
               <motion.img
+                key={galleryIndex}
                 src={primaryImage}
-                className={`w-full h-full object-cover transition-transform duration-300 ${
+                className={`w-full h-full object-cover transition-all duration-500 ${
                   zoom ? "scale-105" : "scale-100"
                 }`}
               />
             </div>
           </div>
 
-          {/* Thumbnails */}
-          <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
-            {product.images?.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setGalleryIndex(idx);
-                  setSelectedVariant(null);
-                }}
-                className={`w-20 h-20 rounded-lg overflow-hidden border ${
-                  galleryIndex === idx && !selectedVariant
-                    ? "border-green-600 ring-2 ring-green-200"
-                    : "border-gray-300"
-                }`}
-              >
-                <img
-                  src={getImageUrl(img)}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-
-            {/* Variant thumbnails */}
-            {product.variants?.map((v, i) => {
-              const vimg = v.images?.[0];
-              if (!vimg) return null;
-              return (
+          {/* DOT INDICATORS */}
+          {images.length > 1 && (
+            <div className="mt-4 flex justify-center gap-2">
+              {images.map((img, idx) => (
                 <button
-                  key={i}
-                  onClick={() => setSelectedVariant(v)}
-                  className={`w-20 h-20 rounded-lg overflow-hidden border ${
-                    selectedVariant?.sku === v.sku
-                      ? "border-green-600 ring-2 ring-green-200"
-                      : "border-gray-300"
+                  key={img._id || idx}
+                  onClick={() => setGalleryIndex(idx)}
+                  className={`w-2.5 h-2.5 rounded-full transition ${
+                    galleryIndex === idx
+                      ? "bg-green-600 scale-110"
+                      : "bg-gray-300 hover:bg-gray-400"
                   }`}
-                >
-                  <img
-                    src={getImageUrl(vimg)}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              );
-            })}
-          </div>
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* RIGHT: Details & Buy Panel */}
@@ -324,40 +410,79 @@ export default function ProductViewPage() {
           </h1>
 
           <div className="flex items-center gap-3 mt-3">
-            <div className="flex">{renderStars(product.average_rating)}</div>
+            <div className="flex">{renderStars(product.average_rating || 0)}</div>
             <span className="text-gray-600 text-sm">
               ({product.total_reviews || 0} reviews)
             </span>
           </div>
 
-          {/* Short Description */}
-          <p className="mt-4 text-gray-700 leading-relaxed">
-            {product.short_description || product.description}
-          </p>
+          {/* Selected colour & size summary */}
+          <div className="mt-2 text-sm text-gray-600 space-x-3">
+            {selectedColor && (
+              <span>
+                Colour: <span className="font-semibold">{selectedColor.color}</span>
+              </span>
+            )}
+            {selectedVariant?.size && (
+              <span>
+                Size: <span className="font-semibold">{selectedVariant.size}</span>
+              </span>
+            )}
+          </div>
 
-          {/* Variants */}
-          {product.variants?.length > 0 && (
+          {/* Short Description */}
+          {/* <p className="mt-4 text-gray-700 leading-relaxed">
+            {product.short_description || product.description}
+          </p> */}
+
+          {/* COLOR SELECTOR */}
+          {product.colors?.length > 0 && (
+            <div className="mt-6">
+              <span className="font-semibold text-sm">Choose Colour</span>
+              <div className="flex flex-wrap gap-3 mt-2">
+                {product.colors.map((c, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setSelectedColorIndex(index);
+                      const col = product.colors[index];
+                      if (col?.sizes?.length) {
+                        setSelectedVariant(col.sizes[0]);
+                      } else {
+                        setSelectedVariant(null);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-lg border ${
+                      selectedColorIndex === index
+                        ? "border-green-600 bg-green-50"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    {c.color}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SIZE SELECTOR */}
+          {sizeOptions.length > 0 && (
             <div className="mt-6">
               <span className="font-semibold text-sm">Choose Size</span>
               <div className="flex flex-wrap gap-3 mt-2">
-                {product.variants.map((v) => {
-                  const size =
-                    v.attributes?.find((a) => a.key === "size")?.value ||
-                    v.sku;
-                  return (
-                    <button
-                      key={v.sku}
-                      onClick={() => setSelectedVariant(v)}
-                      className={`px-4 py-2 rounded-lg border ${
-                        selectedVariant?.sku === v.sku
-                          ? "border-green-600 bg-green-50"
-                          : "border-gray-300 bg-white"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
+                {sizeOptions.map((v, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedVariant(v)}
+                    className={`px-4 py-2 rounded-lg border ${
+                      selectedVariant?.size === v.size
+                        ? "border-green-600 bg-green-50"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    {v.size}
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -394,6 +519,10 @@ export default function ProductViewPage() {
                 +
               </button>
             </div>
+
+            <div className="mt-1 text-xs text-gray-500">
+              {maxStock > 0 ? `In stock: ${maxStock}` : "Out of stock"}
+            </div>
           </div>
 
           {/* Price Card */}
@@ -413,16 +542,27 @@ export default function ProductViewPage() {
             <div className="mt-4 flex gap-4">
               <button
                 onClick={addToCart}
-                className="flex-1 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                disabled={!canBuy}
+                className={`flex-1 py-3 rounded-lg font-semibold ${
+                  canBuy
+                    ? "bg-green-600 text-white hover:bg-green-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
               >
-                Add to Cart
+                {canBuy ? "Add to Cart" : "Select size first"}
               </button>
               <button
                 onClick={() => {
+                  if (!canBuy) return;
                   addToCart();
                   navigate("/checkout");
                 }}
-                className="flex-1 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50"
+                disabled={!canBuy}
+                className={`flex-1 py-3 border rounded-lg font-semibold ${
+                  canBuy
+                    ? "border-gray-300 hover:bg-gray-50"
+                    : "border-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
               >
                 Buy Now
               </button>
@@ -431,9 +571,7 @@ export default function ProductViewPage() {
         </div>
       </div>
 
-      {/* ---------------------------------- */}
       {/* FULL DESCRIPTION SECTION */}
-      {/* ---------------------------------- */}
       <div className="mt-16">
         <h2 className="text-2xl font-bold mb-4">Product Description</h2>
         <p className="text-gray-700 leading-relaxed whitespace-pre-line">
@@ -442,12 +580,9 @@ export default function ProductViewPage() {
         </p>
       </div>
 
-      {/* ---------------------------------- */}
       {/* REVIEWS */}
-      {/* ---------------------------------- */}
       <div className="mt-16">
         <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
-
         {product.reviews?.length > 0 ? (
           <div className="space-y-4">
             {product.reviews.map((r, idx) => (
@@ -460,7 +595,9 @@ export default function ProductViewPage() {
                   <div className="flex items-center gap-2">
                     <div className="flex">{renderStars(r.rating)}</div>
                     <span className="text-gray-500 text-sm">
-                      {new Date(r.created_at).toLocaleDateString()}
+                      {r.created_at
+                        ? new Date(r.created_at).toLocaleDateString()
+                        : ""}
                     </span>
                   </div>
                 </div>
@@ -473,13 +610,12 @@ export default function ProductViewPage() {
         )}
       </div>
 
-      {/* ---------------------------------- */}
-      {/* WRITE REVIEW SECTION */}
-      {/* ---------------------------------- */}
+      {/* WRITE REVIEW */}
       <div className="mt-12 border rounded-lg p-6 bg-white">
         {!isLoggedIn && (
           <p className="text-gray-600">
-            ⭐ <span className="font-semibold text-red-500">Login required</span>{" "}
+            ⭐{" "}
+            <span className="font-semibold text-red-500">Login required</span>{" "}
             to write a review.
           </p>
         )}
@@ -519,7 +655,7 @@ export default function ProductViewPage() {
             <button
               onClick={submitReview}
               disabled={submittingReview}
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+              className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-300"
             >
               {submittingReview ? "Submitting..." : "Submit Review"}
             </button>
@@ -527,13 +663,10 @@ export default function ProductViewPage() {
         )}
       </div>
 
-      {/* ---------------------------------- */}
       {/* RELATED PRODUCTS */}
-      {/* ---------------------------------- */}
       {related?.length > 0 && (
         <div className="mt-16">
           <h2 className="text-2xl font-bold mb-4">You May Also Like</h2>
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {related.map((r) => (
               <div
@@ -547,9 +680,7 @@ export default function ProductViewPage() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <p className="font-semibold text-gray-900 text-sm">
-                  {r.name}
-                </p>
+                <p className="font-semibold text-gray-900 text-sm">{r.name}</p>
                 <p className="text-green-700 font-bold text-sm">
                   ₹{(r.sale_price || r.price).toLocaleString()}
                 </p>
