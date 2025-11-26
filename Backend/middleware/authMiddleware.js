@@ -30,3 +30,13 @@ export const unifiedLogin = async (req, res) => {
     return res.status(500).json({ message: "Login failed", error: error.message });
   }
 };
+export const verifyAdmin = (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    next();
+  } catch (err) {
+    res.status(401).json({ message: "Not authorized" });
+  }
+};

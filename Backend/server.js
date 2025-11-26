@@ -6,7 +6,7 @@ import cors from "cors";
 import { testTwilio } from "./controller/userController.js";
 import cartRoute from "./route/cartRoute.js";
 import orderRoutes from "./route/orderRoute.js";
-
+import adminRoutes from "./route/adminROute.js";
 // import ProductRoute from "./route/productRoute.js";
 
 connectDB();
@@ -25,7 +25,9 @@ app.use(express.json());
 app.use("/api/users", userRoute);
 app.use("/api/cart", cartRoute);
 app.use("/api/orders", orderRoutes);
+app.use("/api/admin", adminRoutes);
 // app.use("/api/products", ProductRoute);
+
 
 // Test route
 app.post("/test-twilio", testTwilio);

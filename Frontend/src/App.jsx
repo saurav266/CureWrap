@@ -19,12 +19,14 @@ import { useAuth } from "./context/AuthContext.jsx";
 
 // Admin Pages
 import AdminHome from "./pages/AdminPages/Home.jsx";
-import OrderManagement from "./pages/AdminPages/Order.jsx";
+
 import AdminProductPage from "./components/admin/Product.jsx";
 import EditProductPage from "./components/admin/EditProduct.jsx";
 import AddProductPage from "./components/admin/AddProduct.jsx";
 import UserManagement from "./pages/AdminPages/User.jsx";
 import AdminNavbar from "./components/admin/AdminNavbar.jsx";
+// for order
+import AllOrder from "./components/admin/order/AllOrder.jsx";
 
 // Checkouts
 import CheckoutPage from "./pages/CheckoutPage";
@@ -81,7 +83,7 @@ if (user?.email === ADMIN_EMAIL) {
         element={
           <ProtectedRoute adminEmail={ADMIN_EMAIL}>
             <AdminNavbar />
-            <OrderManagement />
+            <AllOrder />
           </ProtectedRoute>
         }
       />
