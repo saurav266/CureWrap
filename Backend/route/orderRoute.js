@@ -4,22 +4,22 @@ import {
   getUserOrders,
   getOrderById,
   updateTracking,
-} from "../controllers/orderController.js";
+} from "../controller/orderController.js";
 import {
   createRazorpayOrder,
   verifyRazorpayPayment,
-} from "../controllers/paymentController.js";
-import { auth } from "../middleware/auth.js"; // you will create auth
+} from "../controller/paymentController.js";
+ // you will create auth
 
 const router = express.Router();
 
-router.post("/place", auth, placeOrder);
-router.get("/my-orders", auth, getUserOrders);
-router.get("/:id", auth, getOrderById);
+router.post("/place",  placeOrder);
+router.get("/my-orders",  getUserOrders);
+router.get("/:id",  getOrderById);
 router.patch("/:id/tracking", updateTracking); // admin later
 
 // Payments
-router.post("/razorpay/create", auth, createRazorpayOrder);
-router.post("/razorpay/verify", auth, verifyRazorpayPayment);
+router.post("/razorpay/create", createRazorpayOrder);
+router.post("/razorpay/verify",  verifyRazorpayPayment);
 
 export default router;

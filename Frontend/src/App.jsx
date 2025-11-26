@@ -20,19 +20,21 @@ import { useAuth } from "./context/AuthContext.jsx";
 // Admin Pages
 import AdminHome from "./pages/AdminPages/Home.jsx";
 import OrderManagement from "./pages/AdminPages/Order.jsx";
-import ProductManagement from "./pages/AdminPages/Product.jsx";
+import AdminProductPage from "./components/admin/Product.jsx";
+import EditProductPage from "./components/admin/EditProduct.jsx";
+import AddProductPage from "./components/admin/AddProduct.jsx";
 import UserManagement from "./pages/AdminPages/User.jsx";
 import AdminNavbar from "./components/admin/AdminNavbar.jsx";
-//checkouts
+
+// Checkouts
 import CheckoutPage from "./pages/CheckoutPage";
 import PaymentPage from "./pages/PaymentPage";
 import OrderPlaced from "./pages/OrderPlaced";
 import CartDrawer from "./components/CartDrawer";
 import { useState, useEffect } from "react";
-//track order
+
+// Track order
 import OrderTrackingPage from "./pages/OrderTrackingPage";
-
-
 
 function App() {
   const [cartOpen, setCartOpen] = useState(false);
@@ -44,63 +46,94 @@ function App() {
   }, []);
 
   const { user } = useAuth();
-
-  // SECURITY: Only THIS email can access admin panel
   const ADMIN_EMAIL = "saurav@example.com";
   const location = useLocation();
-
-  const hideFooterOn = ["/login", "/register", "/cart","/checkout", "/checkout/payment", "/checkout/success","/orders/:id","/orders"];
+  const hideFooterOn = [
+    "/login",
+    "/register",
+    "/cart",
+    "/checkout",
+    "/checkout/payment",
+    "/checkout/success",
+    "/orders/:id",
+    "/orders",
+  ];
   const shouldHideFooter = hideFooterOn.includes(location.pathname);
 
+  // Admin routes
+ // Admin routes
+// Admin routes
+if (user?.email === ADMIN_EMAIL) {
+  return (
+    <Routes>
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+            <AdminNavbar />
+            <AdminHome />
+          </ProtectedRoute>
+        }
+      />
 
-  // If logged in as admin → render admin routes ONLY
-  if (user?.email === ADMIN_EMAIL) {
-    return (
-      <Routes>
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute adminEmail={ADMIN_EMAIL}>
-              <AdminNavbar />
-              <AdminHome />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/admin/orders"
+        element={
+          <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+            <AdminNavbar />
+            <OrderManagement />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/admin/orders"
-          element={
-            <ProtectedRoute adminEmail={ADMIN_EMAIL}>
-              <AdminNavbar />
-              <OrderManagement />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/admin/products"
+        element={
+          <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+            <AdminNavbar />
+            <AdminProductPage />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/admin/products"
-          element={
-            <ProtectedRoute adminEmail={ADMIN_EMAIL}>
-              <AdminNavbar />
-              <ProductManagement />
-            </ProtectedRoute>
-          }
-        />
+      {/* ADD PRODUCT ROUTE */}
+      <Route
+        path="/admin/products/new"
+        element={
+          <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+            <AdminNavbar />
+            <AddProductPage />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/admin/users"
-          element={
-            <ProtectedRoute adminEmail={ADMIN_EMAIL}>
-              <AdminNavbar />
-              <UserManagement />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    );
-  }
+      {/* Edit Product */}
+      <Route
+        path="/admin/products/edit/:id"
+        element={
+          <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+            <AdminNavbar />
+            <EditProductPage />
+          </ProtectedRoute>
+        }
+      />
 
-  // Regular users → normal website
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+            <AdminNavbar />
+            <UserManagement />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
+}
+
+
+
+  // Regular users
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
