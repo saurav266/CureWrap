@@ -138,7 +138,7 @@ export default function ProductSection() {
                 >
                   {/* Sale badge (inside padding so it never overlaps the image) */}
                   {isOnSale && (
-                    <div className="absolute top-4 left-4 bg-green-600 text-white text-xs px-3 py-1 rounded-full shadow">
+                    <div className="absolute top-4 left-4 bg-green-600 text-white text-xs px-3 py-1 rounded-full shadow z-10">
                       {discount}% OFF
                     </div>
                   )}

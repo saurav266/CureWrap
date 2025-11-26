@@ -1,9 +1,10 @@
 // src/pages/CartPage.jsx
 import React, { useEffect, useState } from "react";
+import CartDrawer from "../components/CartDrawer";
 
 export default function CartPage() {
   const [cart, setCart] = useState([]);
-
+  const [open, setOpen] = useState(true);
   const loadCart = () => {
     const cartData = JSON.parse(localStorage.getItem("cart")) || [];
     setCart(cartData);
@@ -167,7 +168,7 @@ export default function CartPage() {
             <div className="text-2xl font-bold">₹{calculateSubtotal().toLocaleString()}</div>
           </div>
           <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
-            Proceed to Checkout
+            <a href="/checkout">Proceed to Checkout</a>
           </button>
         </div>
       </div>

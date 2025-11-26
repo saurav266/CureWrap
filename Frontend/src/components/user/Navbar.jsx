@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
-
+import MiniCart from "./MiniCart.jsx";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { RiPokerHeartsLine } from "react-icons/ri";
 import { FiUser } from "react-icons/fi";
 import { AiOutlineShoppingCart } from "react-icons/ai";
-
+import {motion} from "framer-motion";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 // Shared nav link style (desktop)
@@ -21,6 +21,8 @@ const Navbar = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [miniCartOpen, setMiniCartOpen] = useState(false);
+  const [cart, setCart] = useState([]);
 
   // Update cart count
   useEffect(() => {
@@ -35,6 +37,47 @@ const Navbar = () => {
 
     return () => window.removeEventListener("cartUpdated", updateCart);
   }, []);
+
+  useEffect(() => {
+    const loadCart = () => {
+      const items = JSON.parse(localStorage.getItem("cart")) || [];
+      setCart(items);
+    };
+    loadCart();
+    window.addEventListener("cartUpdated", loadCart);
+    return () => window.removeEventListener("cartUpdated", loadCart);
+  }, []);
+
+  useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (!e.target.closest(".mini-cart") && !e.target.closest("#cart-icon-btn")) {
+      setMiniCartOpen(false);
+    }
+  };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
+  // ---- Add To Cart (Mini products in Mega Menu) ----
+const addToCart = (product) => {
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+  const existing = cart.find((item) => item.title === product.title);
+
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cart.push({ ...product, quantity: 1 });
+  }
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  window.dispatchEvent(new Event("cartUpdated"));
+
+  // Optional: show toast if you want
+  // toast.success(`${product.title} added to cart`);
+};
+
 
   return (
     <div className="
@@ -94,11 +137,11 @@ const Navbar = () => {
           >
             <div className="flex gap-4 flex-nowrap">
               {[
-                { title: "Product 1", price: "₹25.00" },
-                { title: "Product 2", price: "₹35.00" },
-                { title: "Product 3", price: "₹40.00" },
-                { title: "Product 4", price: "₹50.00" },
-                { title: "Product 5", price: "₹60.00" },
+                { title: "Product 1", price: 25.00 },
+                { title: "Product 2", price: 35.00 },
+                { title: "Product 3", price: 40.00 },
+                { title: "Product 4", price: 50.00 },
+                { title: "Product 5", price: 60.00 },
               ].map((p, i) => (
                 <div
                   key={i}
@@ -125,11 +168,18 @@ const Navbar = () => {
                       </p>
                     </div>
 
-                    <button className="
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(p);
+                      }}
+                    className="
                       bg-green-600 text-white text-[11px]
                       py-1 rounded-md w-full 
                       hover:bg-green-700 transition
-                    ">
+                    "
+                    aria-label={`Add ${p.name} to cart`}
+                    >
                       Add to Cart
                     </button>
                   </div>
@@ -198,22 +248,25 @@ const Navbar = () => {
         </div>
 
         {/* Cart */}
-        <Link to="/cart" className="relative">
-          <AiOutlineShoppingCart className="
-            h-7 w-7 cursor-pointer 
-            transition-all duration-300 
-            hover:scale-125 hover:text-green-500
-          " />
+        <div className="relative">
+          <button
+            id ="cart-icon-btn"
+            onClick={() => setMiniCartOpen((prev) => !prev)}
+            className="relative"
+          >
+            <AiOutlineShoppingCart
+              className="h-7 w-7 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500"
+            />
+            <span className="absolute -right-2 -bottom-2 w-5 h-5 rounded-full bg-black text-white text-xs flex items-center justify-center shadow-md">
+              {cartCount}
+            </span>
+          </button>
 
-          <span className="
-            absolute -right-2 -bottom-2 
-            w-5 h-5 rounded-full 
-            bg-black text-white 
-            text-xs flex items-center justify-center shadow-md
-          ">
-            {cartCount}
-          </span>
-        </Link>
+          {/* Mini Cart Component */}
+          <MiniCart open={miniCartOpen} cart={cart} onClose={() => setMiniCartOpen(false)} />
+        </div>
+
+
 
         {/* Hamburger */}
         <button
