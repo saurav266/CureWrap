@@ -321,15 +321,6 @@ export default function ContactUsPremium() {
             </motion.div>
           </div>
         </section>
-
-        {/* small footer CTA */}
-        <section className="py-12">
-          <div className="bg-white rounded-2xl p-8 shadow-lg text-center">
-            <h4 className="text-xl font-semibold mb-2">Prefer a live chat?</h4>
-            <p className="text-gray-600 mb-4">Click the chat icon on the bottom-right and we’ll be with you in seconds.</p>
-            <button className="px-6 py-2 rounded-full bg-gradient-to-r from-[#2F86D6] to-[#63B46B] text-white font-semibold shadow hover:scale-[1.02] transition">Start Chat</button>
-          </div>
-        </section>
       </main>
 
     </div>

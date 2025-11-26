@@ -1,28 +1,25 @@
-// routes/orderRoute.js
-import { Router } from "express";
+import express from "express";
 import {
-  createOrderCOD,
-  createStripeSession,
-  stripeWebhookHandler,
-  createRazorpayOrder,
-  verifyRazorpayPayment
+  placeOrder,
+  getUserOrders,
+  getOrderById,
+  updateTracking,
 } from "../controllers/orderController.js";
+import {
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+} from "../controllers/paymentController.js";
+import { auth } from "../middleware/auth.js"; // you will create auth
 
-const router = Router();
+const router = express.Router();
 
-// COD order
-router.post("/create-cod", createOrderCOD);
+router.post("/place", auth, placeOrder);
+router.get("/my-orders", auth, getUserOrders);
+router.get("/:id", auth, getOrderById);
+router.patch("/:id/tracking", updateTracking); // admin later
 
-// Stripe checkout
-router.post("/create-stripe-session", createStripeSession);
-
-// Stripe webhook (raw body)
-router.post("/webhook/stripe", stripeWebhookHandler);
-
-// Razorpay create order
-router.post("/razorpay/create", createRazorpayOrder);
-
-// Razorpay verify payment
-router.post("/razorpay/verify", verifyRazorpayPayment);
+// Payments
+router.post("/razorpay/create", auth, createRazorpayOrder);
+router.post("/razorpay/verify", auth, verifyRazorpayPayment);
 
 export default router;
