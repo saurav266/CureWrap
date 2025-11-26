@@ -5,12 +5,12 @@ import { useLocation } from "react-router-dom";
 import Navbar from "./components/user/Navbar.jsx";
 import Footer from "./components/Footer";
 
-import Home from "./pages/home.jsx";
-import Product from "./pages/product.jsx";
-import About from "./pages/about.jsx";
-import Contact from "./pages/contact.jsx";
+import Home from "./pages/Homeuser.jsx";
+import Product from "./pages/Product.jsx";
+import About from "./pages/About.jsx";
+import Contact from "./pages/Contact.jsx";
 import Login from "./pages/login.jsx";
-import Register from "./pages/register.jsx";
+import Register from "./pages/Register.jsx";
 import MyOrders from "./pages/MyOrders";
 import ProtectedRoute from "./components/protected/ProtectedRoute.jsx";
 import ProductViewPage from "./pages/ViewPage.jsx";
