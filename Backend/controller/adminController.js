@@ -2,6 +2,10 @@ import jwt from "jsonwebtoken";
 import twilio from "twilio";
 import 'dotenv/config';
 import User from "../model/user.js";
+
+import Order from "../model/orderSchema.js";
+import mongoose from "mongoose";
+
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
@@ -47,4 +51,62 @@ export const loginAdmin = async (req, res) => {
   }
 };
 
+
+
+export const getAdminStats = async (req, res) => {
+  try {
+    // Total Users
+    const usersCount = await User.countDocuments();
+
+    // Total Orders
+    const ordersCount = await Order.countDocuments();
+
+    // Total Revenue (sum of `total` field)
+    const revenueData = await Order.aggregate([
+      { $group: { _id: null, totalRevenue: { $sum: "$total" } } }
+    ]);
+
+    const totalRevenue = revenueData[0]?.totalRevenue || 0;
+
+    // Monthly Revenue Graph
+    const revenueGraph = await Order.aggregate([
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" } },
+          value: { $sum: "$total" }
+        }
+      },
+      { $sort: { "_id.month": 1 } }
+    ]);
+
+    // Monthly order count (sales chart)
+    const sales = await Order.aggregate([
+      {
+        $group: {
+          _id: { month: { $month: "$createdAt" } },
+          value: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.month": 1 } }
+    ]);
+
+    return res.json({
+      success: true,
+      usersCount,
+      ordersCount,
+      totalRevenue,
+      sales: sales.map((s) => ({
+        label: `Month ${s._id.month}`,
+        value: s.value,
+      })),
+      revenueGraph: revenueGraph.map((r) => ({
+        label: `Month ${r._id.month}`,
+        value: r.value,
+      })),
+    });
+  } catch (err) {
+    console.error("Admin Stats Error:", err);
+    res.status(500).json({ success: false, message: "Failed to load stats" });
+  }
+};
 

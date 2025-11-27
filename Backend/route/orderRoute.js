@@ -3,7 +3,8 @@ import {
   placeOrder,
   getUserOrders,
   getOrderById,
-  updateTracking,
+  getAllOrders
+  
 } from "../controller/orderController.js";
 import {
   createRazorpayOrder,
@@ -16,7 +17,8 @@ const router = express.Router();
 router.post("/place",  placeOrder);
 router.get("/my-orders",  getUserOrders);
 router.get("/:id",  getOrderById);
-router.patch("/:id/tracking", updateTracking); // admin later
+router.get("/", getAllOrders); // admin later
+// router.patch("/:id/tracking", updateTracking); // admin later
 
 // Payments
 router.post("/razorpay/create", createRazorpayOrder);
