@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-
+import { assets } from "../assets/frontend_assets/assets";
 // Brand gradient (use your CureWrap identity)
 const brandGradient =
   "bg-gradient-to-r from-[#2F86D6]/80 to-[#63B46B]/80";
@@ -7,22 +7,22 @@ const brandGradient =
 const activities = [
   { 
     name: "Gym / Workout", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png",
+    img: assets.gym,
     link: "https://share.google/images/J5AtnOEF53f0AkotV" 
   },
   { 
     name: "Running / Jogging", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
+    img: assets.jogging, 
     link: "https://share.google/images/EAK8nMNEaXgHZOLdH" 
   },
   { 
-    name: "Yoga / Pilates", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
+    name: "Yoga / Stretching", 
+    img: assets.yoga, 
     link: "https://share.google/images/Zq1fq6JtwNkzzycN2" 
   },
   { 
     name: "Rehabilitation", 
-    img: "/mnt/data/Screenshot 2025-11-21 134354.png", 
+    img: assets.rehabilitation, 
     link: "https://share.google/images/ZBIyOkyEM5E92kePR" 
   },
 ];
