@@ -43,6 +43,17 @@ export default function MyOrders() {
 
   const formatDate = (date) => new Date(date).toLocaleDateString();
 
+  // calculate remaining replacement days
+  const getRemainingDays = (item, deliveredDate) => {
+    if (!item?.product?.return_policy?.days || !deliveredDate) return null;
+    const policyDays = item.product.return_policy.days;
+    const diffDays =
+      policyDays -
+      Math.floor((Date.now() - new Date(deliveredDate)) / (1000 * 60 * 60 * 24));
+
+    return diffDays > 0 ? diffDays : 0;
+  };
+
   if (loading) {
     return (
       <div className="min-h-[50vh] flex justify-center items-center">
@@ -97,9 +108,7 @@ export default function MyOrders() {
                 <p className="text-sm text-gray-500 mt-1">
                   Placed on: {formatDate(order.createdAt || order.placedAt)}
                 </p>
-                <p className="text-xl font-bold text-gray-900 mt-2">
-                  ₹{total.toLocaleString()}
-                </p>
+                <p className="text-xl font-bold text-gray-900 mt-2">₹{total.toLocaleString()}</p>
 
                 {/* Status Badge */}
                 <span
@@ -109,6 +118,27 @@ export default function MyOrders() {
                 >
                   {status.replace(/_/g, " ")}
                 </span>
+
+                {/* ⭐ Remaining Days to Request Replacement — only after delivery */}
+                {status === "delivered" && (
+                  (() => {
+                    // find highest remaining among items
+                    let highestRemaining = 0;
+                    order.items?.forEach((item) => {
+                      const daysLeft = getRemainingDays(item, order.deliveredAt);
+                      if (daysLeft > highestRemaining) highestRemaining = daysLeft;
+                    });
+                    return highestRemaining > 0 ? (
+                      <p className="mt-2 text-sm font-medium text-green-700 bg-green-100 px-3 py-1 rounded-lg inline-block">
+                        🔄 {highestRemaining} days left to request replacement
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-sm font-medium text-red-700 bg-red-100 px-3 py-1 rounded-lg inline-block">
+                        ⛔ Replacement window expired
+                      </p>
+                    );
+                  })()
+                )}
               </div>
 
               {/* CENTER — Items Preview */}
@@ -143,6 +173,15 @@ export default function MyOrders() {
                   Buy Again
                 </button>
               </div>
+              {order.status === "delivered" && remainingDays > 0 && (
+                <button
+                  onClick={() => setShowReplacementModal(true)}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold"
+                >
+                  Request Replacement
+                </button>
+              )}
+
             </div>
           );
         })}
