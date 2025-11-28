@@ -100,10 +100,6 @@ export default function CureWrapAboutV2() {
         </div>
       </section>
 
-      {/* divider */}
-      <div className="w-full">
-        <svg viewBox="0 0 1440 80" className="w-full h-[80px]"><path d="M0,24 C300,120 600,0 720,24 C840,48 1140,0 1440,24 L1440 80 L0 80 Z" fill="#f8fafc" /></svg>
-      </div>
 
       {/* OUR BEGINNINGS */}
       <section className="max-w-7xl mx-auto px-6 py-20">

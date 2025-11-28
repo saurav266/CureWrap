@@ -79,9 +79,9 @@ export default function HeroSection() {
           />
 
           <Hotspot 
-            id="elbow-wear"
-            top="61%" 
-            left="73%" 
+            id="back-wear"
+            top="38%" 
+            left="18%" 
             title="ELBOW WEAR" 
             price="₹29.95"
             productId="elbow-wear"
@@ -89,7 +89,7 @@ export default function HeroSection() {
           />
 
           <Hotspot 
-            id="knee-cap"
+            id="hinge-knee"
             top="93%" 
             left="5%" 
             title="KNEE CAP" 
@@ -99,9 +99,9 @@ export default function HeroSection() {
           />
 
           <Hotspot 
-            id="ankle-wear"
-            top="93%" 
-            left="97%" 
+            id="knee-wear"
+            top="87%" 
+            left="65%" 
             title="ANKLE WEAR" 
             price="₹95.95"
             productId="ankle-wear"
