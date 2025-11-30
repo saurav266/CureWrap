@@ -7,14 +7,14 @@ import { assets } from "../assets/admin_assets/assets.js";
 
 // images (keep your existing imports)
 import heroimg from "../assets/Frontend_assets/about/women.jpg";
-import begining from "../assets/Frontend_assets/about/beginnings.png";
+import athlete from "../assets/Frontend_assets/curewrap/athlete.png";
+import hingeknee from "../assets/Frontend_assets/curewrap/hingeKnee.png";
+import postureBelt from "../assets/Frontend_assets/curewrap/postureBelt.png";
+import lsLumber from "../assets/Frontend_assets/curewrap/lsLumber.png";
+import childLady from "../assets/Frontend_assets/curewrap/childLady.png";
+import playing from "../assets/Frontend_assets/curewrap/playing.png";
 import dumbell from "../assets/Frontend_assets/about/dumbell.png";
-import uniq from "../assets/Frontend_assets/about/belt.png";
-import product from "../assets/Frontend_assets/about/product.png";
-import whatdo2 from "../assets/Frontend_assets/about/oldWomen.png";
-import ourMission from "../assets/Frontend_assets/about/ourMission.png";
-import girl_yoga from "../assets/Frontend_assets/about/girl_yoga.png";
-import father_son from "../assets/Frontend_assets/about/father_with_child.png";
+
 import process1 from "../assets/Frontend_assets/about/process1.png";
 import process2 from "../assets/Frontend_assets/about/process2.png";
 import process3 from "../assets/Frontend_assets/about/process3.png";
@@ -103,7 +103,7 @@ export default function CureWrapAboutV2() {
 
       {/* OUR BEGINNINGS */}
       <section className="max-w-7xl mx-auto px-6 py-20">
-        <motion.h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">Our Beginnings</motion.h2>
+        <motion.h2 className="text-3xl md:text-6xl font-bold text-gray-900 mb-8">Our Beginnings</motion.h2>
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <p className="text-gray-700 text-lg leading-relaxed">
             CureWrap began with a simple realization — supportive gear often hurt more than it helped.
@@ -114,7 +114,7 @@ export default function CureWrapAboutV2() {
             Months of prototyping and real-world testing led to our first breakthrough —
             compression that stabilizes without limiting motion.
           </p>
-          <motion.img src={begining} className="rounded-2xl shadow-lg w-full h-120 object-cover" />
+          <motion.img src={childLady} className="rounded-2xl shadow-lg w-full h-119 object-cover" />
         </div>
       </section>
 
@@ -148,9 +148,9 @@ export default function CureWrapAboutV2() {
 
           {/* FIXED COLLAGE */}
           <div className="grid grid-cols-3 gap-4 w-full overflow-hidden">
-            <img src={dumbell} className="col-span-2 h-80 w-full object-cover  shadow-md" />
-            <img src={uniq} className="h-80 w-full object-cover  shadow-md" />
-            <img src={product} className="col-span-2 h-74 w-full object-cover  shadow-md" />
+            <img src={athlete} className="col-span-2 h-75 w-full object-cover  shadow-md" />
+            <img src={dumbell} className="h-80 w-full object-cover  shadow-md" />
+            <img src={lsLumber} className="col-span-2 h-85 w-full object-cover  shadow-md" />
           </div>
         </div>
       </section>
@@ -159,13 +159,17 @@ export default function CureWrapAboutV2() {
       <section className="bg-teal-50 py-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="grid grid-cols-3 gap-4 w-full overflow-hidden">
-              <img src={girl_yoga} className="col-span-1 h-[500px] w-full object-cover rounded-2xl shadow-md" />
-              <div className="col-span-2 flex flex-col gap-4">
-                <img src={whatdo2} className="h-[240px] w-full object-cover rounded-2xl shadow-md" />
-                <img src={father_son} className="h-[240px] w-full object-cover rounded-2xl shadow-md" />
-              </div>
+            <div className="grid grid-cols-2 gap-4 w-full overflow-hidden">
+              <img
+                src={postureBelt}
+                className="w-full h-[500px] object-cover rounded-2xl shadow-md"
+              />
+              <img
+                src={hingeknee}
+                className="w-full h-[500px] object-cover rounded-2xl shadow-md"
+              />
             </div>
+
 
             <div>
               <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why We Do What We Do</h3>
@@ -204,7 +208,7 @@ export default function CureWrapAboutV2() {
               to live, move and perform without hesitation.
             </p>
           </div>
-          <motion.img src={ourMission} className="shadow-lg w-full h-100 object-cover" />
+          <motion.img src={playing} className="shadow-lg w-full h-100 object-cover" />
         </div>
       </section>
 

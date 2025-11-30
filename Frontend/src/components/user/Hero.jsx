@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
-
+import lsBelt from "../../assets/Frontend_assets/curewrap/lsBelt.png"
 /* ------------------------------------------------------------------
    HERO SECTION (PREMIUM VERSION)
 ------------------------------------------------------------------ */
@@ -75,7 +75,7 @@ export default function HeroSection() {
             title="BACK BELT SUPPORT" 
             price="₹39.95"
             productId="back-support"
-            img={assets.product1}
+            img={lsBelt}
           />
 
           <Hotspot 
@@ -85,7 +85,7 @@ export default function HeroSection() {
             title="ELBOW WEAR" 
             price="₹29.95"
             productId="elbow-wear"
-            img={assets.product2}
+            img={lsBelt}
           />
 
           <Hotspot 
@@ -95,7 +95,7 @@ export default function HeroSection() {
             title="KNEE CAP" 
             price="₹29.95"
             productId="knee-cap"
-            img={assets.product3}
+            img={lsBelt}
           />
 
           <Hotspot 
@@ -105,7 +105,7 @@ export default function HeroSection() {
             title="ANKLE WEAR" 
             price="₹95.95"
             productId="ankle-wear"
-            img={assets.product4}
+            img={lsBelt}
           />
         </motion.div>
       </div>

@@ -7,6 +7,7 @@ import { testTwilio } from "./controller/userController.js";
 import cartRoute from "./route/cartRoute.js";
 import orderRoutes from "./route/orderRoute.js";
 import adminRoutes from "./route/adminROute.js";
+import contactRoute from "./route/contact.js";
 // import ProductRoute from "./route/productRoute.js";
 
 connectDB();
@@ -26,6 +27,8 @@ app.use("/api/users", userRoute);
 app.use("/api/cart", cartRoute);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/contact", contactRoute);
+
 // app.use("/api/products", ProductRoute);
 
 
