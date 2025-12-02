@@ -236,6 +236,45 @@ export default function ProductViewPage() {
     window.dispatchEvent(new Event("cartUpdated"));
     toast.success("Added to cart!");
   };
+    const buyNow = () => {
+    if (hasColourSizeOptions && !selectedVariant) {
+      toast.error("Please select a size first.");
+      return;
+    }
+
+    const item = selectedVariant || product;
+    if (!item) return toast.error("No product selected.");
+
+    if (quantity < 1) return toast.error("Quantity must be at least 1");
+    if (quantity > maxStock) return toast.error("Not enough stock");
+
+    // Build a single cart item, same shape that CheckoutPage expects
+    const cartItem = {
+      ...item,
+      productId: product._id,
+      name: product.name,
+      price:
+        item.sale_price ||
+        item.price ||
+        product.sale_price ||
+        product.price,
+      size: item.size,
+      color: selectedColor?.color || item.color,
+      quantity,
+      image:
+        selectedColor?.images?.[0]?.url ||
+        product.images?.[0]?.url ||
+        item.image ||
+        "",
+    };
+
+    // 🔥 Overwrite cart with just this one item (classic Buy Now behavior)
+    localStorage.setItem("cart", JSON.stringify([cartItem]));
+    window.dispatchEvent(new Event("cartUpdated"));
+
+    navigate("/checkout");
+  };
+
 
   // ------------------------------ SUBMIT REVIEW ------------------------------
   const submitReview = async () => {
@@ -588,20 +627,16 @@ export default function ProductViewPage() {
                 {canBuy ? "Add to Cart" : "Select size first"}
               </button>
               <button
-                onClick={() => {
-                  if (!canBuy) return;
-                  addToCart();
-                  navigate("/checkout");
-                }}
-                disabled={!canBuy}
-                className={`flex-1 py-2.5 sm:py-3 border rounded-lg font-semibold text-sm sm:text-base ${
-                  canBuy
-                    ? "border-gray-300 hover:bg-gray-50"
-                    : "border-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
-              >
-                Buy Now
-              </button>
+  onClick={buyNow}
+  disabled={!canBuy}
+  className={`flex-1 py-2.5 sm:py-3 border rounded-lg font-semibold text-sm sm:text-base ${
+    canBuy
+      ? "border-gray-300 hover:bg-gray-50"
+      : "border-gray-200 text-gray-400 cursor-not-allowed"
+  }`}
+>
+  Buy Now
+</button>
             </div>
           </div>
         </div>

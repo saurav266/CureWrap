@@ -5,17 +5,41 @@ import { useParams, useNavigate } from "react-router-dom";
 const BACKEND_URL = "http://localhost:8000";
 
 export default function OrderTrackingPage() {
-  const { id } = useParams();
+  const { id } = useParams(); // order ID
   const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
-  const [loadingOrder, setLoadingOrder] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [tracking, setTracking] = useState(null);
-  const [loadingTracking, setLoadingTracking] = useState(false);
+  // Fetch order by ID
+  const fetchOrder = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  // ----------------- Helpers -----------------
+      const res = await fetch(`${BACKEND_URL}/api/orders/${id}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.order) {
+        setError(data.error || "Order not found");
+        setOrder(null);
+        return;
+      }
+
+      setOrder(data.order);
+    } catch (err) {
+      console.error("Fetch order error:", err);
+      setError("Failed to load order");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrder();
+  }, [id]);
+
   const formatDate = (d) =>
     d ? new Date(d).toLocaleString("en-IN") : "N/A";
 
@@ -24,13 +48,14 @@ export default function OrderTrackingPage() {
       maximumFractionDigits: 2,
     })}`;
 
+  // Timeline steps
   const timelineSteps = useMemo(
     () => [
       { key: "processing", label: "Processing" },
       { key: "packed", label: "Packed" },
       { key: "shipped", label: "Shipped" },
       { key: "out_for_delivery", label: "Out for Delivery" },
-      { key: "delivered", label: "Delivered" }
+      { key: "delivered", label: "Delivered" },
     ],
     []
   );
@@ -48,79 +73,7 @@ export default function OrderTrackingPage() {
     return (activeIndex / (timelineSteps.length - 1)) * 100;
   }, [activeIndex, timelineSteps.length]);
 
-  // ----------------- API Calls -----------------
-  const fetchOrder = async () => {
-    try {
-      setLoadingOrder(true);
-      setError("");
-      const res = await fetch(`${BACKEND_URL}/api/orders/${id}`);
-      const data = await res.json();
-
-      if (!res.ok || !data.order) {
-        setError(data.error || "Failed to fetch order");
-        setOrder(null);
-        return;
-      }
-      setOrder(data.order);
-    } catch (err) {
-      console.error("fetchOrder error:", err);
-      setError("Failed to load order");
-    } finally {
-      setLoadingOrder(false);
-    }
-  };
-
-  const fetchLiveTracking = async () => {
-    if (!order?.shiprocket?.awb_code) return;
-    try {
-      setLoadingTracking(true);
-      const res = await fetch(
-        `${BACKEND_URL}/api/orders/track/${order.shiprocket.awb_code}`
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        console.error("Tracking error:", data);
-        return;
-      }
-      setTracking(data.tracking || null);
-    } catch (err) {
-      console.error("fetchLiveTracking error:", err);
-    } finally {
-      setLoadingTracking(false);
-    }
-  };
-
-  // Initial load + auto-refresh
-  useEffect(() => {
-    let interval;
-    (async () => {
-      await fetchOrder();
-      await fetchLiveTracking();
-      interval = setInterval(async () => {
-        await fetchOrder();
-        await fetchLiveTracking();
-      }, 30000); // 30s
-    })();
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  // ----------------- Derived tracking events -----------------
-  const events = useMemo(() => {
-    if (!tracking?.tracking_data) return [];
-    const td = tracking.tracking_data;
-    return (
-      td.shipment_track_activities ||
-      td.shipment_track ||
-      []
-    );
-  }, [tracking]);
-
-  // ----------------- Render -----------------
-  if (loadingOrder) {
+  if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="h-10 w-10 animate-spin border-4 border-gray-300 border-t-green-600 rounded-full" />
@@ -135,7 +88,7 @@ export default function OrderTrackingPage() {
           {error || "Order not found"}
         </p>
         <button
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate("/my-orders")}
           className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
         >
           Back to My Orders
@@ -146,6 +99,7 @@ export default function OrderTrackingPage() {
 
   const awb = order.shiprocket?.awb_code;
   const courier = order.shiprocket?.courier_name;
+  const labelUrl = order.shiprocket?.label_url;
   const trackingUrl = awb
     ? `https://shiprocket.co/tracking/${awb}`
     : null;
@@ -170,14 +124,14 @@ export default function OrderTrackingPage() {
         </div>
 
         <button
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate("/my-orders")}
           className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800 text-sm hover:bg-gray-50"
         >
           ← Back to My Orders
         </button>
       </div>
 
-      {/* Order Status Timeline */}
+      {/* Animated Timeline Card */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
           Order Status
@@ -189,13 +143,17 @@ export default function OrderTrackingPage() {
           </span>
         </p>
 
-        {/* Progress bar */}
+        {/* Progress bar background */}
         <div className="relative mt-4 mb-6">
           <div className="h-1 bg-gray-200 rounded-full" />
+
+          {/* Animated green bar */}
           <div
             className="absolute h-1 bg-green-500 rounded-full top-0 left-0 transition-all duration-700 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
+
+          {/* Dots */}
           <div className="absolute inset-0 flex justify-between items-center">
             {timelineSteps.map((step, idx) => {
               const isActive = idx <= activeIndex;
@@ -225,24 +183,55 @@ export default function OrderTrackingPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Last updated: {formatDate(order.updatedAt)}</span>
-          <button
-            onClick={async () => {
-              await fetchOrder();
-              await fetchLiveTracking();
-            }}
-            className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            Refresh now
-          </button>
-        </div>
+        <p className="text-xs text-gray-500">
+          Last updated: {formatDate(order.updatedAt)}
+        </p>
       </div>
 
       {/* Shipment details */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
           Shipment Details
+        </h2>
+
+        {awb ? (
+          <>
+            <p className="text-sm text-gray-700">
+              <span className="font-semibold">AWB:</span> {awb}
+            </p>
+            <p className="text-sm text-gray-700 mb-4">
+              <span className="font-semibold">Courier:</span>{" "}
+              {courier || "N/A"}
+            </p>
+
+            <button
+              onClick={() => trackingUrl && window.open(trackingUrl, "_blank")}
+              className="w-full py-2.5 mb-3 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
+            >
+              Track Shipment on Shiprocket
+            </button>
+
+            {labelUrl && (
+              <button
+                onClick={() => window.open(labelUrl, "_blank")}
+                className="w-full py-2.5 rounded-lg bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700"
+              >
+                Download Shipping Label
+              </button>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-gray-500">
+            Shipment is being prepared. Tracking details will appear here
+            once the courier is assigned.
+          </p>
+        )}
+      </div>
+
+      {/* Order & items summary */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+          Order Summary
         </h2>
 
         <div className="grid md:grid-cols-2 gap-4 text-sm mb-4">
@@ -322,80 +311,9 @@ export default function OrderTrackingPage() {
           </div>
         </div>
 
-        {awb ? (
-          <>
-            <p className="text-sm text-gray-700">
-              <span className="font-semibold">AWB:</span> {awb}
-            </p>
-            <p className="text-sm text-gray-700 mb-4">
-              <span className="font-semibold">Courier:</span>{" "}
-              {courier || "N/A"}
-            </p>
-
-            <button
-              onClick={() =>
-                trackingUrl && window.open(trackingUrl, "_blank")
-              }
-              className="w-full md:w-auto px-4 py-2.5 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
-            >
-              Track on Shiprocket
-            </button>
-          </>
-        ) : (
-          <p className="text-sm text-gray-500">
-            Shipment is being prepared. Tracking details will appear here
-            once the courier is assigned.
-          </p>
-        )}
-      </div>
-
-      {/* Live courier scan history */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Live Shipment Activity
-          </h2>
-          {loadingTracking && (
-            <span className="text-xs text-gray-500">
-              Updating…
-            </span>
-          )}
-        </div>
-
-        {events && events.length > 0 ? (
-          <ul className="space-y-3 text-sm">
-            {events.map((e, idx) => (
-              <li
-                key={idx}
-                className="border-l-4 border-green-600 pl-3 py-1"
-              >
-                <p className="font-semibold text-gray-900">
-                  {e.activity || e.current_status || "Shipment update"}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {e.location && `${e.location} · `}
-                  {e.date
-                    ? formatDate(e.date)
-                    : e.date_time
-                    ? formatDate(e.date_time)
-                    : ""}
-                </p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-gray-500">
-            No courier scan updates yet. As the shipment moves, live
-            updates will show here.
-          </p>
-        )}
-      </div>
-
-      {/* Items list */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-10">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">
           Items ({order.items?.length || 0})
-        </h2>
+        </h3>
         {order.items?.length ? (
           <div className="space-y-3">
             {order.items.map((item, idx) => (
@@ -423,9 +341,7 @@ export default function OrderTrackingPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">
-            No items found in this order.
-          </p>
+          <p className="text-sm text-gray-500">No items in this order.</p>
         )}
       </div>
     </div>
