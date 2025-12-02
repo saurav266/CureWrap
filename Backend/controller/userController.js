@@ -10,14 +10,20 @@ const twilioClient = twilio(
 
 export const createUser = async (req, res) => {
   try {
-    const { name, email, phoneNumber } = req.body;
+    const { name, email, phoneno } = req.body;
 
-    if (!name || !email || !phoneNumber) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!name) {
+      return res.status(400).json({ message: "name is required" });
+    }
+    if (!email) {
+      return res.status(400).json({ message: "email is required" });
+    }
+    if (!phoneno) {
+      return res.status(400).json({ message: "phone number is required" });
     }
 
     const existingUser = await User.findOne({
-      $or: [{ email }, { phoneNumber }],
+      $or: [{ email }, { phoneno }],
     });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -30,14 +36,14 @@ export const createUser = async (req, res) => {
     await twilioClient.messages.create({
       body: `Your OTP is ${otp}`,
       from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneNumber,
+      to: phoneno,
     });
    
     
     const newUser = new User({
       name,
       email,
-      phoneNumber,
+      phoneno,
       otp,
       otpExpiresAt,
     });
@@ -46,7 +52,7 @@ export const createUser = async (req, res) => {
 
     res.status(201).json({
       message: "User created and OTP sent via SMS",
-      user: { name, email, phoneNumber },
+      user: { name, email, phoneno },
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -57,18 +63,22 @@ export const createUser = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { phoneNumber } = req.body;
+    const { phoneno } = req.body;   // ✅ read phoneno from body
 
-    if (!phoneNumber) {
+    console.log("Login body:", req.body);
+    console.log("Received phoneno:", phoneno);
+
+    if (!phoneno) {
       return res.status(400).json({ message: "Phone number is required" });
     }
 
-    const user = await User.findOne({ phoneNumber });
+    const user = await User.findOne({ phoneno });   // ✅ query by phoneno
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ message: "No account found with this phone number." });
     }
 
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -76,16 +86,20 @@ export const login = async (req, res) => {
     user.otpExpiresAt = otpExpiresAt;
     await user.save();
 
-    // Send OTP via Twilio
+    console.log("Sending OTP to:", phoneno);
+
     await twilioClient.messages.create({
       body: `Your OTP is ${otp}`,
       from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneNumber,
+      to: phoneno,           
+               // ✅ USE phoneno HERE
     });
+    console.log("Sending OTP to:", phoneno);    
 
-    res.status(200).json({ message: "OTP sent successfully" });
+    return res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Login error:", error);
+    return res.status(500).json({ message: "Server  error", error: error.message });
   }
 };
 
@@ -94,13 +108,13 @@ export const login = async (req, res) => {
 
 export const verifyOtp = async (req, res) => {
   try {
-    const { phoneNumber, otp } = req.body;
+    const { phoneno, otp } = req.body;
 
-    if (!phoneNumber || !otp) {
+    if (!phoneno || !otp) {
       return res.status(400).json({ message: "Phone number and OTP are required" });
     }
 
-    const user = await User.findOne({ phoneNumber });
+    const user = await User.findOne({ phoneno });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -120,7 +134,7 @@ export const verifyOtp = async (req, res) => {
     await user.save();
 
     const token = jwt.sign(
-      { userId: user._id, phoneNumber: user.phoneNumber },
+      { userId: user._id, phoneno: user.phoneno },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -136,7 +150,7 @@ export const verifyOtp = async (req, res) => {
     res.json({
       success: true,
       message: "Login successful",
-      user: { id: user._id, name: user.name, email: user.email, phoneNumber: user.phoneNumber }
+      user: { id: user._id, name: user.name, email: user.email, phoneno: user.phoneno }
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

@@ -16,7 +16,7 @@ const LoginWithMobile = () => {
   useEffect(() => {
     let timer;
     if (cooldown > 0) {
-      timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
     }
     return () => clearTimeout(timer);
   }, [cooldown]);
@@ -24,25 +24,40 @@ const LoginWithMobile = () => {
   // Helper to format number with +91
   const formatMobile = (num) => {
     if (!num) return "";
-    return num.startsWith("+91") ? num : `+91${num.replace(/^(\+91)?/, "")}`;
+    const cleaned = num.replace(/\D/g, ""); // keep only digits
+
+    // if already looks like 91xxxxxxxxxx
+    if (cleaned.startsWith("91") && cleaned.length === 12) {
+      return `+${cleaned}`;
+    }
+
+    // if 10-digit local mobile
+    if (cleaned.length === 10) {
+      return `+91${cleaned}`;
+    }
+
+    // fallback
+    return `+91${cleaned}`;
   };
 
   const requestOtp = async (e) => {
     e?.preventDefault();
     setLoading(true);
+    setError("");
+
     try {
       const formattedMobile = formatMobile(mobile);
 
       await axios.post(
         "http://localhost:8000/api/users/login",
-        { phoneNumber: formattedMobile },
+        { phoneno: formattedMobile }, // ✅ backend expects phoneno
         { withCredentials: true }
       );
 
       setStep("verify");
-      setError("");
-      setCooldown(30); // 30s cooldown
+      setCooldown(30);
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.message || "Server error");
     } finally {
       setLoading(false);
@@ -52,29 +67,35 @@ const LoginWithMobile = () => {
   const verifyOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+
     try {
       const formattedMobile = formatMobile(mobile);
 
       const response = await axios.post(
         "http://localhost:8000/api/users/verify-otp",
-        { phoneNumber: formattedMobile, otp },
+        { phoneno: formattedMobile, otp }, // ✅ phoneno again
         { withCredentials: true }
       );
 
+      // assuming backend: { success, message, user: {...}, token? }
       const { user, token } = response.data;
 
-      // Save user + token
+      // Save auth
       login(user);
-      localStorage.setItem("token", token);
+      if (token) {
+        localStorage.setItem("token", token);
+      }
       localStorage.setItem("user", JSON.stringify(user));
 
-      // ✅ Decide navigation based on email
+      // redirect: admin vs normal user
       if (user.email === "saurav@example.com") {
         navigate("/admin");
       } else {
         navigate("/");
       }
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.message || "Invalid OTP");
     } finally {
       setLoading(false);
@@ -84,7 +105,10 @@ const LoginWithMobile = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-center mb-6">Login with Mobile</h2>
+        <h2 className="text-xl font-semibold text-center mb-6">
+          Login with Mobile
+        </h2>
+
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         {step === "request" ? (

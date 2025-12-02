@@ -1,15 +1,13 @@
 // src/pages/admin/AllOrder.jsx
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const BACKEND_URL = "http://localhost:8000";
 
-// ⚠️ Adjust these endpoints to match your routes:
-//  - GET   `${BACKEND_URL}/api/admin/orders`     -> return all orders
-//  - PUT   `${BACKEND_URL}/api/admin/orders/:id` -> update orderStatus
-// If you named them differently, just change inside fetchOrders() and updateStatus().
-
 export default function AllOrder() {
+  const navigate = useNavigate();
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -23,8 +21,7 @@ export default function AllOrder() {
       setLoading(true);
       setError("");
 
-      const res = await fetch(`${BACKEND_URL}/api/orders`, {
-        // If you use JWT for admin:
+      const res = await fetch(`${BACKEND_URL}/api/orders/admin/all`, {
         // headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       const data = await res.json();
@@ -52,17 +49,14 @@ export default function AllOrder() {
     try {
       setUpdatingId(orderId);
 
-      const res = await fetch(
-        `${BACKEND_URL}/api/orders/${orderId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            // Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
+      const res = await fetch(`${BACKEND_URL}/api/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          // Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
       const data = await res.json();
 
@@ -142,14 +136,32 @@ export default function AllOrder() {
                     {o._id}
                   </td>
                   <td className="px-4 py-2 border-b text-xs text-gray-600">
-                    {o.userId || <span className="italic text-gray-400">Guest</span>}
+                    {o.userId || (
+                      <span className="italic text-gray-400">Guest</span>
+                    )}
                   </td>
                   <td className="px-4 py-2 border-b text-xs">
                     {formatDate(o.createdAt)}
                   </td>
+
+                  {/* ✅ Items column: show count + product names */}
                   <td className="px-4 py-2 border-b">
-                    {o.items?.length || 0}
+                    <div className="text-xs font-medium">
+                      {o.items?.length || 0} item
+                      {o.items?.length === 1 ? "" : "s"}
+                    </div>
+                    {o.items && o.items.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrder(o)}
+                        className="text-[11px] text-blue-600 hover:underline max-w-[220px] text-left truncate"
+                        title={o.items.map((it) => it.name).join(", ")}
+                      >
+                        {o.items.map((it) => it.name).join(", ")}
+                      </button>
+                    )}
                   </td>
+
                   <td className="px-4 py-2 border-b font-semibold">
                     ₹{(o.total ?? 0).toLocaleString()}
                   </td>
@@ -175,9 +187,7 @@ export default function AllOrder() {
                     <select
                       className="border rounded px-2 py-1 text-xs"
                       value={o.orderStatus || "processing"}
-                      onChange={(e) =>
-                        updateStatus(o._id, e.target.value)
-                      }
+                      onChange={(e) => updateStatus(o._id, e.target.value)}
                       disabled={updatingId === o._id}
                     >
                       <option value="processing">processing</option>
@@ -186,12 +196,18 @@ export default function AllOrder() {
                       <option value="cancelled">cancelled</option>
                     </select>
                   </td>
-                  <td className="px-4 py-2 border-b text-right">
+                  <td className="px-4 py-2 border-b text-right space-x-2">
                     <button
                       onClick={() => setSelectedOrder(o)}
                       className="text-xs px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-100"
                     >
                       View
+                    </button>
+                    <button
+                      onClick={() => navigate(`/admin/orders/${o._id}`)}
+                      className="text-xs px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      Edit
                     </button>
                   </td>
                 </tr>
@@ -213,7 +229,8 @@ export default function AllOrder() {
             </button>
 
             <h2 className="text-xl font-bold mb-4">
-              Order Details - <span className="font-mono text-sm">{selectedOrder._id}</span>
+              Order Details -{" "}
+              <span className="font-mono text-sm">{selectedOrder._id}</span>
             </h2>
 
             {/* Basic Info */}
@@ -322,15 +339,29 @@ export default function AllOrder() {
                         </td>
                         <td className="px-3 py-2">{item.quantity}</td>
                         <td className="px-3 py-2">
-                          ₹{((item.price || 0) * (item.quantity || 0)).toLocaleString()}
+                          ₹
+                          {(
+                            (item.price || 0) * (item.quantity || 0)
+                          ).toLocaleString()}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
 
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => {
+                    setSelectedOrder(null);
+                    navigate(`/admin/orders/${selectedOrder._id}`);
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Edit This Order
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
