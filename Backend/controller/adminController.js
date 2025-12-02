@@ -12,11 +12,11 @@ const twilioClient = twilio(
 );
 
 export const loginAdmin = async (req, res) => {
-  const { phoneNumber } = req.body; // 👈 expect phone + otp
+  const {phoneno } = req.body; // 👈 expect phone + otp
 
   try {
     // Find user by phone
-    const user = await User.findOne({  phoneNumber });
+    const user = await User.findOne({ phoneno });
     if (!user) {
       return res.status(404).json({ message: "Account not found." });
     }
@@ -42,7 +42,7 @@ export const loginAdmin = async (req, res) => {
      await twilioClient.messages.create({
       body: `Your OTP is ${otp}`,
       from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneNumber,
+      to:phoneno,
     });
 
      res.status(200).json({ message: "OTP sent successfully" });
