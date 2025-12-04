@@ -47,6 +47,7 @@ const Navbar = () => {
         <NavLink to="/admin/products" className={navLinkClass}>PRODUCT</NavLink>
         <NavLink to="/admin/orders" className={navLinkClass}>ORDER</NavLink>
         <NavLink to="/admin/users" className={navLinkClass}>USER</NavLink>
+        <NavLink to="/admin/returns" className={navLinkClass}>RETURN</NavLink>
       </ul>
 
       {/* Right Icons */}

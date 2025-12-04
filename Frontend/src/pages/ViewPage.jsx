@@ -3,6 +3,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
+import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
+
+const backendUrl = "http://localhost:8000";
+const FALLBACK_IMAGE = "/mnt/data/yoga-2587066_1280.jpg";
 
 export default function ProductViewPage() {
   const { id } = useParams();
@@ -32,10 +36,41 @@ export default function ProductViewPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
 
-  const backendUrl = "http://localhost:8000";
-  const FALLBACK_IMAGE = "/mnt/data/yoga-2587066_1280.jpg";
+  // WISHLIST
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
-  // ------------------------------ IMAGE HELPER ------------------------------
+  // ------------------------------ HELPERS ------------------------------
+  const getCurrentUserAndId = () => {
+    const userStr = localStorage.getItem("user");
+    if (!userStr) return { user: null, userId: null, phone: null };
+
+    try {
+      const parsed = JSON.parse(userStr);
+      // support shapes: { _id, ... } OR { user: { _id, ... } }
+      const coreUser = parsed.user || parsed;
+
+      const userId =
+        coreUser._id ||
+        coreUser.id ||
+        coreUser.userId ||
+        coreUser.userid ||
+        null;
+
+      const phone =
+        coreUser.phoneno ||
+        coreUser.phone ||
+        coreUser.mobile ||
+        coreUser.phoneNumber ||
+        null;
+
+      return { user: coreUser, userId, phone };
+    } catch (e) {
+      console.error("Failed to parse user from localStorage:", e);
+      return { user: null, userId: null, phone: null };
+    }
+  };
+
   const getImageUrl = (img) => {
     if (!img?.url) return FALLBACK_IMAGE;
     return img.url.startsWith("http")
@@ -43,11 +78,12 @@ export default function ProductViewPage() {
       : `${backendUrl}/${img.url.replace(/^\/+/, "")}`;
   };
 
-  // ------------------------------ FETCH PRODUCT + RELATED ------------------------------
+  // ------------------------------ FETCH PRODUCT + RELATED + WISHLIST ------------------------------
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
+        // PRODUCT
         const res = await fetch(`${backendUrl}/api/users/products/${id}`);
         const data = await res.json();
 
@@ -58,14 +94,11 @@ export default function ProductViewPage() {
           const p = data.product;
           setProduct(p);
 
-          // Default colour & size selection
+          // Default colour & size
           if (Array.isArray(p.colors) && p.colors.length > 0) {
             setSelectedColorIndex(0);
             const firstColor = p.colors[0];
-            if (
-              Array.isArray(firstColor.sizes) &&
-              firstColor.sizes.length > 0
-            ) {
+            if (Array.isArray(firstColor.sizes) && firstColor.sizes.length > 0) {
               setSelectedVariant(firstColor.sizes[0]);
             } else {
               setSelectedVariant(null);
@@ -79,11 +112,9 @@ export default function ProductViewPage() {
           setGalleryIndex(0);
         }
 
-        // Related products
+        // RELATED
         try {
-          const relRes = await fetch(
-            `${backendUrl}/api/users/products?limit=4`
-          );
+          const relRes = await fetch(`${backendUrl}/api/users/products?limit=4`);
           const relData = await relRes.json();
           const arr = Array.isArray(relData.products)
             ? relData.products.filter((p) => p._id !== id).slice(0, 4)
@@ -93,11 +124,33 @@ export default function ProductViewPage() {
           setRelated([]);
         }
 
-        // AUTH CHECK
-        const token = localStorage.getItem("user");
-        setIsLoggedIn(!!token);
+        // AUTH
+        const { user: currentUser, userId, phone } = getCurrentUserAndId();
+        setIsLoggedIn(!!currentUser);
 
-        // PURCHASE CHECK (dummy local check)
+        // WISHLIST STATUS
+        if ((userId || phone) && data.product?._id) {
+          try {
+            const idToSend = userId || phone;
+            const wlRes = await fetch(`${backendUrl}/api/wishlist/${idToSend}`);
+            const wlData = await wlRes.json();
+
+            if (wlRes.ok && wlData.success && Array.isArray(wlData.wishlist)) {
+              const inWishlist = wlData.wishlist.some((w) => {
+                const pid =
+                  w.product_id && typeof w.product_id === "object"
+                    ? w.product_id._id
+                    : w.product_id;
+                return pid === data.product._id;
+              });
+              setIsInWishlist(inWishlist);
+            }
+          } catch (err) {
+            console.error("Wishlist fetch error:", err);
+          }
+        }
+
+        // PURCHASE CHECK (local dummy)
         const orders = JSON.parse(localStorage.getItem("orders")) || [];
         const purchased = orders.some((order) =>
           order.items?.some((item) => item.productId === id)
@@ -110,7 +163,8 @@ export default function ProductViewPage() {
         setLoading(false);
       }
     };
-    fetchProduct();
+
+    fetchData();
   }, [id]);
 
   // ------------------------------ COLOR & VARIANT ------------------------------
@@ -125,7 +179,7 @@ export default function ProductViewPage() {
     return [];
   }, [selectedColor, product]);
 
-  // ------------------------------ MAIN IMAGE SLIDER ------------------------------
+  // ------------------------------ IMAGE SLIDER ------------------------------
   const images = product?.images || [];
 
   const primaryImageObj = images[galleryIndex] || images[0] || null;
@@ -145,16 +199,15 @@ export default function ProductViewPage() {
     setGalleryIndex(0);
   }, [id]);
 
-  // Autoplay (pause when zoom is true)
   useEffect(() => {
     if (!images.length || images.length === 1 || zoom) return;
-    const interval = setInterval(() => {
-      setGalleryIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
+    const interval = setInterval(
+      () => setGalleryIndex((prev) => (prev + 1) % images.length),
+      3000
+    );
     return () => clearInterval(interval);
   }, [images.length, zoom]);
 
-  // Swipe handlers
   const handleTouchStart = (e) => {
     setTouchStartX(e.touches[0].clientX);
   };
@@ -191,6 +244,74 @@ export default function ProductViewPage() {
     (product?.variants && product.variants.length > 0);
 
   const canBuy = !hasColourSizeOptions || !!selectedVariant;
+
+  // ------------------------------ EXPECTED DELIVERY ------------------------------
+  const getExpectedDeliveryText = () => {
+    const now = new Date();
+
+    const min = new Date(now);
+    min.setDate(min.getDate() + 4);
+
+    const max = new Date(now);
+    max.setDate(max.getDate() + 7);
+
+    const format = (d) =>
+      d.toLocaleDateString("en-IN", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      });
+
+    return `Expected delivery: ${format(min)} – ${format(max)}`;
+  };
+
+  // ------------------------------ WISHLIST TOGGLE ------------------------------
+  const handleToggleWishlist = async () => {
+    const { user, userId, phone } = getCurrentUserAndId();
+
+    if (!user || (!userId && !phone)) {
+      toast.error("Please login to use wishlist.");
+      navigate("/login", { state: { from: `/product/${id}` } });
+      return;
+    }
+
+    if (!product?._id) return;
+
+    try {
+      setWishlistLoading(true);
+
+      const res = await fetch(`${backendUrl}/api/wishlist/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId || undefined,
+          phoneno: phone || undefined,
+          productId: product._id,
+        }),
+      });
+
+      const data = await res.json();
+      console.log("toggle wishlist res:", res.status, data);
+
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Wishlist action failed");
+        return;
+      }
+
+      if (data.action === "added") {
+        setIsInWishlist(true);
+        toast.success("Added to wishlist ❤️");
+      } else if (data.action === "removed") {
+        setIsInWishlist(false);
+        toast("Removed from wishlist", { icon: "🗑️" });
+      }
+    } catch (err) {
+      console.error("toggleWishlist error:", err);
+      toast.error("Could not update wishlist");
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
 
   // ------------------------------ ADD TO CART ------------------------------
   const addToCart = () => {
@@ -236,7 +357,8 @@ export default function ProductViewPage() {
     window.dispatchEvent(new Event("cartUpdated"));
     toast.success("Added to cart!");
   };
-    const buyNow = () => {
+
+  const buyNow = () => {
     if (hasColourSizeOptions && !selectedVariant) {
       toast.error("Please select a size first.");
       return;
@@ -248,7 +370,6 @@ export default function ProductViewPage() {
     if (quantity < 1) return toast.error("Quantity must be at least 1");
     if (quantity > maxStock) return toast.error("Not enough stock");
 
-    // Build a single cart item, same shape that CheckoutPage expects
     const cartItem = {
       ...item,
       productId: product._id,
@@ -268,13 +389,11 @@ export default function ProductViewPage() {
         "",
     };
 
-    // 🔥 Overwrite cart with just this one item (classic Buy Now behavior)
     localStorage.setItem("cart", JSON.stringify([cartItem]));
     window.dispatchEvent(new Event("cartUpdated"));
 
     navigate("/checkout");
   };
-
 
   // ------------------------------ SUBMIT REVIEW ------------------------------
   const submitReview = async () => {
@@ -359,7 +478,7 @@ export default function ProductViewPage() {
 
       {/* GALLERY + BUY AREA */}
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-12 items-start">
-        {/* LEFT: Gallery (wider on laptop/desktop) */}
+        {/* LEFT: Gallery */}
         <div className="lg:col-span-8 w-full">
           <div className="relative bg-white rounded-xl overflow-hidden">
             {isOnSale && (
@@ -368,7 +487,7 @@ export default function ProductViewPage() {
               </div>
             )}
 
-            {/* MAIN IMAGE BOX – FIXED HEIGHT BY BREAKPOINT (mobile friendly) */}
+            {/* MAIN IMAGE BOX */}
             <div
               className="relative w-full bg-gray-100 overflow-hidden flex items-center justify-center
                          h-[320px] sm:h-[360px] md:h-[420px] lg:h-[480px]"
@@ -429,17 +548,36 @@ export default function ProductViewPage() {
 
         {/* RIGHT: Details & Buy Panel */}
         <div className="lg:col-span-4 xl:col-span-4 mt-6 lg:mt-0 xl:sticky xl:top-24 self-start">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-            {product.name}
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+                {product.name}
+              </h1>
 
-          <div className="flex items-center gap-3 mt-2 sm:mt-3">
-            <div className="flex">
-              {renderStars(product.average_rating || 0)}
+              <div className="flex items-center gap-3 mt-2 sm:mt-3">
+                <div className="flex">
+                  {renderStars(product.average_rating || 0)}
+                </div>
+                <span className="text-gray-600 text-sm">
+                  ({product.total_reviews || 0} reviews)
+                </span>
+              </div>
             </div>
-            <span className="text-gray-600 text-sm">
-              ({product.total_reviews || 0} reviews)
-            </span>
+
+            {/* Wishlist icon top-right */}
+            <button
+              type="button"
+              onClick={handleToggleWishlist}
+              disabled={wishlistLoading}
+              className="mt-1 p-2 rounded-full border border-gray-200 hover:bg-pink-50 hover:border-pink-300 transition disabled:opacity-60"
+              title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            >
+              {isInWishlist ? (
+                <AiFillHeart className="text-pink-600 text-xl" />
+              ) : (
+                <AiOutlineHeart className="text-pink-600 text-xl" />
+              )}
+            </button>
           </div>
 
           {/* Selected colour & size summary */}
@@ -614,6 +752,11 @@ export default function ProductViewPage() {
               </div>
             )}
 
+            {/* Expected delivery */}
+            <div className="mt-2 text-xs sm:text-sm text-gray-600">
+              🚚 {getExpectedDeliveryText()}
+            </div>
+
             <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 onClick={addToCart}
@@ -627,16 +770,16 @@ export default function ProductViewPage() {
                 {canBuy ? "Add to Cart" : "Select size first"}
               </button>
               <button
-  onClick={buyNow}
-  disabled={!canBuy}
-  className={`flex-1 py-2.5 sm:py-3 border rounded-lg font-semibold text-sm sm:text-base ${
-    canBuy
-      ? "border-gray-300 hover:bg-gray-50"
-      : "border-gray-200 text-gray-400 cursor-not-allowed"
-  }`}
->
-  Buy Now
-</button>
+                onClick={buyNow}
+                disabled={!canBuy}
+                className={`flex-1 py-2.5 sm:py-3 border rounded-lg font-semibold text-sm sm:text-base ${
+                  canBuy
+                    ? "border-gray-300 hover:bg-gray-50"
+                    : "border-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Buy Now
+              </button>
             </div>
           </div>
         </div>

@@ -55,39 +55,59 @@ export const loginAdmin = async (req, res) => {
 
 export const getAdminStats = async (req, res) => {
   try {
-    // Total Users
+    // 1) Total Users
     const usersCount = await User.countDocuments();
 
-    // Total Orders
-    const ordersCount = await Order.countDocuments();
+    // 2) Base filters
+    // Orders that are not cancelled
+    const nonCancelledFilter = { orderStatus: { $ne: "cancelled" } };
 
-    // Total Revenue (sum of `total` field)
+    // Orders that actually contribute to revenue:
+    //   - not cancelled
+    //   - paymentStatus = "paid"
+    const revenueFilter = {
+      orderStatus: { $ne: "cancelled" },
+      paymentStatus: "paid",
+    };
+
+    // 3) Total Orders (exclude cancelled)
+    const ordersCount = await Order.countDocuments(nonCancelledFilter);
+
+    // 4) Total Revenue (sum of `total` for non-cancelled, paid orders)
     const revenueData = await Order.aggregate([
-      { $group: { _id: null, totalRevenue: { $sum: "$total" } } }
+      { $match: revenueFilter },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$total" },
+        },
+      },
     ]);
 
     const totalRevenue = revenueData[0]?.totalRevenue || 0;
 
-    // Monthly Revenue Graph
-    const revenueGraph = await Order.aggregate([
+    // 5) Monthly Revenue Graph (non-cancelled, paid only)
+    const revenueGraphAgg = await Order.aggregate([
+      { $match: revenueFilter },
       {
         $group: {
           _id: { month: { $month: "$createdAt" } },
-          value: { $sum: "$total" }
-        }
+          value: { $sum: "$total" },
+        },
       },
-      { $sort: { "_id.month": 1 } }
+      { $sort: { "_id.month": 1 } },
     ]);
 
-    // Monthly order count (sales chart)
-    const sales = await Order.aggregate([
+    // 6) Monthly order count (Sales chart) - exclude cancelled
+    const salesAgg = await Order.aggregate([
+      { $match: nonCancelledFilter },
       {
         $group: {
           _id: { month: { $month: "$createdAt" } },
-          value: { $sum: 1 }
-        }
+          value: { $sum: 1 },
+        },
       },
-      { $sort: { "_id.month": 1 } }
+      { $sort: { "_id.month": 1 } },
     ]);
 
     return res.json({
@@ -95,11 +115,11 @@ export const getAdminStats = async (req, res) => {
       usersCount,
       ordersCount,
       totalRevenue,
-      sales: sales.map((s) => ({
+      sales: salesAgg.map((s) => ({
         label: `Month ${s._id.month}`,
         value: s.value,
       })),
-      revenueGraph: revenueGraph.map((r) => ({
+      revenueGraph: revenueGraphAgg.map((r) => ({
         label: `Month ${r._id.month}`,
         value: r.value,
       })),

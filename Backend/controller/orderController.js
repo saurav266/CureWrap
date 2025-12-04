@@ -1,4 +1,7 @@
-// controllers/orderController.js
+// controller/orderController.js
+import "dotenv/config";
+import crypto from "crypto";
+import Razorpay from "razorpay";
 import Order from "../model/orderSchema.js";
 import {
   createShiprocketOrder,
@@ -9,9 +12,16 @@ import {
 } from "../services/shiprocketService.js";
 import ShiprocketAuth from "../services/shiprocketService.js";
 
+const RETURN_WINDOW_DAYS = 7; // backend return window
+
+// Razorpay client (for payments + refunds)
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
 /**
  * Place Order (Guest + Logged-in)
- * Supports paymentMethod: "COD" | "STRIPE" | "RAZORPAY"
  */
 export const placeOrder = async (req, res) => {
   try {
@@ -27,7 +37,6 @@ export const placeOrder = async (req, res) => {
       userId,
     } = req.body;
 
-    // ---------- BASIC VALIDATIONS ----------
     if (!items || !Array.isArray(items) || !items.length) {
       return res.status(400).json({ error: "No items in order" });
     }
@@ -46,7 +55,7 @@ export const placeOrder = async (req, res) => {
         .json({ error: "Subtotal and total are required" });
     }
 
-    // ---------- NORMALIZE ITEMS ----------
+    // NORMALIZE ITEMS
     const normalizedItems = items.map((i, idx) => {
       const productId = i.productId || i.product || i._id || i.id;
 
@@ -55,10 +64,7 @@ export const placeOrder = async (req, res) => {
       }
 
       const name =
-        i.name ||
-        i.productName ||
-        i.title ||
-        `Item ${idx + 1}`;
+        i.name || i.productName || i.title || `Item ${idx + 1}`;
 
       return {
         product: productId,
@@ -71,7 +77,7 @@ export const placeOrder = async (req, res) => {
       };
     });
 
-    // ---------- VALIDATE PINCODE ----------
+    // PINCODE VALIDATION
     const rawPincode = String(shippingAddress.postalCode || "").trim();
     if (!/^[1-9][0-9]{5}$/.test(rawPincode)) {
       return res.status(400).json({
@@ -79,13 +85,11 @@ export const placeOrder = async (req, res) => {
       });
     }
 
-    // ---------- PAYMENT STATUS ----------
-    // Always start as pending. Razorpay/Stripe will mark as paid in their verify controllers.
+    // PAYMENT STATUS: always start pending
     let paymentStatus = "pending";
-
     const finalUserId = userId || req.user?.id || null;
 
-    // ---------- CREATE ORDER IN DB ----------
+    // CREATE ORDER
     const order = await Order.create({
       userId: finalUserId,
       items: normalizedItems,
@@ -98,12 +102,10 @@ export const placeOrder = async (req, res) => {
       tax,
       total,
       orderStatus: "processing",
+      returnStatus: "none",
     });
 
-    // ---------- SHIPROCKET INTEGRATION ----------
-    // ⚠️ IMPORTANT:
-    // - COD orders → create Shiprocket order immediately.
-    // - Online payments (RAZORPAY, STRIPE) → Shiprocket will be called AFTER payment success in their verify controller.
+    // SHIPROCKET (COD ONLY HERE)
     let shiprocketData = null;
     let awbData = null;
     let labelData = null;
@@ -116,7 +118,6 @@ export const placeOrder = async (req, res) => {
 
         const srPayload = {
           channel_order_id: `WEB-${order._id}`,
-
           customer_name: firstName || fullName || "Customer",
           customer_last_name: lastName || "",
           address: shippingAddress.addressLine1,
@@ -126,15 +127,12 @@ export const placeOrder = async (req, res) => {
           country: shippingAddress.country || "India",
           email: paymentResult?.email || "noemail@example.com",
           phone: shippingAddress.phone,
-
           items: normalizedItems.map((i) => ({
             name: i.name,
             sku: i.product?.toString() || "NO-SKU",
             quantity: i.quantity,
             price: i.price,
           })),
-
-          // COD only here
           payment_method: "COD",
           total,
           length: 10,
@@ -143,18 +141,13 @@ export const placeOrder = async (req, res) => {
           weight: 0.5,
         };
 
-        // 3) Create order in Shiprocket
         shiprocketData = await createShiprocketOrder(srPayload);
         const shipmentId = shiprocketData?.shipment_id;
 
         if (shipmentId) {
-          // 4) Assign AWB
           awbData = await assignShiprocketAwb(shipmentId);
-
-          // 5) Generate label
           labelData = await generateShiprocketLabel(shipmentId);
 
-          // 6) Save back to Mongo
           order.shiprocket = {
             order_id: shiprocketData.order_id,
             channel_order_id: shiprocketData.channel_order_id,
@@ -186,7 +179,6 @@ export const placeOrder = async (req, res) => {
         "Shiprocket error:",
         shipErr.response?.data || shipErr.message
       );
-      // Don't fail the whole order if Shiprocket fails
     }
 
     return res.json({
@@ -202,8 +194,7 @@ export const placeOrder = async (req, res) => {
   }
 };
 
-
-// 🔹 Mark order as PAID (for COD after delivery)
+// COD: mark as paid (manual admin)
 export const markOrderPaid = async (req, res) => {
   try {
     const orderId = req.params.id;
@@ -215,9 +206,8 @@ export const markOrderPaid = async (req, res) => {
 
     if (order.paymentStatus !== "paid") {
       order.paymentStatus = "paid";
-
       if (order.orderStatus === "processing") {
-        order.orderStatus = "shipped"; // or "delivered" depending on flow
+        order.orderStatus = "shipped";
       }
       await order.save();
     }
@@ -229,19 +219,167 @@ export const markOrderPaid = async (req, res) => {
   }
 };
 
+/* ========= 💳 COD → Razorpay Conversion ========= */
+
+// Create Razorpay order for an existing COD order
+export const createRazorpayOrderForCod = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+
+    if (!order.total || order.total <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid order amount" });
+    }
+
+    const amountPaise = Math.round(order.total * 100); // Razorpay uses paise
+
+    const options = {
+      amount: amountPaise,
+      currency: "INR",
+      receipt: `COD-${order._id}`,
+      notes: {
+        appOrderId: order._id.toString(),
+        type: "cod_to_online",
+      },
+    };
+
+    const rpOrder = await razorpay.orders.create(options);
+
+    // Store Razorpay order info in paymentResult
+    order.paymentResult = {
+      ...(order.paymentResult || {}),
+      razorpay_order_id: rpOrder.id,
+      status: "created",
+      mode: "cod_to_razorpay",
+    };
+
+    await order.save();
+
+    return res.json({
+      success: true,
+      razorpayOrder: rpOrder,
+      appOrderId: order._id,
+      key: process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (err) {
+    console.error("createRazorpayOrderForCod error:", err);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to create Razorpay order" });
+  }
+};
+
+// Verify Razorpay payment for COD order and mark it as paid
+export const verifyRazorpayPaymentAndMarkPaid = async (req, res) => {
+  try {
+    const {
+      appOrderId,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
+
+    if (
+      !appOrderId ||
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Missing Razorpay fields" });
+    }
+
+    const order = await Order.findById(appOrderId);
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Order not found" });
+    }
+
+    // Verify signature
+    const signPayload = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(signPayload)
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid Razorpay signature" });
+    }
+
+    // Signature valid => mark as paid
+    order.paymentStatus = "paid";
+    order.paymentMethod = "RAZORPAY";
+    order.paymentResult = {
+      ...(order.paymentResult || {}),
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      status: "paid",
+    };
+
+    if (order.orderStatus === "processing") {
+      order.orderStatus = "shipped";
+    }
+
+    await order.save();
+
+    return res.json({ success: true, order });
+  } catch (err) {
+    console.error("verifyRazorpayPaymentAndMarkPaid error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to verify payment / mark order as paid",
+    });
+  }
+};
+
+/* ========= ORDERS CRUD / LISTING ========= */
+
 export const getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find({
-      $or: [
-        { paymentStatus: "paid" },   // any fully paid order
-        { paymentMethod: "COD" },    // all COD orders (pending/paid)
-      ],
-    }).sort({ createdAt: -1 });
+    const { filter, limit: limitStr } = req.query;
 
-    res.json({ success: true, orders });
+    // base query = everything
+    const query = {};
+
+    // FILTERS
+    if (filter === "cancelled") {
+      // only cancelled orders
+      query.orderStatus = "cancelled";
+    } else if (filter === "prepaid") {
+      // prepaid = paid + NOT COD
+      query.paymentStatus = "paid";
+      query.paymentMethod = { $ne: "COD" };
+    } else if (filter === "cod") {
+      // cash on delivery
+      query.paymentMethod = "COD";
+    }
+    // else: "all" → no extra conditions (all orders)
+
+    // Optional limit (for dashboard recent orders)
+    const limit = limitStr ? parseInt(limitStr, 10) : null;
+
+    let mongooseQuery = Order.find(query).sort({ createdAt: -1 });
+    if (!isNaN(limit) && limit > 0) {
+      mongooseQuery = mongooseQuery.limit(limit);
+    }
+
+    const orders = await mongooseQuery;
+
+    return res.json({ success: true, orders });
   } catch (e) {
     console.error("getAllOrders error:", e);
-    res.status(500).json({ error: "Failed to fetch orders" });
+    return res.status(500).json({ error: "Failed to fetch orders" });
   }
 };
 
@@ -274,24 +412,98 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
+// ✅ UPDATED: auto-refund on cancel for Razorpay-paid orders
 export const updateOrderStatus = async (req, res) => {
   try {
     const orderId = req.params.id;
     const { status } = req.body;
+
     const validStatuses = [
       "processing",
+      "packed",
       "shipped",
+      "out_for_delivery",
       "delivered",
       "cancelled",
     ];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: "Invalid status value" });
     }
+
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
+
+    const previousStatus = order.orderStatus;
+
+    // set new status
     order.orderStatus = status;
+
+    // set deliveredAt when delivered
+    if (status === "delivered" && !order.deliveredAt) {
+      order.deliveredAt = new Date();
+    }
+
+    /**
+     * 🔁 AUTO REFUND LOGIC
+     * If:
+     *  - status changed to "cancelled"
+     *  - order was previously not cancelled
+     *  - paymentMethod is RAZORPAY
+     *  - paymentStatus is "paid"
+     * then try to refund via Razorpay.
+     */
+    if (
+      status === "cancelled" &&
+      previousStatus !== "cancelled" &&
+      order.paymentMethod === "RAZORPAY" &&
+      order.paymentStatus === "paid"
+    ) {
+      try {
+        const paymentId = order.paymentResult?.razorpay_payment_id;
+
+        if (!paymentId) {
+          throw new Error("Missing razorpay_payment_id on order");
+        }
+
+        const refundAmountPaise = Math.round(order.total * 100);
+
+        const refund = await razorpay.payments.refund(paymentId, {
+          amount: refundAmountPaise, // full refund
+          speed: "optimum",
+        });
+
+        // mark order as refunded
+        order.paymentStatus = "refunded";
+        order.refundInfo = {
+          gateway: "razorpay",
+          refundId: refund.id,
+          amount: refund.amount / 100,
+          currency: refund.currency,
+          status: refund.status,
+          createdAt: new Date(),
+          raw: refund,
+        };
+
+        console.log(
+          `✅ Auto refund success for order ${order._id}, refundId = ${refund.id}`
+        );
+      } catch (refundErr) {
+        console.error("❌ Auto refund on cancel failed:", refundErr);
+
+        // keep order cancelled, but store refund failure info
+        order.refundInfo = {
+          gateway: "razorpay",
+          refundId: null,
+          amount: order.total,
+          currency: "INR",
+          status: "failed",
+          error: refundErr.message,
+        };
+      }
+    }
+
     await order.save();
     res.json({ success: true, order });
   } catch (e) {
@@ -361,31 +573,270 @@ export const editOrder = async (req, res) => {
   }
 };
 
+/* ========= SHIPROCKET LIVE TRACKING ========= */
+
 export const trackLiveShipment = async (req, res) => {
   try {
     const { awb } = req.params;
-    if (!awb) return res.status(400).json({ error: "AWB missing" });
+    if (!awb) {
+      return res
+        .status(400)
+        .json({ success: false, error: "AWB missing" });
+    }
 
+    // get shiprocket token (may throw)
     const token = await ShiprocketAuth();
+
+    // call Shiprocket (may throw)
     const trackingResult = await trackShipmentByAwb(awb, token);
 
-    res.json({ success: true, tracking: trackingResult });
+    return res.json({ success: true, tracking: trackingResult });
   } catch (e) {
-    console.error("trackLiveShipment error:", e.message);
-    res.status(500).json({ error: "Failed to track shipment" });
+    console.error(
+      "trackLiveShipment error:",
+      e.response?.data || e.message
+    );
+
+    // 👉 IMPORTANT: do NOT crash the frontend with 500.
+    // Return success: false but status 200 so UI can just show "no updates yet".
+    return res.status(200).json({
+      success: false,
+      tracking: null,
+      error:
+        e.response?.data?.message ||
+        e.response?.data ||
+        e.message ||
+        "Failed to track shipment",
+    });
   }
 };
 
+// OPTIONAL: if you use this anywhere else
 export const getTrackingLive = async (req, res) => {
   try {
     const { awb } = req.params;
 
-    if (!awb) return res.status(400).json({ error: "AWB is required" });
+    if (!awb) {
+      return res
+        .status(400)
+        .json({ success: false, error: "AWB is required" });
+    }
 
     const result = await trackShipment(awb);
-    res.json({ success: true, tracking: result });
+    return res.json({ success: true, tracking: result });
   } catch (error) {
-    console.error("Tracking Error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Tracking failed", details: error.message });
+    console.error(
+      "getTrackingLive error:",
+      error.response?.data || error.message
+    );
+
+    return res.status(200).json({
+      success: false,
+      tracking: null,
+      error:
+        error.response?.data?.message ||
+        error.response?.data ||
+        error.message ||
+        "Tracking failed",
+    });
+  }
+};
+
+/* ========== 🔁 RETURN + REPLACEMENT FLOW ========== */
+
+// user: request return (refund OR replacement)
+export const requestOrderReturn = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { reason, type } = req.body; // type: "refund" | "replacement"
+
+    if (!["refund", "replacement"].includes(type)) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid return type" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+
+    if (order.orderStatus !== "delivered") {
+      return res.status(400).json({
+        success: false,
+        error: "Return / replacement allowed only after delivery.",
+      });
+    }
+
+    const deliveredAt = order.deliveredAt || order.updatedAt || order.createdAt;
+    const diffMs = Date.now() - new Date(deliveredAt).getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays > RETURN_WINDOW_DAYS) {
+      return res.status(400).json({
+        success: false,
+        error: "Return window has expired.",
+      });
+    }
+
+    if (order.returnStatus && order.returnStatus !== "none") {
+      return res.status(400).json({
+        success: false,
+        error: "Return already requested or processed for this order.",
+      });
+    }
+
+    order.returnStatus = "requested";
+    order.returnType = type; // refund or replacement
+    order.returnReason = reason || "";
+    order.returnRequestedAt = new Date();
+
+    await order.save();
+
+    return res.json({ success: true, order });
+  } catch (e) {
+    console.error("requestOrderReturn error:", e);
+    res.status(500).json({ success: false, error: "Failed to request return" });
+  }
+};
+
+// admin: list all orders with some return activity
+export const getReturnOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      returnStatus: { $ne: "none" },
+    }).sort({ returnRequestedAt: -1, createdAt: -1 });
+
+    res.json({ success: true, orders });
+  } catch (e) {
+    console.error("getReturnOrders error:", e);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch return orders" });
+  }
+};
+
+// admin: approve / reject return / replacement
+export const updateReturnStatusAdmin = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { status, note } = req.body; // status: "approved" | "rejected"
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid return status" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Order not found" });
+    }
+
+    if (order.returnStatus === "none") {
+      return res.status(400).json({
+        success: false,
+        error: "No return was requested for this order.",
+      });
+    }
+
+    order.returnStatus = status;
+    order.returnAdminNote = note || "";
+    order.returnResolvedAt = new Date();
+
+    // If admin approves
+    if (status === "approved") {
+      // 1) REFUND FLOW (online payment)
+      if (order.returnType === "refund") {
+        if (
+          order.paymentMethod === "RAZORPAY" &&
+          order.paymentStatus === "paid" &&
+          process.env.RAZORPAY_KEY_ID &&
+          process.env.RAZORPAY_KEY_SECRET
+        ) {
+          const paymentId = order.paymentResult?.razorpay_payment_id;
+          const refundAmountPaise = Math.round(order.total * 100);
+
+          if (paymentId) {
+            try {
+              const refund = await razorpay.payments.refund(paymentId, {
+                amount: refundAmountPaise,
+              });
+
+              order.refundInfo = {
+                gateway: "razorpay",
+                refundId: refund.id,
+                amount: refund.amount / 100,
+                currency: refund.currency,
+                status: refund.status,
+                raw: refund,
+              };
+
+              // mark as refunded
+              order.paymentStatus = "refunded";
+            } catch (err) {
+              console.error("Razorpay refund error:", err);
+              // still keep return approved; you can handle manual refund outside
+              order.refundInfo = {
+                gateway: "razorpay",
+                refundId: null,
+                amount: order.total,
+                currency: "INR",
+                status: "failed",
+                raw: { message: err.message },
+              };
+            }
+          }
+        }
+
+        // once refunded, we treat order as cancelled logically
+        if (order.orderStatus !== "cancelled") {
+          order.orderStatus = "cancelled";
+        }
+      }
+
+      // 2) REPLACEMENT FLOW
+      if (order.returnType === "replacement") {
+        // create a new replacement order with same items & shipping
+        const replacementOrder = await Order.create({
+          userId: order.userId,
+          items: order.items,
+          shippingAddress: order.shippingAddress,
+          paymentMethod: order.paymentMethod,
+          // no new charge; it's a free replacement
+          paymentStatus: "paid",
+          paymentResult: {
+            type: "replacement",
+            originalOrderId: order._id,
+            note: "Free replacement order",
+          },
+          subtotal: order.subtotal,
+          shippingCharges: order.shippingCharges, // could be 0 if you want
+          tax: order.tax,
+          total: order.total,
+          orderStatus: "processing",
+          returnStatus: "none",
+        });
+
+        order.replacementOrderId = replacementOrder._id;
+
+        // also mark original as cancelled
+        if (order.orderStatus !== "cancelled") {
+          order.orderStatus = "cancelled";
+        }
+
+        // (optional) here you could also immediately create Shiprocket order for replacement
+      }
+    }
+
+    await order.save();
+
+    res.json({ success: true, order });
+  } catch (e) {
+    console.error("updateReturnStatusAdmin error:", e);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to update return status" });
   }
 };

@@ -19,7 +19,7 @@ const razorpay = new Razorpay({
 // ✅ Create Razorpay order (for frontend checkout)
 export const createRazorpayOrder = async (req, res) => {
   try {
-    const { totalAmount } = req.body;
+    const { totalAmount, appOrderId } = req.body; // appOrderId optional but useful for receipt
 
     if (!totalAmount || totalAmount <= 0) {
       return res
@@ -30,7 +30,10 @@ export const createRazorpayOrder = async (req, res) => {
     const options = {
       amount: Math.round(totalAmount * 100), // in paise
       currency: "INR",
-      receipt: "rcpt_" + Date.now(),
+      receipt: appOrderId ? `rcpt_${appOrderId}` : "rcpt_" + Date.now(),
+      notes: {
+        appOrderId: appOrderId || "",
+      },
     };
 
     const order = await razorpay.orders.create(options);
@@ -53,18 +56,24 @@ export const createRazorpayOrder = async (req, res) => {
 // ✅ Verify Razorpay payment, update Order, then push to Shiprocket as PREPAID
 export const verifyRazorpayPayment = async (req, res) => {
   try {
+    console.log("verifyRazorpayPayment body:", req.body);
+
     const {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-      orderId, // your MongoDB Order._id
+      orderId,    // may be undefined
+      appOrderId, // from your frontend
     } = req.body;
+
+    // Prefer orderId, fallback to appOrderId
+    const effectiveOrderId = orderId || appOrderId;
 
     if (
       !razorpay_order_id ||
       !razorpay_payment_id ||
       !razorpay_signature ||
-      !orderId
+      !effectiveOrderId
     ) {
       return res
         .status(400)
@@ -87,7 +96,7 @@ export const verifyRazorpayPayment = async (req, res) => {
 
     // 2) Mark order as PAID in Mongo
     let updatedOrder = await Order.findByIdAndUpdate(
-      orderId,
+      effectiveOrderId,
       {
         paymentStatus: "paid",
         paymentMethod: "RAZORPAY",
@@ -206,5 +215,58 @@ export const verifyRazorpayPayment = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, error: "Verification failed" });
+  }
+};
+
+
+
+export const refundPayment = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "orderId required",
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.paymentStatus !== "paid") {
+      return res.status(400).json({
+        success: false,
+        message: "Only paid orders can be refunded",
+      });
+    }
+
+    const paymentId = order.paymentResult?.razorpay_payment_id;
+
+    if (!paymentId) {
+      return res.status(400).json({ success: false, message: "No payment ID found" });
+    }
+
+    const refundResponse = await razorpay.payments.refund(paymentId, {
+      amount: order.total * 100, // full refund
+      speed: "optimum",
+    });
+
+    order.paymentStatus = "refunded";
+    order.orderStatus = "cancelled";
+    order.refundResult = {
+      refundId: refundResponse.id,
+      status: refundResponse.status,
+      created_at: new Date(),
+    };
+
+    await order.save();
+
+    return res.json({ success: true, message: "Refund initiated", order });
+  } catch (err) {
+    console.error("refundPayment error:", err);
+    return res.status(500).json({ success: false, error: err.message });
   }
 };

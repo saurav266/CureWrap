@@ -1,36 +1,58 @@
 // src/context/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [authReady, setAuthReady] = useState(false); // ✅ tells app when hydration is done
 
-  // Check localStorage for persisted login
+  // 🔁 Hydrate from localStorage on first load / refresh
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
+    try {
+      const storedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("token");
+
+      if (storedUser && storedToken) {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        setToken(storedToken);
+        console.log("AuthContext: restored from localStorage", parsed);
+      } else {
+        setUser(null);
+        setToken(null);
+      }
+    } catch (err) {
+      console.error("AuthContext: error reading localStorage", err);
+      setUser(null);
+      setToken(null);
+    } finally {
+      setAuthReady(true); // ✅ very important for PrivateRoute
     }
   }, []);
 
-  const login = (userData, token) => {
+  const login = (userData, tokenValue) => {
     setUser(userData);
+    setToken(tokenValue);
     localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", token);
+    localStorage.setItem("token", tokenValue);
+    setAuthReady(true);
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
   };
 
-  const isAuthenticated = !!user;
+  const isAuthenticated = !!user && !!token;
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, isAuthenticated, authReady, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

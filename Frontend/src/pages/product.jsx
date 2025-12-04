@@ -253,6 +253,13 @@ export default function ProductSection() {
                 new Date(p.created_at) >
                   new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // last 30 days
 
+              // ✅ Use backend description if available
+              const shortDesc =
+                p.short_description ||
+                p.shortDescription ||
+                p.description ||
+                "";
+
               return (
                 <motion.div
                   key={p._id}
@@ -337,9 +344,9 @@ export default function ProductSection() {
                     </span>
                   </div>
 
-                  {/* Short description */}
+                  {/* ✅ Card description from backend, truncated */}
                   <p className="text-gray-600 text-xs md:text-sm line-clamp-2 mb-3">
-                    {p.short_description ||
+                    {shortDesc ||
                       "Breathable, stretchable fabric designed for daily wear and targeted support."}
                   </p>
 
@@ -370,7 +377,6 @@ export default function ProductSection() {
                       )}
                     </p>
 
-                    {/* EMI / extra info line */}
                     <p className="mt-1 text-[11px] text-gray-500">
                       Inclusive of all taxes • COD available
                     </p>
@@ -463,12 +469,14 @@ export default function ProductSection() {
                     Inclusive of all taxes • Free shipping above ₹499
                   </p>
 
-                  <p className="text-sm text-gray-700 mb-4 leading-relaxed line-clamp-4">
+                  {/* ✅ Quick view uses full backend description */}
+                  <p className="text-sm text-gray-700 mb-4 leading-relaxed">
                     {quickView.description ||
+                      quickView.short_description ||
                       "Engineered with breathable, four-way stretch fabric that supports the joint without restricting movement. Ideal for daily wear, workouts or recovery days."}
                   </p>
 
-                  {/* Bullet points / realistic benefits */}
+                  {/* You can keep or remove these static bullet points as you like */}
                   <ul className="text-xs text-gray-700 space-y-1 mb-4">
                     <li>• Targeted compression for improved joint stability</li>
                     <li>• Sweat-wicking, odour-resistant inner lining</li>

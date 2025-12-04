@@ -1,4 +1,5 @@
 // src/components/FeaturedProductsCinematicSquareModal.jsx
+import { Toaster } from "react-hot-toast";
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -45,6 +46,8 @@ export default function FeaturedProductsCinematicSquareModal() {
   const [quickView, setQuickView] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [heartBurstId, setHeartBurstId] = useState(null);
+  const [wishlist, setWishlist] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const cardRefs = useRef({});
 
   // ===================== FETCH FEATURED PRODUCTS FROM BACKEND =====================
@@ -118,10 +121,9 @@ export default function FeaturedProductsCinematicSquareModal() {
     };
   }, [quickView]);
 
-  // keyboard accessibility for modal
+  // Modal keyboard access
   useEffect(() => {
     if (!quickView) return;
-
     const handleKey = (e) => {
       if (e.key === "Escape") {
         setQuickView(null);
@@ -133,7 +135,6 @@ export default function FeaturedProductsCinematicSquareModal() {
         );
       }
     };
-
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [quickView]);
@@ -191,6 +192,8 @@ export default function FeaturedProductsCinematicSquareModal() {
   // ===================== RENDER =====================
   return (
     <>
+      <Toaster position="top-right" />
+
       <section className="py-14 md:py-20 px-4 md:px-12 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
@@ -360,7 +363,7 @@ export default function FeaturedProductsCinematicSquareModal() {
         </div>
       </section>
 
-      {/* =================== SQUARE MODAL (Option C) =================== */}
+      {/* =================== QUICK VIEW MODAL =================== */}
       {quickView && (
         <div className="fixed inset-0 z-[4000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
           <motion.div
@@ -396,7 +399,7 @@ export default function FeaturedProductsCinematicSquareModal() {
                 </div>
               </div>
 
-              {/* Thumbnail ribbon */}
+              {/* Thumbnails */}
               <div className="px-6 pb-6">
                 <div className="w-full flex items-center justify-center">
                   <div className="w-full max-w-[860px]">
@@ -465,12 +468,20 @@ export default function FeaturedProductsCinematicSquareModal() {
                 </p>
 
                 <div className="mt-4 flex gap-3">
-                  <button className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#2F86D6] to-[#63B46B] text-white px-4 py-2 rounded-full font-semibold shadow hover:scale-105 transition transform">
+                  <button
+                    className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#2F86D6] to-[#63B46B] text-white px-4 py-2 rounded-full font-semibold shadow hover:scale-105 transition"
+                    onClick={() => addToCart(quickView)}
+                  >
                     Add to Cart
                     <AiOutlineShoppingCart />
                   </button>
 
-                  <button className="px-4 py-2 rounded-full border border-white/10 text-white/90 hover:bg-white/6 transition">
+                  <button
+                    onClick={() =>
+                      window.location.assign(`/product/${quickView.id}`)
+                    }
+                    className="px-4 py-2 rounded-full border border-white/10 text-white/90 hover:bg-white/6 transition"
+                  >
                     View Product
                   </button>
                 </div>
@@ -494,6 +505,7 @@ export default function FeaturedProductsCinematicSquareModal() {
         </div>
       )}
 
+      {/* Styles */}
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

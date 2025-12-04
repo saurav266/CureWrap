@@ -26,80 +26,80 @@ export default function AdminDashboard() {
   const [sortBy, setSortBy] = useState("date");
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  async function loadData() {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
 
-      const token = localStorage.getItem("token"); // change key if needed
+        const token = localStorage.getItem("token"); // change key if needed
 
-      // 1) Fetch stats
-      const res1 = await fetch(`${BACKEND_URL}/api/admin/stats`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-      });
-
-      const statsJson = await res1.json();
-      console.log("STATS RESPONSE:", statsJson);
-
-      if (res1.ok) {
-        setStats({
-          usersCount: statsJson.usersCount || 0,
-          ordersCount: statsJson.ordersCount || 0,
-          totalRevenue: statsJson.totalRevenue || 0,
-          sales: statsJson.sales || [],
-          revenueGraph: statsJson.revenueGraph || [],
-        });
-      } else {
-        console.error("Stats error:", statsJson);
-      }
-
-      // 2) Fetch recent orders
-      const res2 = await fetch(
-        `${BACKEND_URL}/api/orders?limit=10`,
-        {
+        // 1) Fetch stats
+        const res1 = await fetch(`${BACKEND_URL}/api/admin/stats`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: token ? `Bearer ${token}` : "",
           },
+        });
+
+        const statsJson = await res1.json();
+        console.log("STATS RESPONSE:", statsJson);
+
+        if (res1.ok) {
+          setStats({
+            usersCount: statsJson.usersCount || 0,
+            ordersCount: statsJson.ordersCount || 0,
+            totalRevenue: statsJson.totalRevenue || 0,
+            sales: statsJson.sales || [],
+            revenueGraph: statsJson.revenueGraph || [],
+          });
+        } else {
+          console.error("Stats error:", statsJson);
         }
-      );
 
-      const ordersJson = await res2.json();
-      console.log("RECENT ORDERS RESPONSE:", ordersJson);
+        // 2) Fetch recent orders
+        const res2 = await fetch(`${BACKEND_URL}/api/orders?limit=10`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
 
-      if (!res2.ok) {
-        console.error("Orders error:", ordersJson);
-        return;
+        const ordersJson = await res2.json();
+        console.log("RECENT ORDERS RESPONSE:", ordersJson);
+
+        if (!res2.ok) {
+          console.error("Orders error:", ordersJson);
+          return;
+        }
+
+        // Handle multiple shapes: {orders: []}, {data: []}, or plain []
+        let orders = [];
+        if (Array.isArray(ordersJson.orders)) {
+          orders = ordersJson.orders;
+        } else if (Array.isArray(ordersJson.data)) {
+          orders = ordersJson.data;
+        } else if (Array.isArray(ordersJson)) {
+          orders = ordersJson;
+        }
+
+        setRecentOrders(orders);
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+      } finally {
+        setLoading(false);
       }
-
-      // 👉 handle multiple possible shapes
-      let orders = [];
-      if (Array.isArray(ordersJson.orders)) {
-        orders = ordersJson.orders;
-      } else if (Array.isArray(ordersJson.data)) {
-        orders = ordersJson.data;
-      } else if (Array.isArray(ordersJson)) {
-        // in case API returns plain array
-        orders = ordersJson;
-      }
-
-      setRecentOrders(orders);
-    } catch (err) {
-      console.error("Dashboard load error:", err);
-    } finally {
-      setLoading(false);
     }
-  }
 
-  loadData();
-}, []);
+    loadData();
+  }, []);
 
+  // ❌ Remove cancelled orders for UI display
+  const nonCancelledOrders = recentOrders.filter(
+    (o) => o.orderStatus !== "cancelled"
+  );
 
-  // Sort recent orders by amount or date using real fields
-  const sortedOrders = [...recentOrders].sort((a, b) => {
+  // Sort recent *non-cancelled* orders by amount or date
+  const sortedOrders = [...nonCancelledOrders].sort((a, b) => {
     if (sortBy === "amount") {
       return (b.total || 0) - (a.total || 0); // using order.total from your schema
     }
@@ -113,6 +113,9 @@ useEffect(() => {
     if (!iso) return "";
     return new Date(iso).toLocaleString();
   };
+
+  // 👇 Use nonCancelledOrders length for total orders in the UI
+  const displayOrdersCount = nonCancelledOrders.length || stats.ordersCount;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -130,7 +133,7 @@ useEffect(() => {
         </div>
         <div className="bg-white p-6 rounded shadow">
           <h2 className="text-gray-500 text-sm">Total Orders</h2>
-          <p className="text-3xl font-bold">{stats.ordersCount}</p>
+          <p className="text-3xl font-bold">{displayOrdersCount}</p>
         </div>
         <div className="bg-white p-6 rounded shadow">
           <h2 className="text-gray-500 text-sm">Total Revenue</h2>
@@ -214,14 +217,21 @@ useEffect(() => {
             {sortedOrders.map((order) => (
               <tr key={order._id} className="border-b hover:bg-gray-50">
                 <td className="py-2 font-mono text-xs">{order._id}</td>
+
                 <td className="py-2">
                   {order.shippingAddress?.name || (
                     <span className="italic text-gray-400">Guest</span>
                   )}
                 </td>
-                <td className="py-2">
-                  ₹{(order.total ?? 0).toLocaleString()}
+
+                {/* ✅ Show amount ONLY when payment is fully done & order not cancelled */}
+                <td className="py-2 font-semibold">
+                  {order.paymentStatus === "paid" &&
+                  order.orderStatus !== "cancelled"
+                    ? `₹${(order.total ?? 0).toLocaleString()}`
+                    : "—"}
                 </td>
+
                 <td className="py-2">
                   <span
                     className={`px-2 py-1 rounded text-xs font-medium capitalize ${
@@ -231,12 +241,15 @@ useEffect(() => {
                         ? "bg-yellow-50 text-yellow-600"
                         : order.orderStatus === "shipped"
                         ? "bg-blue-50 text-blue-600"
-                        : "bg-red-50 text-red-600"
+                        : order.orderStatus === "cancelled"
+                        ? "bg-red-50 text-red-600"
+                        : "bg-gray-50 text-gray-600"
                     }`}
                   >
                     {order.orderStatus || "processing"}
                   </span>
                 </td>
+
                 <td className="py-2 text-xs text-gray-500">
                   {formatDate(order.createdAt)}
                 </td>

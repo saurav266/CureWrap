@@ -15,7 +15,11 @@ const backendUrl = "http://localhost:8000";
 // Shared nav link style (desktop)
 const navLinkClass = ({ isActive }) =>
   `relative group transition-all duration-300 font-semibold tracking-wide
-   ${isActive ? "text-green-600" : "text-gray-700 hover:text-green-500 hover:scale-100 hover:-translate-y-0.5"}
+   ${
+     isActive
+       ? "text-green-600"
+       : "text-gray-700 hover:text-green-500 hover:scale-100 hover:-translate-y-0.5"
+   }
    hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]`;
 
 // Helper to build image url
@@ -270,7 +274,8 @@ const Navbar = () => {
 
       {/* Right Icons */}
       <div className="flex items-center gap-10">
-        <Link to="/WatchList">
+        {/* 🔁 FIXED: route to /wishlist */}
+        <Link to="/wishlist">
           <RiPokerHeartsLine
             className="
             h-7 w-7 cursor-pointer 

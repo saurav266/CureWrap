@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { lazy, Suspense, useState, useEffect } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import "./index.css";
@@ -7,7 +8,7 @@ import Navbar from "./components/user/Navbar.jsx";
 import Footer from "./components/Footer";
 import CartDrawer from "./components/CartDrawer";
 import ProtectedRoute from "./components/protected/ProtectedRoute.jsx";
-import { useAuth } from "./context/AuthContext.jsx";
+import { useAuth } from "./context/AuthContext.jsx"; // 👈 make sure path matches
 
 // Lazy Loaded User Pages
 const Home = lazy(() => import("./pages/Homeuser.jsx"));
@@ -23,6 +24,7 @@ const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const PaymentPage = lazy(() => import("./pages/PaymentPage"));
 const OrderPlaced = lazy(() => import("./pages/OrderPlaced"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage.jsx"));
+import WishlistPage from "./components/user/WishlistPage.jsx";
 
 // Lazy Loaded Admin Pages
 const AdminNavbar = lazy(() => import("./components/admin/AdminNavbar.jsx"));
@@ -30,6 +32,7 @@ const AdminHome = lazy(() => import("./pages/AdminPages/Home.jsx"));
 const AdminProductPage = lazy(() => import("./components/admin/Product.jsx"));
 const EditProductPage = lazy(() => import("./components/admin/EditProduct.jsx"));
 const AddProductPage = lazy(() => import("./components/admin/AddProduct.jsx"));
+const AdminReturnPage = lazy(() => import("./components/admin/AdminReturnPage.jsx"));
 const UserManagement = lazy(() => import("./pages/AdminPages/User.jsx"));
 const AllOrder = lazy(() => import("./components/admin/order/AllOrder.jsx"));
 const EditOrderPage = lazy(() => import("./components/admin/order/OrderEditPage.jsx"));
@@ -40,7 +43,7 @@ const MemoFooter = React.memo(Footer);
 const MemoCartDrawer = React.memo(CartDrawer);
 
 function App() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, authReady } = useAuth(); // ✅ use authReady + isAuthenticated
   const ADMIN_EMAIL = "saurav@example.com";
 
   const [cartOpen, setCartOpen] = useState(false);
@@ -59,14 +62,24 @@ function App() {
     "/cart",
     "/checkout",
     "/checkout/payment",
-    "/checkout/success"
+    "/checkout/success",
   ];
   const shouldHideFooter = hideFooterOn.includes(location.pathname);
+
+  // 🔄 While we are restoring user/token from localStorage,
+  // don’t decide admin/user/redirect yet
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="h-10 w-10 border-t-4 border-green-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // ===========================================
   // ADMIN ROUTES
   // ===========================================
-  if (user?.email === ADMIN_EMAIL) {
+  if (isAuthenticated && user?.email === ADMIN_EMAIL) {
     return (
       <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
         <AdminNavbar />
@@ -84,6 +97,14 @@ function App() {
             element={
               <ProtectedRoute adminEmail={ADMIN_EMAIL}>
                 <AllOrder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/returns"
+            element={
+              <ProtectedRoute adminEmail={ADMIN_EMAIL}>
+                <AdminReturnPage />
               </ProtectedRoute>
             }
           />
@@ -153,17 +174,33 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
+          {/* ✅ Wishlist protected by isAuthenticated AFTER authReady */}
+          <Route
+            path="/wishlist"
+            element={
+              isAuthenticated ? (
+                <WishlistPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+
           {/* protected customer pages */}
           <Route
             path="/orders"
             element={
-              user ? <MyOrders /> : <Navigate to="/login" replace />
+              isAuthenticated ? <MyOrders /> : <Navigate to="/login" replace />
             }
           />
           <Route
             path="/orders/:id"
             element={
-              user ? <OrderTrackingPage /> : <Navigate to="/login" replace />
+              isAuthenticated ? (
+                <OrderTrackingPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
           />
 

@@ -28,10 +28,10 @@ const userSchema = new mongoose.Schema({
 
   // Wishlist: array of product references
   wishlist: [
-    {
-      product_id: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-      addedAt: { type: Date, default: Date.now }
-    }
+   {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
   ]
 }, { timestamps: true });
 

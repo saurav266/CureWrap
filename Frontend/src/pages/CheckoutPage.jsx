@@ -145,7 +145,15 @@ export default function CheckoutPage() {
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error("place order non-JSON response:", text);
+      throw new Error("Server did not return valid JSON for place order");
+    }
+
     console.log("place order response:", res.status, data);
 
     if (!res.ok || !data.success) {
@@ -161,10 +169,11 @@ export default function CheckoutPage() {
     localStorage.removeItem("cart");
     localStorage.setItem("lastOrderId", order?._id || "");
 
-    navigate(`/order-success/${order._id}`);
+    // 👇 go to order tracking page
+    navigate(`/orders/${order._id}`);
   };
 
-  // ---------- Razorpay flow with cleanup on failure ----------
+  // ---------- Razorpay flow (using /api/payment/razorpay/*) ----------
   const placeRazorpayOrder = async () => {
     let appOrder = null;
 
@@ -175,7 +184,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 1️⃣ Create app order first (status: 'pending' in DB)
+      // 1️⃣ Create app order first
       appOrder = await createAppOrder();
       console.log("App order created:", appOrder);
 
@@ -185,17 +194,33 @@ export default function CheckoutPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ totalAmount: appOrder.total }),
+          body: JSON.stringify({
+            totalAmount: appOrder.total,
+            appOrderId: appOrder._id,
+          }),
         }
       );
 
-      const rpData = await rpRes.json();
+      const rpText = await rpRes.text();
+      let rpData;
+      try {
+        rpData = JSON.parse(rpText);
+      } catch (e) {
+        console.error("Razorpay create-order non-JSON response:", rpText);
+        throw new Error(
+          `Razorpay create-order did not return JSON (status ${rpRes.status})`
+        );
+      }
+
       console.log("Razorpay create-order response:", rpRes.status, rpData);
 
-      const razorOrder = rpData.order;
-      const razorKey = rpData.key;
+      const razorOrder = rpData.order || rpData.razorpayOrder;
+      const razorKey =
+        rpData.key ||
+        import.meta?.env?.VITE_RAZORPAY_KEY_ID ||
+        process.env.REACT_APP_RAZORPAY_KEY_ID;
 
-      if (!rpRes.ok || !rpData.success || !razorOrder?.id) {
+      if (!rpRes.ok || !rpData.success || !razorOrder?.id || !razorKey) {
         console.error("Razorpay order error:", rpData);
         setError(rpData.error || "Failed to create Razorpay order.");
 
@@ -226,7 +251,7 @@ export default function CheckoutPage() {
           contact: phone,
         },
         notes: {
-          internal_order_id: appOrder._id,
+          appOrderId: appOrder._id,
         },
         handler: async function (response) {
           // ✅ Called ONLY when Razorpay says payment is successful
@@ -238,15 +263,25 @@ export default function CheckoutPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                  appOrderId: appOrder._id,
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature: response.razorpay_signature,
-                  orderId: appOrder._id,
                 }),
               }
             );
 
-            const verifyData = await verifyRes.json();
+            const verifyText = await verifyRes.text();
+            let verifyData;
+            try {
+              verifyData = JSON.parse(verifyText);
+            } catch (e) {
+              console.error("Verify non-JSON response:", verifyText);
+              throw new Error(
+                `Payment verify did not return JSON (status ${verifyRes.status})`
+              );
+            }
+
             console.log("Verify response:", verifyRes.status, verifyData);
 
             if (!verifyRes.ok || !verifyData.success) {
@@ -262,17 +297,21 @@ export default function CheckoutPage() {
                     method: "DELETE",
                   });
                 } catch (delErr) {
-                  console.error("Failed to delete order after verify fail:", delErr);
+                  console.error(
+                    "Failed to delete order after verify fail:",
+                    delErr
+                  );
                 }
               }
               return;
             }
 
-            // ✅ Payment verified, backend marked as paid & pushed to Shiprocket
+            // ✅ Payment verified, backend marked it as paid
             localStorage.removeItem("cart");
             localStorage.setItem("lastOrderId", appOrder._id);
 
-            navigate(`/order-success/${appOrder._id}`);
+            // 👇 go to order tracking page
+            navigate(`/orders/${appOrder._id}`);
           } catch (err) {
             console.error("Payment verification error:", err);
             setError("Payment verification failed.");
@@ -284,7 +323,10 @@ export default function CheckoutPage() {
                   method: "DELETE",
                 });
               } catch (delErr) {
-                console.error("Failed to delete order after verify error:", delErr);
+                console.error(
+                  "Failed to delete order after verify error:",
+                  delErr
+                );
               }
             }
           }
@@ -309,7 +351,10 @@ export default function CheckoutPage() {
             await fetch(`${BACKEND_URL}/api/orders/${appOrder._id}`, {
               method: "DELETE",
             });
-            console.log("Pending order deleted after payment.failed:", appOrder._id);
+            console.log(
+              "Pending order deleted after payment.failed:",
+              appOrder._id
+            );
           } catch (delErr) {
             console.error("Failed to delete pending order:", delErr);
           }
