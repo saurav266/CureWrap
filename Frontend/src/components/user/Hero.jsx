@@ -1,19 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
-import lsBelt from "../../assets/Frontend_assets/curewrap/lsBelt.png"
-/* ------------------------------------------------------------------
-   HERO SECTION (PREMIUM VERSION)
------------------------------------------------------------------- */
+import lsBelt from "../../assets/Frontend_assets/curewrap/lsBelt.png";
+
+const backendUrl = "http://localhost:8000";
+
 export default function HeroSection() {
+  const [products, setProducts] = useState([]);
+
+  // Fetch all products once
+  useEffect(() => {
+    fetch(`${backendUrl}/api/users/products`)
+      .then((res) => res.json())
+      .then((data) => setProducts(data.products || []))
+      .catch(() => setProducts([]));
+  }, []);
+
+  // Helper to get product by name
+  const getProduct = (keyword) => {
+    return products.find((p) =>
+      p.name.toLowerCase().includes(keyword.toLowerCase())
+    );
+  };
+
   return (
     <section className="relative w-full min-h-[90vh] flex items-center px-4 md:px-12 overflow-x-hidden">
       {/* Soft gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-green-100 to-white pointer-events-none" />
 
-      {/* Layout Grid */}
       <div className="relative max-w-7xl w-full grid grid-cols-1 md:grid-cols-[0.45fr_0.55fr] items-center gap-8 mx-auto">
+        
         {/* LEFT TEXT */}
         <motion.div
           initial={{ opacity: 0, x: -60 }}
@@ -24,13 +41,11 @@ export default function HeroSection() {
           <h1 className="text-4xl md:text-6xl font-bold leading-tight text-gray-900">
             Stay Safe. <span className="text-green-600">Stay Aware.</span>
           </h1>
-
           <p className="text-base md:text-xl text-gray-700 max-w-lg mx-auto md:mx-0">
             Protect yourself from phishing attacks with real-time detection,
             awareness training, and tools designed to keep you safe online.
           </p>
 
-          {/* CTA */}
           <motion.a
             href="/products"
             whileHover={{ scale: 1.08 }}
@@ -41,72 +56,24 @@ export default function HeroSection() {
           </motion.a>
         </motion.div>
 
-        {/* RIGHT — HERO IMAGE + HOTSPOTS */}
+        {/* RIGHT IMAGE WITH HOTSPOTS */}
         <motion.div
           initial={{ opacity: 0, x: 60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1.1, ease: "easeOut" }}
-          className="
-            relative flex justify-center md:justify-end
-            pr-0 md:pr-2 lg:pr-4
-            overflow-visible
-          "
+          className="relative flex justify-center md:justify-end pr-0 md:pr-2 lg:pr-4 overflow-visible"
         >
           <motion.img
             src={assets.girl}
             alt="Hero Model"
-            className="
-              w-full max-w-[420px] sm:max-w-[480px] md:max-w-[1250px]
-              h-auto object-contain drop-shadow-2xl brightness-110 contrast-110
-
-              scale-[1.02] sm:scale-[1.06]
-              md:scale-[1.15] lg:scale-[1.22]
-
-              translate-x-0
-              md:translate-x-[20px] lg:translate-x-[40px]
-            "
+            className="w-full max-w-[420px] sm:max-w-[480px] md:max-w-[1250px] h-auto object-contain drop-shadow-2xl brightness-110 contrast-110 scale-[1.02] sm:scale-[1.06] md:scale-[1.15] lg:scale-[1.22] translate-x-0 md:translate-x-[20px] lg:translate-x-[40px]"
           />
 
-          {/* HOTSPOTS */}
-          <Hotspot 
-            id="back-support"
-            top="64%" 
-            left="10%" 
-            title="BACK BELT SUPPORT" 
-            price="₹39.95"
-            productId="back-support"
-            img={lsBelt}
-          />
-
-          <Hotspot 
-            id="back-wear"
-            top="38%" 
-            left="18%" 
-            title="ELBOW WEAR" 
-            price="₹29.95"
-            productId="elbow-wear"
-            img={lsBelt}
-          />
-
-          <Hotspot 
-            id="hinge-knee"
-            top="93%" 
-            left="5%" 
-            title="KNEE CAP" 
-            price="₹29.95"
-            productId="knee-cap"
-            img={lsBelt}
-          />
-
-          <Hotspot 
-            id="knee-wear"
-            top="87%" 
-            left="65%" 
-            title="ANKLE WEAR" 
-            price="₹95.95"
-            productId="ankle-wear"
-            img={lsBelt}
-          />
+          {/* HOTSPOTS WITH BACKEND MATCH */}
+          <Hotspot keyword="LS LUMBUR BELT" getProduct={getProduct} top="64%" left="10%" />
+          <Hotspot keyword="LS Contoured Belt" getProduct={getProduct} top="38%" left="18%" />
+          <Hotspot keyword="Hinge Knee" getProduct={getProduct} top="93%" left="5%" />
+          <Hotspot keyword="Knee Brace" getProduct={getProduct} top="87%" left="65%" />
         </motion.div>
       </div>
     </section>
@@ -114,13 +81,24 @@ export default function HeroSection() {
 }
 
 /* ------------------------------------------------------------------
-   PREMIUM HOTSPOT WITH GLASS BUTTON + NAVIGATION
+   HOTSPOT COMPONENT (BACKEND DRIVEN)
 ------------------------------------------------------------------ */
-function Hotspot({ top, left, title, price, img, productId }) {
+function Hotspot({ top, left, keyword, getProduct }) {
   const [show, setShow] = useState(false);
+  const product = getProduct(keyword);
 
   const leftValue = parseFloat(left);
-  const cardSide = leftValue > 50 ? "left" : "right";
+  const side = leftValue > 50 ? "left" : "right";
+
+  const img = product?.images?.[0]?.url
+    ? product.images[0].url.startsWith("http")
+      ? product.images[0].url
+      : `${backendUrl}/${product.images[0].url}`
+    : lsBelt;
+
+  const price = product?.sale_price
+    ? `₹${product.sale_price.toLocaleString()}`
+    : `₹${product?.price?.toLocaleString()}`;
 
   return (
     <div
@@ -131,69 +109,36 @@ function Hotspot({ top, left, title, price, img, productId }) {
     >
       <motion.button
         whileHover={{ scale: 1.25 }}
-        className="
-          hotspot-ring relative
-          w-8 h-8 rounded-full
-          flex items-center justify-center
-
-          bg-white/40 backdrop-blur-xl
-          border-[3px] border-white/80
-
-          animate-[breathingGlowTriColor_3.8s_ease-in-out_infinite]
-
-          transition-all duration-300
-          z-20
-        "
+        className="w-8 h-8 rounded-full flex items-center justify-center bg-white/40 backdrop-blur-xl border-[3px] border-white/80 animate-pulse"
       >
         <span className="text-green-700 text-xl font-extrabold">+</span>
       </motion.button>
 
-      {/* PRODUCT CARD */}
-      {show && (
+      {show && product && (
         <motion.div
-          initial={{ opacity: 0, y: 12, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className={`
-            hidden md:flex
-            absolute
-            bg-white w-[300px]
-            rounded-2xl shadow-2xl border border-gray-200 p-4 gap-4 z-50
+          className={`hidden md:flex absolute bg-white w-[300px] rounded-2xl shadow-2xl border border-gray-200 p-4 gap-4 z-50
             top-[50%] -translate-y-1/2
-            ${cardSide === "left" ? "-left-[320px]" : "left-[55px]"}
-          `}
+            ${side === "left" ? "-left-[320px]" : "left-[55px]"}`}
         >
-          {/* ARROW */}
-          {cardSide === "left" ? (
-            <div className="absolute top-1/2 -translate-y-1/2 -right-3
-                            w-0 h-0 border-t-[10px] border-b-[10px] border-l-[12px]
-                            border-t-transparent border-b-transparent border-l-white" />
+          {/* Pointer */}
+          {side === "left" ? (
+            <div className="absolute top-1/2 -translate-y-1/2 -right-3 w-0 h-0 border-t-[10px] border-b-[10px] border-l-[12px] border-transparent border-l-white" />
           ) : (
-            <div className="absolute top-1/2 -translate-y-1/2 -left-3
-                            w-0 h-0 border-t-[10px] border-b-[10px] border-r-[12px]
-                            border-t-transparent border-b-transparent border-r-white" />
+            <div className="absolute top-1/2 -translate-y-1/2 -left-3 w-0 h-0 border-t-[10px] border-b-[10px] border-r-[12px] border-transparent border-r-white" />
           )}
 
-          {/* PRODUCT IMAGE */}
-          <img
-            src={img}
-            alt="Preview"
-            className="w-24 h-24 object-cover rounded-xl border border-gray-200"
-          />
+          <img src={img} className="w-24 h-24 object-cover rounded-xl border border-gray-200" />
 
-          {/* CONTENT */}
           <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{product.name}</h3>
             <p className="text-green-600 font-bold mt-1">{price}</p>
 
             <Link
-              to={`/product/${productId}`}
-              className="
-                mt-2 px-4 py-1.5 text-xs font-semibold
-                bg-green-600 text-white rounded-full
-                hover:bg-green-700 transition
-              "
+              to={`/product/${product._id}`}
+              className="mt-2 px-4 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-full hover:bg-green-700 transition"
             >
               VIEW PRODUCT
             </Link>

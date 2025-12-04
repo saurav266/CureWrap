@@ -23,6 +23,13 @@ const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const PaymentPage = lazy(() => import("./pages/PaymentPage"));
 const OrderPlaced = lazy(() => import("./pages/OrderPlaced"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage.jsx"));
+import ScrollToTop from "./components/user/ScrollToTop.jsx";
+
+//policy pages
+import RefundPolicy from "./pages/RefundPolicy.jsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
+import TermsOfService from "./pages/TermsOfService.jsx";
+import FAQ from "./pages/FAQ.jsx";
 
 // Lazy Loaded Admin Pages
 const AdminNavbar = lazy(() => import("./components/admin/AdminNavbar.jsx"));
@@ -59,7 +66,11 @@ function App() {
     "/cart",
     "/checkout",
     "/checkout/payment",
-    "/checkout/success"
+    "/checkout/success",
+    "/refund-policy",
+    "/privacy-policy",
+    "/terms",
+    "/faq"
   ];
   const shouldHideFooter = hideFooterOn.includes(location.pathname);
 
@@ -144,6 +155,7 @@ function App() {
       <MemoCartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
 
       <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
+      <ScrollToTop />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/product" element={<Product />} />
@@ -152,6 +164,10 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/faq" element={<FAQ />} />
 
           {/* protected customer pages */}
           <Route
