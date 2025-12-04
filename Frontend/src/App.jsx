@@ -24,7 +24,7 @@ const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const PaymentPage = lazy(() => import("./pages/PaymentPage"));
 const OrderPlaced = lazy(() => import("./pages/OrderPlaced"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage.jsx"));
-import WishlistPage from "./components/user/WishlistPage.jsx";
+import WishlistPage from "./components/user/wishlistPage.jsx"
 
 // Lazy Loaded Admin Pages
 const AdminNavbar = lazy(() => import("./components/admin/AdminNavbar.jsx"));
