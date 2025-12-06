@@ -150,11 +150,11 @@ app.post("/api/test-otp/send", async (req, res) => {
 
 
 
-
 app.get("/", (req, res) => {
   res.send("Hello, CureWrap Backend Optimized!");
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  
 });

@@ -248,7 +248,7 @@ export default function RefundPolicy() {
                 www.curewrapplus.com
               </a>
             </p>
-            <p className="text-gray-700">Phone: +91-81231 31143</p>
+            <p className="text-gray-700">Phone: +91-84206 44354</p>
           </div>
         </section>
       </main>

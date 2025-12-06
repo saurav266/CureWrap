@@ -8,6 +8,8 @@ import postureImg from "../assets/frontend_assets/curewrap/frontPostureBelt.png"
 import housewife from "../assets/frontend_assets/curewrap/lsBelt.png";
 import rehabilitation from "../assets/frontend_assets/curewrap/kneeBrace.png";
 
+const backendUrl = "http://localhost:8000";
+
 const brandGradient = "bg-gradient-to-r from-[#2F86D6]/80 to-[#63B46B]/80";
 
 const activities = [
@@ -17,16 +19,29 @@ const activities = [
   { name: "Rehabilitation", slug: "rehabilitation", img: rehabilitation }
 ];
 
+/* 🔥 PRODUCT ID–BASED MAPPING (ROCK SOLID) */
 const activityMap = {
-  gym_workout: ["Knee Brace", "Hinge Knee"],
-  pain_relief: ["LS Lumber Belt", "LS Contoured Belt", "Knee Brace"],
-  office_posture: ["Posture Corrector Belt", "LS Contoured Belt"],
-  rehabilitation: ["Hinge Knee", "LS Lumber Belt"]
+  gym_workout: [
+    "692711b3c97c569366415213", // Knee Brace
+    "69270418d8a75f130faf4d66", // Hinged Knee
+  ],
+  pain_relief: [
+    "6929c183b6489355ea3c6b21", // LS Lumbar Belt
+    "6929aef0b6489355ea3c5a25", // LS Contoured Belt
+    "692711b3c97c569366415213", // Knee Brace
+  ],
+  office_posture: [
+    "6932ab49ac77b4f2a0ad736e", // Posture Corrector Belt
+    "6929aef0b6489355ea3c5a25", // LS Contoured Belt
+  ],
+  rehabilitation: [
+    "69270418d8a75f130faf4d66", // Hinged Knee
+    "6929c183b6489355ea3c6b21", // LS Lumbar Belt
+  ],
 };
 
 export default function ShopByActivitySection() {
   const navigate = useNavigate();
-  const backendUrl = "http://localhost:8000";
 
   const [popup, setPopup] = useState(false);
   const [popupProducts, setPopupProducts] = useState([]);
@@ -39,10 +54,10 @@ export default function ShopByActivitySection() {
       .then((data) => setAllProducts(data.products || []));
   }, []);
 
-  // Open popup and filter products
+  // Open popup based on activity match (using _id)
   const handleActivityClick = (slug) => {
-    const names = activityMap[slug];
-    const filtered = allProducts.filter((p) => names.includes(p.name));
+    const idList = activityMap[slug];
+    const filtered = allProducts.filter((p) => idList.includes(p._id));
     setPopupProducts(filtered);
     setPopup(true);
   };
@@ -78,100 +93,100 @@ export default function ShopByActivitySection() {
             <div className={`absolute inset-0 opacity-0 group-hover:opacity-80 transition-all duration-500 ${brandGradient}`} />
 
             <div
-            className=" absolute bottom-0 left-0 w-full bg-green-600 text-white py-2 px-4 text-lg font-semibold transform -skew-y-3 opacity-100 group-hover:opacity-0 transition-all duration-500 "
-          >
-            {activity.name}
-          </div>
+              className="absolute bottom-0 left-0 w-full bg-green-600 text-white py-2 px-4 text-lg font-semibold transform -skew-y-3 opacity-100
+              group-hover:opacity-0 transition-all duration-500"
+            >
+              {activity.name}
+            </div>
           </motion.div>
         ))}
       </div>
 
       {/* POPUP MODAL */}
-{popup && (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4">
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className="relative bg-white w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-2xl p-6 shadow-xl"
-    >
-      <Toaster position="relative top-right" reverseOrder={false} />
-      {/* CLOSE BUTTON */}
-      <button
-        onClick={() => setPopup(false)}
-        className="absolute top-4 right-4 bg-gray-200 hover:bg-red-500 hover:text-white text-gray-700 rounded-full h-9 w-9 flex justify-center items-center text-xl font-bold transition"
-      >
-        ×
-      </button>
+      {popup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="relative bg-white w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-2xl p-6 shadow-xl"
+          >
+            <Toaster position="relative top-right" />
 
-      <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">
-        Related Products
-      </h2>
-
-      {popupProducts.length === 0 ? (
-        <p className="text-center text-gray-600">No products found</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {popupProducts.map((p) => (
-            <div
-              key={p._id}
-              className="border rounded-xl p-4 shadow hover:shadow-md transition"
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() => setPopup(false)}
+              className="absolute top-4 right-4 bg-gray-200 hover:bg-red-500 hover:text-white text-gray-700 rounded-full h-9 w-9 flex justify-center items-center text-xl font-bold transition"
             >
-              <img
-                src={
-                  p.images?.[0]?.url?.startsWith("http")
-                    ? p.images[0].url
-                    : `${backendUrl}/${p.images[0].url}`
-                }
-                className="w-full h-48 object-contain rounded mb-3"
-              />
+              ×
+            </button>
 
-              <p className="font-semibold text-gray-900 text-lg">{p.name}</p>
-              <p className="text-green-700 font-bold mt-1 mb-4 text-lg">
-                ₹{(p.sale_price || p.price).toLocaleString()}
-              </p>
+            <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">
+              Related Products
+            </h2>
 
-              {/* BUTTONS */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => navigate(`/product/${p._id}`)}
-                  className="flex-1 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition"
-                >
-                  View
-                </button>
-
-                <button
-                onClick={() => {
-                  let cart = JSON.parse(localStorage.getItem("cart")) || [];
-                  cart.push({
-                    productId: p._id,
-                    quantity: 1,
-                    price: p.sale_price || p.price,
-                    name: p.name,
-                    color: p.colors?.[0]?.color || null,
-                    size: p.colors?.[0]?.sizes?.[0]?.size || p.variants?.[0]?.size,
-                    image: p.images?.[0]?.url
-                      ? (p.images[0].url.startsWith("http")
+            {popupProducts.length === 0 ? (
+              <p className="text-center text-gray-600">No products found</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {popupProducts.map((p) => (
+                  <div
+                    key={p._id}
+                    className="border rounded-xl p-4 shadow hover:shadow-md transition"
+                  >
+                    <img
+                      src={
+                        p.images?.[0]?.url?.startsWith("http")
                           ? p.images[0].url
-                          : `${backendUrl}/${p.images[0].url}`)
-                      : "",
-                  });
-                  localStorage.setItem("cart", JSON.stringify(cart));
-                  window.dispatchEvent(new Event("cartUpdated"));
-                  toast.success("Added to cart!");   // 🔥 Show toaster
-                }}
-                className="flex-1 py-2 rounded-lg border border-green-600 text-green-700 font-semibold hover:bg-green-50 transition"
-              >
-                Add to Cart
-              </button>
+                          : `${backendUrl}/${p.images?.[0]?.url}`
+                      }
+                      className="w-full h-48 object-contain rounded mb-3"
+                      alt={p.name}
+                    />
+
+                    <p className="font-semibold text-gray-900 text-lg line-clamp-2">{p.name}</p>
+                    <p className="text-green-700 font-bold mt-1 mb-4 text-lg">
+                      ₹{(p.sale_price || p.price).toLocaleString()}
+                    </p>
+
+                    {/* BUTTONS */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => navigate(`/product/${p._id}`)}
+                        className="flex-1 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition"
+                      >
+                        View
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          let cart = JSON.parse(localStorage.getItem("cart")) || [];
+                          cart.push({
+                            productId: p._id,
+                            quantity: 1,
+                            price: p.sale_price || p.price,
+                            name: p.name,
+                            image: p.images?.[0]?.url
+                              ? (p.images[0].url.startsWith("http")
+                                  ? p.images[0].url
+                                  : `${backendUrl}/${p.images[0].url}`)
+                              : "",
+                          });
+                          localStorage.setItem("cart", JSON.stringify(cart));
+                          window.dispatchEvent(new Event("cartUpdated"));
+                          toast.success("Added to cart!");
+                        }}
+                        className="flex-1 py-2 rounded-lg border border-green-600 text-green-700 font-semibold hover:bg-green-50 transition"
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            )}
+          </motion.div>
         </div>
       )}
-    </motion.div>
-  </div>
-)}
-
     </section>
   );
 }

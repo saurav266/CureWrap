@@ -30,7 +30,7 @@ const images = [
 
 export default function PreHeadingGallery() {
   return (
-    <section aria-label="Top gallery" className="relative w-full py-10">
+    <section aria-label="Top gallery" className="relative w-full py-0">
 
       {/* ================= IMAGE STRIP ================= */}
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-0">

@@ -35,13 +35,13 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://wa.me/918123131143"
+              href="https://wa.me/8420644354"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm mb-5 flex items-center gap-2 opacity-90 hover:opacity-100 hover:underline transition"
             >
               <FaWhatsapp className="text-xl" />
-              +91 8123131143
+              +91 8420644354
             </a>
 
             {/* Social Icons */}

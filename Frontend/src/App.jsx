@@ -70,7 +70,8 @@ function App() {
     "/refund-policy",
     "/privacy-policy",
     "/terms",
-    "/faq"
+    "/faq",
+    "/product/:id"
   ];
   const shouldHideFooter = hideFooterOn.includes(location.pathname);
 
