@@ -1,23 +1,62 @@
-@import "tailwindcss";
+/* -----------------------------------------------------
+   IMPORTS
+----------------------------------------------------- */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Montserrat:wght@400;500;600&display=swap');
+@import "tailwindcss";
 
+/* -----------------------------------------------------
+   GLOBAL ANIMATIONS
+----------------------------------------------------- */
 
+/* Float Up Animation */
 @keyframes floatUp {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(-40px); opacity: 0; }
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-48px) scale(1.6); opacity: 0; }
 }
 
 .animate-floatUp {
-  animation: floatUp 0.8s ease forwards;
+  animation: floatUp 0.9s ease forwards;
 }
 
-/* ============= FEATURED PRODUCT MODAL EXTRA CSS ============= */
+/* Dual Ring Pulse Animations */
+@keyframes dualPulseOuter {
+  0%   { transform: scale(1); opacity: 0.55; }
+  70%  { transform: scale(2.0); opacity: 0; }
+  100% { transform: scale(2.0); opacity: 0; }
+}
 
-/* hide scrollbar for thumbnail ribbon */
+@keyframes dualPulseInner {
+  0%   { transform: scale(1); opacity: 0.7; }
+  70%  { transform: scale(1.55); opacity: 0; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+/* Breathing Glow (Tri-Color) */
+@keyframes breathingGlowTriColor {
+  0%   { box-shadow: 0 0 14px rgba(0, 255, 140, 0.45); }
+  33%  { box-shadow: 0 0 20px rgba(0, 140, 255, 0.55); }
+  66%  { box-shadow: 0 0 26px rgba(0, 255, 255, 0.65); }
+  100% { box-shadow: 0 0 14px rgba(0, 255, 140, 0.45); }
+}
+
+/* -----------------------------------------------------
+   RESPONSIVE UTILITIES
+----------------------------------------------------- */
+@media (max-width: 1024px) {
+  .backdrop-blur-xl {
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* -----------------------------------------------------
+   FEATURED PRODUCT MODAL
+----------------------------------------------------- */
+
+/* Hide scrollbar for thumbnail ribbon */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* cinematic helpers */
+/* Cinematic helpers */
 .fp-image { 
   transform-origin: center;
   will-change: transform;
@@ -26,59 +65,9 @@
   transition: background 220ms linear;
 }
 
-/* heart float animation */
-@keyframes floatUp {
-  0%   { transform: translateY(0) scale(1); opacity: 1; }
-  100% { transform: translateY(-48px) scale(1.6); opacity: 0; }
-}
-.animate-floatUp {
-  animation: floatUp 0.9s ease forwards;
-}
-
-/* extra blur on modal for small screens */
-@media (max-width: 1024px) {
-  .backdrop-blur-xl {
-    backdrop-filter: blur(8px);
-  }
-}
-
 /* -----------------------------------------------------
-   DUAL RING PULSE + GREEN → BLUE GRADIENT
+   HOTSPOT RINGS
 ----------------------------------------------------- */
-
-/* OUTER smooth gradient ring */
-@keyframes dualPulseOuter {
-  0% {
-    transform: scale(1);
-    opacity: 0.55;
-  }
-  70% {
-    transform: scale(2.0);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(2.0);
-    opacity: 0;
-  }
-}
-
-/* INNER, faster pulse ring */
-@keyframes dualPulseInner {
-  0% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  70% {
-    transform: scale(1.55);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1.55);
-    opacity: 0;
-  }
-}
-
-/* BOTH rings apply automatically */
 .hotspot-ring::before,
 .hotspot-ring::after {
   content: "";
@@ -88,44 +77,23 @@
   pointer-events: none;
 }
 
-/* OUTER ring — gradient GREEN➜BLUE */
+/* Outer ring — gradient GREEN➜BLUE */
 .hotspot-ring::before {
-  background: radial-gradient(
-    circle,
-    rgba(0, 255, 120, 0.7),
-    rgba(0, 140, 255, 0.75)
-  );
+  background: radial-gradient(circle, rgba(0, 255, 120, 0.7), rgba(0, 140, 255, 0.75));
   animation: dualPulseOuter 2.3s ease-out infinite;
   filter: blur(6px);
 }
 
-/* INNER ring — more subtle */
+/* Inner ring — more subtle */
 .hotspot-ring::after {
-  background: radial-gradient(
-    circle,
-    rgba(0, 255, 160, 0.45),
-    rgba(0, 160, 255, 0.5)
-  );
+  background: radial-gradient(circle, rgba(0, 255, 160, 0.45), rgba(0, 160, 255, 0.5));
   animation: dualPulseInner 1.6s ease-out infinite;
   filter: blur(4px);
 }
 
-/* Smooth tri-color breathing for core button */
-@keyframes breathingGlowTriColor {
-  0% {
-    box-shadow: 0 0 14px rgba(0, 255, 140, 0.45);
-  }
-  33% {
-    box-shadow: 0 0 20px rgba(0, 140, 255, 0.55);
-  }
-  66% {
-    box-shadow: 0 0 26px rgba(0, 255, 255, 0.65);
-  }
-  100% {
-    box-shadow: 0 0 14px rgba(0, 255, 140, 0.45);
-  }
-}
-
+/* -----------------------------------------------------
+   TYPOGRAPHY HELPERS
+----------------------------------------------------- */
 .font-heading {
   font-family: "Poppins", sans-serif;
   font-weight: 700;
