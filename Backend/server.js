@@ -13,7 +13,7 @@ import cartRoute from "./route/cartRoute.js";
 import orderRoutes from "./route/orderRoute.js";
 import adminRoutes from "./route/adminROute.js";
 import paymentRoute from "./route/paymentRoute.js";
-
+import contactRoute from "./route/contactRoute.js"
 
 // Create Twilio client
 const client = twilio(
@@ -58,6 +58,7 @@ app.use("/api/cart", cartRoute);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoute);
+app.use("/api/contact", contactRoute);
 
 // ------------------ FIX DUPLICATE INDEX ISSUE ------------------
 
