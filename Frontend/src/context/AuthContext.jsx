@@ -32,20 +32,25 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (userData, tokenValue) => {
-    setUser(userData);
-    setToken(tokenValue);
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", tokenValue);
-    setAuthReady(true);
-  };
+ const login = (userData, tokenValue) => {
+  setUser(userData);
+  setToken(tokenValue);
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-  };
+  localStorage.setItem("user", JSON.stringify(userData));
+  localStorage.setItem("token", tokenValue);
+  localStorage.setItem("userId", userData.id); // ✅ REQUIRED
+
+  setAuthReady(true);
+};
+
+const logout = () => {
+  setUser(null);
+  setToken(null);
+
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
+  localStorage.removeItem("userId"); // ✅
+};
 
   const isAuthenticated = !!user && !!token;
 

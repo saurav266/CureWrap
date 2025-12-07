@@ -796,17 +796,45 @@ export default function AllOrder() {
                       </span>{" "}
                       {selectedOrder.shiprocket.courier_name || "N/A"}
                     </p>
-                    <button
-                      className="mt-1 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700"
-                      onClick={() =>
-                        window.open(
-                          `https://shiprocket.co/tracking/${selectedOrder.shiprocket.awb_code}`,
-                          "_blank"
-                        )
-                      }
-                    >
-                      Track on Shiprocket
-                    </button>
+                    {/* DOWNLOAD LABEL BUTTON */}
+                      {/* TRACK ON SHIPROCKET */}
+                      <button
+                        className="mt-1 px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700"
+                        onClick={() =>
+                          window.open(
+                            `https://shiprocket.co/tracking/${selectedOrder.shiprocket.awb_code}`,
+                            "_blank"
+                          )
+                        }
+                      >
+                        Track on Shiprocket
+                      </button>
+
+                      {/* LIVE TRACKING (BACKEND API) */}
+                      <button
+                        className="mt-2 px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                        onClick={() =>
+                          window.open(
+                            `${BACKEND_URL}/api/orders/track/${selectedOrder.shiprocket.awb_code}`,
+                            "_blank"
+                          )
+                        }
+                      >
+                        Live Tracking (API)
+                      </button>
+
+                      {/* DOWNLOAD SHIPPING LABEL */}
+                      {selectedOrder.shiprocket?.label_url && (
+                        <button
+                          className="mt-2 px-3 py-1.5 text-xs rounded-lg bg-orange-600 text-white font-semibold hover:bg-orange-700"
+                          onClick={() =>
+                            window.open(selectedOrder.shiprocket.label_url, "_blank")
+                          }
+                        >
+                          Download Shipping Label
+                        </button>
+                      )}
+
                   </>
                 ) : (
                   <p className="text-xs text-gray-500">

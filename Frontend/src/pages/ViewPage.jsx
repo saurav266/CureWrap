@@ -199,6 +199,7 @@ export default function ProductViewPage() {
     setGalleryIndex(0);
   }, [id]);
 
+  // autoplay – stops when zoom=true (hover) and resumes on leave
   useEffect(() => {
     if (!images.length || images.length === 1 || zoom) return;
     const interval = setInterval(
@@ -473,19 +474,34 @@ export default function ProductViewPage() {
 
   // ------------------------------ PAGE UI ------------------------------
   return (
-    <div className="max-w-6xl mx-auto px-4 lg:px-4 xl:px-0 py-6">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-10 lg:px-16 xl:px-20 py-6">
       <Toaster position="top-right" />
 
       {/* GALLERY + BUY AREA */}
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-12 items-start">
         {/* LEFT: Gallery */}
         <div className="lg:col-span-8 w-full">
-          <div className="relative bg-white rounded-xl overflow-hidden">
+          <div className="relative bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
             {isOnSale && (
               <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-green-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm shadow z-10">
                 {discountPercent}% OFF
               </div>
             )}
+
+            {/* Wishlist on image top-right */}
+            <button
+              type="button"
+              onClick={handleToggleWishlist}
+              disabled={wishlistLoading}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 sm:p-2.5 rounded-full bg-white/90 border border-gray-200 shadow-md hover:bg-pink-50 hover:border-pink-300 transition disabled:opacity-60"
+              title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            >
+              {isInWishlist ? (
+                <AiFillHeart className="text-pink-600 text-[20px] sm:text-[22px]" />
+              ) : (
+                <AiOutlineHeart className="text-pink-600 text-[20px] sm:text-[22px]" />
+              )}
+            </button>
 
             {/* MAIN IMAGE BOX */}
             <div
@@ -548,50 +564,39 @@ export default function ProductViewPage() {
 
         {/* RIGHT: Details & Buy Panel */}
         <div className="lg:col-span-4 xl:col-span-4 mt-6 lg:mt-0 xl:sticky xl:top-24 self-start">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-                {product.name}
-              </h1>
-
-              <div className="flex items-center gap-3 mt-2 sm:mt-3">
-                <div className="flex">
-                  {renderStars(product.average_rating || 0)}
-                </div>
-                <span className="text-gray-600 text-sm">
-                  ({product.total_reviews || 0} reviews)
-                </span>
-              </div>
-            </div>
-
-            {/* Wishlist icon top-right */}
-            <button
-              type="button"
-              onClick={handleToggleWishlist}
-              disabled={wishlistLoading}
-              className="mt-1 p-2 rounded-full border border-gray-200 hover:bg-pink-50 hover:border-pink-300 transition disabled:opacity-60"
-              title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          {/* RIGHT HEADER - TITLE + RATING */}
+          <div className="w-full flex flex-col gap-2">
+            <h1
+              className="text-[1.2rem] sm:text-[1.7rem] font-semibold leading-snug text-gray-900 break-words line-clamp-3"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 5,
+                WebkitBoxOrient: "horizontal",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
             >
-              {isInWishlist ? (
-                <AiFillHeart className="text-pink-600 text-xl" />
-              ) : (
-                <AiOutlineHeart className="text-pink-600 text-xl" />
-              )}
-            </button>
+              {product.name}
+            </h1>
+
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex">{renderStars(product.average_rating || 0)}</div>
+              <span className="text-gray-600 text-xs sm:text-sm">
+                ({product.total_reviews || 0} reviews)
+              </span>
+            </div>
           </div>
 
-          {/* Selected colour & size summary */}
-          <div className="mt-2 text-sm text-gray-600 space-x-3">
+          {/* Selected colour & size summary pills */}
+          <div className="mt-3 flex flex-wrap gap-3 text-[13px] font-medium text-gray-700">
             {selectedColor && (
-              <span>
-                Colour:{" "}
-                <span className="font-semibold">{selectedColor.color}</span>
+              <span className="px-2.5 py-1 bg-gray-100 rounded-full">
+                Color: <b>{selectedColor.color}</b>
               </span>
             )}
             {selectedVariant?.size && (
-              <span>
-                Size:{" "}
-                <span className="font-semibold">{selectedVariant.size}</span>
+              <span className="px-2.5 py-1 bg-gray-100 rounded-full">
+                Size: <b>{selectedVariant.size}</b>
               </span>
             )}
           </div>
@@ -680,7 +685,7 @@ export default function ProductViewPage() {
           )}
 
           {/* Quantity selector */}
-          <div className="mt-5">
+          <div className="mt-7">
             <span className="font-semibold text-sm text-gray-800">
               Quantity
             </span>
@@ -857,7 +862,7 @@ export default function ProductViewPage() {
           </li>
           <li>
             For any support, contact us at{" "}
-            <span className="font-semibold">support@example.com</span>.
+            <span className="font-semibold">support@curewrapplus.com</span>.
           </li>
         </ul>
 
@@ -981,16 +986,16 @@ export default function ProductViewPage() {
               <div
                 key={r._id}
                 onClick={() => navigate(`/product/${r._id}`)}
-                className="cursor-pointer border rounded-lg shadow-sm hover:shadow-md transition p-3"
+                className="cursor-pointer border rounded-lg shadow-sm hover:shadow-md transition p-3 bg-white"
               >
                 <div className="w-full h-32 sm:h-40 overflow-hidden rounded-lg mb-2 sm:mb-3">
                   <img
                     src={getImageUrl(r.images?.[0])}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     alt={r.name}
                   />
                 </div>
-                <p className="font-semibold text-gray-900 text-xs sm:text-sm">
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm line-clamp-2">
                   {r.name}
                 </p>
                 <p className="text-green-700 font-bold text-xs sm:text-sm mt-1">

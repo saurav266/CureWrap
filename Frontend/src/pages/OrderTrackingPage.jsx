@@ -145,38 +145,39 @@ export default function OrderTrackingPage() {
     }
   };
 
-  const handleCancelOrder = async () => {
-    if (!order) return;
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this order?"
-    );
-    if (!confirmed) return;
+ const handleCancelOrder = async () => {
+  if (!order) return;
 
-    try {
-      setError("");
-      // 🔧 fixed endpoint: non-admin status route
-      const res = await fetch(
-        `${BACKEND_URL}/api/orders/${order._id}/status`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "cancelled" }),
-        }
-      );
-      const data = await res.json();
+  const confirmed = window.confirm(
+    "Are you sure you want to cancel this order?"
+  );
+  if (!confirmed) return;
 
-      if (!res.ok || !data.success) {
-        console.error("Cancel error:", data);
-        setError(data.error || "Failed to cancel order");
-        return;
+  try {
+    setError("");
+
+    const res = await fetch(
+      `${BACKEND_URL}/api/orders/${order._id}/cancel`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
       }
+    );
 
-      setOrder(data.order);
-    } catch (err) {
-      console.error("Cancel request error:", err);
-      setError("Failed to cancel order. Please try again.");
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      setError(data.error || "Failed to cancel order");
+      return;
     }
-  };
+
+    setOrder(data.order); // update UI after cancel
+  } catch (err) {
+    console.error("Cancel request error:", err);
+    setError("Failed to cancel order. Please try again.");
+  }
+};
+
 
   // Refill cart from this order (used by retry + buy again)
   const refillCartFromOrder = () => {

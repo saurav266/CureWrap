@@ -1,197 +1,204 @@
 import User from "../model/user.js";
-import twilio from "twilio";
+import axios from "axios";
 import "dotenv/config";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
 
+/* ============================================================
+   📌 NORMALIZE PHONE → ALWAYS STORE AS +91XXXXXXXXXX
+============================================================ */
+const normalizePhone = (phone) => {
+  phone = phone.toString().trim().replace(/\D/g, ""); // keep digits only
+
+  // If starts with 91 and is 12 digits → convert to 10-digit
+  if (phone.startsWith("91") && phone.length === 12) {
+    phone = phone.substring(2);
+  }
+
+  // If number still not 10 digits → invalid
+  if (phone.length !== 10) {
+    throw new Error("Invalid Indian phone number");
+  }
+
+  return "+91" + phone;
+};
+
+/* ============================================================
+   🔢 Generate OTP
+============================================================ */
+const generateOtp = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/* ============================================================
+   📩 Send OTP via WhatsTool API
+============================================================ */
+const sendWhatsToolOTP = async (phone, otp) => {
+  const url = `${process.env.WHATSTOOL_BASE_URL}/developers/v2/messages/${process.env.WHATSTOOL_API_NO}`;
+
+  const payload = {
+    to: phone,
+    type: "template",
+    template: {
+      id: process.env.WHATSTOOL_TEMPLATE_ID,
+      body_text_variables: `${otp}`,
+      dynamic_btn_variables: `${otp}`,
+    },
+  };
+
+  await axios.post(url, payload, {
+    headers: {
+      "x-api-key": process.env.WHATSTOOL_API_KEY,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+/* ============================================================
+   🟢 REGISTER USER
+============================================================ */
 export const createUser = async (req, res) => {
   try {
-    const { name, email, phoneno } = req.body;
+    let { name, email, phoneno } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ message: "name is required" });
-    }
-    if (!email) {
-      return res.status(400).json({ message: "email is required" });
-    }
-    if (!phoneno) {
-      return res.status(400).json({ message: "phone number is required" });
+    if (!name || !email || !phoneno) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phoneno }],
-    });
-    if (existingUser) {
+    phoneno = normalizePhone(phoneno); // ALWAYS SAVE +91XXXXXXXXXX
+
+    const existing = await User.findOne({ phoneno });
+    if (existing) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const otp = generateOtp();
 
-    // Send OTP via Twilio SMS
-    await twilioClient.messages.create({
-      body: `Your OTP is ${otp}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneno,
-    });
-   
-    
+    await sendWhatsToolOTP(phoneno, otp);
+
     const newUser = new User({
       name,
       email,
       phoneno,
       otp,
-      otpExpiresAt,
+      otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
     });
 
     await newUser.save();
 
     res.status(201).json({
-      message: "User created and OTP sent via SMS",
+      success: true,
+      message: "OTP sent & user created",
       user: { name, email, phoneno },
     });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+  } catch (err) {
+    console.error("Register Error:", err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
-
-
+/* ============================================================
+   🟡 LOGIN → SEND OTP
+============================================================ */
 export const login = async (req, res) => {
   try {
-    const { phoneno } = req.body;   // ✅ read phoneno from body
-
-    console.log("Login body:", req.body);
-    console.log("Received phoneno:", phoneno);
-
+    let { phoneno } = req.body;
     if (!phoneno) {
-      return res.status(400).json({ message: "Phone number is required" });
+      return res.status(400).json({ message: "Phone number required" });
     }
 
-    const user = await User.findOne({ phoneno });   // ✅ query by phoneno
+    let phone = normalizePhone(phoneno);
+
+    const user = await User.findOne({ phoneno: phone });
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "No account found with this phone number." });
+      return res.status(404).json({ message: "Account not found" });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
+    const otp = generateOtp();
     user.otp = otp;
-    user.otpExpiresAt = otpExpiresAt;
+    user.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
     await user.save();
 
-    console.log("Sending OTP to:", phoneno);
+    await sendWhatsToolOTP(phone, otp);
 
-    await twilioClient.messages.create({
-      body: `Your OTP is ${otp}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneno,           
-               // ✅ USE phoneno HERE
-    });
-    console.log("Sending OTP to:", phoneno);    
-
-    return res.status(200).json({ message: "OTP sent successfully" });
-  } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({ message: "Server  error", error: error.message });
+    res.json({ success: true, message: "OTP sent via WhatsApp" });
+  } catch (err) {
+    console.error("Login Error:", err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
-
-
-
+/* ============================================================
+   🟢 VERIFY OTP → LOGIN USER + RETURN TOKEN
+============================================================ */
 export const verifyOtp = async (req, res) => {
   try {
-    const { phoneno, otp } = req.body;
+    let { phoneno, otp } = req.body;
 
     if (!phoneno || !otp) {
-      return res.status(400).json({ message: "Phone number and OTP are required" });
+      return res.status(400).json({ message: "Phone + OTP required" });
     }
 
-    const user = await User.findOne({ phoneno });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const phone = normalizePhone(phoneno);
 
-    if (user.otp !== otp) {
+    const user = await User.findOne({ phoneno: phone });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.otp !== otp)
       return res.status(400).json({ message: "Invalid OTP" });
-    }
 
-    if (user.otpExpiresAt < new Date()) {
+    if (user.otpExpiresAt < new Date())
       return res.status(400).json({ message: "OTP expired" });
-    }
 
-    // OTP verified → issue JWT
+    // Clear OTP
     user.isVerified = true;
     user.otp = null;
     user.otpExpiresAt = null;
     await user.save();
 
+    // Generate JWT
     const token = jwt.sign(
-      { userId: user._id, phoneno: user.phoneno },
+      { userId: user._id },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "7d" }
     );
 
-    // Store JWT in HTTP-only cookie
-    res.cookie("authToken", token, {
-      httpOnly: true,   // cannot be accessed by JS
-      secure: false,    // set true in production with HTTPS
-      sameSite: "Strict",
-      maxAge: 60 * 60 * 1000 // 1 hour
-    });
-
+    // Send response
     res.json({
       success: true,
       message: "Login successful",
-      user: { id: user._id, name: user.name, email: user.email, phoneno: user.phoneno }
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phoneno: user.phoneno,
+      },
     });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+  } catch (err) {
+    console.error("Verify OTP Error:", err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
-export const logout = async (req, res) => {
-  // Since JWTs are stateless, logout can be handled on the client side by deleting the token.
-  res.json({ success: true, message: "Logout successful on client side by deleting the token." });
-}
-export const isUserVerified = async (userId) => {
+export const logout = (req, res) => { res.clearCookie("authToken"); res.json({ success: true, message: "Logout successful" }); };
+/* ============================================================
+   🔵 GET PROFILE (userId from frontend)
+============================================================ */
+export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(userId);
-    return user ? user.isVerified : false;
-  } catch (error) {
-    console.error("Error checking user verification:", error);
-    return false;
-  }
-};
+    const userId = req.query.userId;
 
-export const testTwilio = async (req, res) => {
-  try {
-    const { to } = req.body; // recipient number
+    if (!userId)
+      return res.status(400).json({ message: "userId is required" });
 
-    if (!to) {
-      return res.status(400).json({ message: "Recipient phone number is required" });
-    }
+    const user = await User.findById(userId).select("-otp -otpExpiresAt");
 
-    const message = await twilioClient.messages.create({
-      body: "Hello! Twilio test message 🚀",
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to,
-    });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.json({
-      success: true,
-      message: "Test SMS sent successfully",
-      sid: message.sid,
-    });
-  } catch (error) {
-    console.error("Twilio test error:", error);
-    res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("Get Profile Error:", err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 };

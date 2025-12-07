@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { motion, useViewportScroll, useTransform } from "framer-motion";
 import { Send, MessageCircle, Mail } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
 
 import CoupleExer_Outdoor from "../assets/Frontend_assets/contact/CoupleExer_Outdoor.png";
 import unsplashYoga from "../assets/Frontend_assets/contact/unsplash_Yoga.jpg";
@@ -13,9 +12,6 @@ import { assets } from "../assets/admin_assets/assets.js";
 const logoUrl = assets.logo;
 const brandBlue = "#2F86D6";
 const brandGreen = "#63B46B";
-
-// BACKEND URL
-const BACKEND_URL = "http://localhost:8000";
 
 export default function ContactUsPremium() {
   const [formData, setFormData] = useState({
@@ -37,59 +33,35 @@ export default function ContactUsPremium() {
     setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  setSending(true);
 
-    // 🔹 VALIDATION
-    if (!formData.firstName.trim()) {
-      toast.error("First name is required ❗");
-      return;
-    }
-    if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) {
-      toast.error("Enter a valid email address ❗");
-      return;
-    }
-    if (!formData.message.trim()) {
-      toast.error("Message cannot be empty ❗");
-      return;
-    }
-
-    setSending(true);
-
-    fetch(`${BACKEND_URL}/api/contact/send-message`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
+  fetch("/api/contact/send-message", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      setSending(false);
+      if (data.success) {
+        setSent(true);
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          subject: "",
+          message: "",
+        });
+        setTimeout(() => setSent(false), 2500);
+      }
     })
-      .then((res) => res.json())
-      .then((data) => {
-        setSending(false);
+    .catch(() => setSending(false));
+};
 
-        if (data.success) {
-          toast.success("Message sent successfully 🎉");
-
-          setFormData({
-            firstName: "",
-            lastName: "",
-            email: "",
-            subject: "",
-            message: "",
-          });
-
-          setSent(true);
-          setTimeout(() => setSent(false), 2500);
-        } else {
-          toast.error(data.message || "Failed to send message ❌");
-        }
-      })
-      .catch(() => {
-        setSending(false);
-        toast.error("Something went wrong ❌ Try again!");
-      });
-  };
 
   return (
     <div className="antialiased text-gray-800 bg-white">
-      <Toaster position="top-right" reverseOrder={false} />
 
       {/* HERO */}
       <section className="relative w-full h-[66vh] md:h-[78vh] lg:h-[86vh] overflow-hidden">
@@ -146,6 +118,7 @@ export default function ContactUsPremium() {
 
       {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-6 -mt-10">
+
         {/* intro + cards */}
         <section className="bg-white py-12 md:py-16">
           <div className="grid md:grid-cols-2 gap-10 items-center">
@@ -220,9 +193,7 @@ export default function ContactUsPremium() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {["firstName", "lastName"].map((field, idx) => (
                   <div key={idx}>
-                    <label className="text-sm text-gray-600">
-                      {field === "firstName" ? "First name" : "Last name"}
-                    </label>
+                    <label className="text-sm text-gray-600">{field === "firstName" ? "First name" : "Last name"}</label>
                     <input
                       name={field}
                       value={formData[field]}
@@ -283,26 +254,27 @@ export default function ContactUsPremium() {
               />
 
               <div className="mt-6 flex flex-col items-start gap-2">
-                <button
-                  type="submit"
-                  disabled={sending}
-                  className={`flex items-center gap-3 text-white px-7 py-3.5 rounded-xl font-semibold shadow-xl text-base transition ${
-                    sending
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-[#2F86D6] to-[#63B46B] hover:scale-[1.04]"
-                  }`}
-                >
-                  {sending ? "Sending..." : sent ? "Sent ✓" : "Send Message"}
-                  <Send size={17} />
-                </button>
+  <button
+    type="submit"
+    disabled={sending}
+    className={`flex items-center gap-3 text-white px-7 py-3.5 rounded-xl font-semibold shadow-xl text-base transition ${
+      sending
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-gradient-to-r from-[#2F86D6] to-[#63B46B] hover:scale-[1.04]"
+    }`}
+  >
+    {sending ? "Sending..." : sent ? "Sent ✓" : "Send Message"}
+    <Send size={17} />
+  </button>
 
-                <p className="text-sm text-gray-500">
-                  Or email us directly at{" "}
-                  <a className="text-teal-600 font-medium" href="mailto:support@curewrapplus.com">
-                    support@curewrapplus.com
-                  </a>
-                </p>
-              </div>
+  <p className="text-sm text-gray-500">
+    Or email us directly at{" "}
+    <a className="text-teal-600 font-medium" href="mailto:support@curewrapplus.com">
+      support@curewrapplus.com
+    </a>
+  </p>
+</div>
+
             </motion.form>
 
             {/* COLLAGE */}

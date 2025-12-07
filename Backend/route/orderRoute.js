@@ -15,7 +15,9 @@ import {
   updateReturnStatusAdmin,
   createRazorpayOrderForCod,
   verifyRazorpayPaymentAndMarkPaid,
+  cancelOrder,
 } from "../controller/orderController.js";
+
 
 const router = express.Router();
 
@@ -38,11 +40,14 @@ router.put("/admin/returns/:id/status", updateReturnStatusAdmin);
 
 /* ===================== CUSTOMER / PAYMENT / TRACKING ===================== */
 
+
 // Place order
 router.post("/place", placeOrder);
 
 // Logged-in user orders
 router.get("/my-orders", getUserOrders);
+// for cancellation/refund tracking
+router.put("/:id/cancel", cancelOrder);
 
 // Mark COD as paid (manual)
 router.put("/:id/mark-paid", markOrderPaid);

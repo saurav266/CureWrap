@@ -13,6 +13,26 @@ const LoginWithMobile = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // ↓↓↓ New format function — EXACT MATCH for backend DB format
+  const formatMobile = (num) => {
+    if (!num) return "";
+
+    let cleaned = num.replace(/\D/g, ""); // keep only digits
+
+    // If already starts with 91 and is 12 digits → return +91XXXXXXXXXX
+    if (cleaned.startsWith("91") && cleaned.length === 12) {
+      return `+${cleaned}`;
+    }
+
+    // If standard 10-digit → convert to +91XXXXXXXXXX
+    if (cleaned.length === 10) {
+      return `+91${cleaned}`;
+    }
+
+    // fallback (rare)
+    return `+91${cleaned}`;
+  };
+
   useEffect(() => {
     let timer;
     if (cooldown > 0) {
@@ -21,86 +41,70 @@ const LoginWithMobile = () => {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  // Helper to format number with +91
-  const formatMobile = (num) => {
-    if (!num) return "";
-    const cleaned = num.replace(/\D/g, ""); // keep only digits
-
-    // if already looks like 91xxxxxxxxxx
-    if (cleaned.startsWith("91") && cleaned.length === 12) {
-      return `+${cleaned}`;
-    }
-
-    // if 10-digit local mobile
-    if (cleaned.length === 10) {
-      return `+91${cleaned}`;
-    }
-
-    // fallback
-    return `+91${cleaned}`;
-  };
-
+  // -----------------------
+  // REQUEST OTP
+  // -----------------------
   const requestOtp = async (e) => {
-    e?.preventDefault();
+    e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const formattedMobile = formatMobile(mobile);
+      const formatted = formatMobile(mobile);
 
       await axios.post(
         "http://localhost:8000/api/users/login",
-        { phoneno: formattedMobile }, // ✅ backend expects phoneno
+        { phoneno: formatted },
         { withCredentials: true }
       );
 
       setStep("verify");
       setCooldown(30);
     } catch (err) {
-      console.error(err);
       setError(err.response?.data?.message || "Server error");
     } finally {
       setLoading(false);
     }
   };
 
+  // -----------------------
+  // VERIFY OTP
+  // -----------------------
   const verifyOtp = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    try {
-      const formattedMobile = formatMobile(mobile);
+  try {
+    const formatted = formatMobile(mobile);
 
-      const response = await axios.post(
-        "http://localhost:8000/api/users/verify-otp",
-        { phoneno: formattedMobile, otp }, // ✅ phoneno again
-        { withCredentials: true }
-      );
+    const response = await axios.post(
+      "http://localhost:8000/api/users/verify-otp",
+      { phoneno: formatted, otp },
+      { withCredentials: true }
+    );
 
-      // assuming backend: { success, message, user: {...}, token? }
-      const { user, token } = response.data;
+    const { user, token } = response.data;
 
-      // Save auth
-      login(user);
-      if (token) {
-        localStorage.setItem("token", token);
-      }
-      localStorage.setItem("user", JSON.stringify(user));
+    // Always choose correct ID
+    const userId = user.id || user._id;
 
-      // redirect: admin vs normal user
-      if (user.email === "saurav@example.com") {
-        navigate("/admin");
-      } else {
-        navigate("/");
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || "Invalid OTP");
-    } finally {
-      setLoading(false);
-    }
-  };
+    // SAVE EVERYTHING
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("userId", userId);
+
+    // Update Auth Context
+    login(user, token);
+
+    navigate("/");
+  } catch (err) {
+    setError(err.response?.data?.message || "Invalid OTP");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -120,14 +124,15 @@ const LoginWithMobile = () => {
               onChange={(e) => setMobile(e.target.value)}
               required
               className="w-full px-4 py-2 border rounded-md"
-              placeholder="Enter 10-digit number"
+              placeholder="Enter your mobile"
             />
+
             <button
               type="submit"
               disabled={loading}
               className="w-full mt-4 py-2 bg-blue-500 text-white rounded-md disabled:opacity-50"
             >
-              {loading ? "Sending..." : "Send OTP"}
+              {loading ? "Sending OTP..." : "Send OTP"}
             </button>
           </form>
         ) : (
@@ -140,6 +145,7 @@ const LoginWithMobile = () => {
               required
               className="w-full px-4 py-2 border rounded-md"
             />
+
             <button
               type="submit"
               disabled={loading}
@@ -148,11 +154,10 @@ const LoginWithMobile = () => {
               {loading ? "Verifying..." : "Verify & Login"}
             </button>
 
-            {/* Resend OTP with cooldown */}
             <button
               type="button"
               onClick={requestOtp}
-              disabled={loading || cooldown > 0}
+              disabled={cooldown > 0}
               className="w-full mt-3 py-2 bg-yellow-500 text-white rounded-md disabled:opacity-50"
             >
               {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend OTP"}

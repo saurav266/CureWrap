@@ -20,7 +20,7 @@ export const unifiedLogin = async (req, res) => {
     const email = user.email;
 
     // 🔑 Decide login type based on email
-    if (email.endsWith("@example.com") || email === "saurav@example.com") {
+    if (email.endsWith("@yahoo.com") || email === "s.basanti1954@yahoo.com") {
   return loginAdmin(req, res);
 } else {
   return login(req, res);

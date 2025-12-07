@@ -1,4 +1,5 @@
 // src/pages/admin/AdminDashboard.jsx
+
 import React, { useEffect, useState } from "react";
 import {
   LineChart,
@@ -12,7 +13,11 @@ import {
   Bar,
 } from "recharts";
 
-const BACKEND_URL = "http://localhost:8000"; // change if needed
+import { io } from "socket.io-client";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+const BACKEND_URL = "http://localhost:8000";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -22,103 +27,113 @@ export default function AdminDashboard() {
     sales: [],
     revenueGraph: [],
   });
+
   const [recentOrders, setRecentOrders] = useState([]);
   const [sortBy, setSortBy] = useState("date");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
+  // --------------------------------------------------
+  // Load dashboard data (stats + recent orders)
+  // --------------------------------------------------
+  async function loadData() {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
 
-        const token = localStorage.getItem("token"); // change key if needed
+      // Fetch stats
+      const res1 = await fetch(`${BACKEND_URL}/api/admin/stats`, {
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
 
-        // 1) Fetch stats
-        const res1 = await fetch(`${BACKEND_URL}/api/admin/stats`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
+      const statsJson = await res1.json();
+      if (res1.ok) {
+        setStats({
+          usersCount: statsJson.usersCount || 0,
+          ordersCount: statsJson.ordersCount || 0,
+          totalRevenue: statsJson.totalRevenue || 0,
+          sales: statsJson.sales || [],
+          revenueGraph: statsJson.revenueGraph || [],
         });
-
-        const statsJson = await res1.json();
-        console.log("STATS RESPONSE:", statsJson);
-
-        if (res1.ok) {
-          setStats({
-            usersCount: statsJson.usersCount || 0,
-            ordersCount: statsJson.ordersCount || 0,
-            totalRevenue: statsJson.totalRevenue || 0,
-            sales: statsJson.sales || [],
-            revenueGraph: statsJson.revenueGraph || [],
-          });
-        } else {
-          console.error("Stats error:", statsJson);
-        }
-
-        // 2) Fetch recent orders
-        const res2 = await fetch(`${BACKEND_URL}/api/orders?limit=10`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
-
-        const ordersJson = await res2.json();
-        console.log("RECENT ORDERS RESPONSE:", ordersJson);
-
-        if (!res2.ok) {
-          console.error("Orders error:", ordersJson);
-          return;
-        }
-
-        // Handle multiple shapes: {orders: []}, {data: []}, or plain []
-        let orders = [];
-        if (Array.isArray(ordersJson.orders)) {
-          orders = ordersJson.orders;
-        } else if (Array.isArray(ordersJson.data)) {
-          orders = ordersJson.data;
-        } else if (Array.isArray(ordersJson)) {
-          orders = ordersJson;
-        }
-
-        setRecentOrders(orders);
-      } catch (err) {
-        console.error("Dashboard load error:", err);
-      } finally {
-        setLoading(false);
       }
-    }
 
+      // Fetch recent orders
+      const res2 = await fetch(`${BACKEND_URL}/api/orders?limit=10`, {
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+
+      const ordersJson = await res2.json();
+
+      let orders = [];
+      if (Array.isArray(ordersJson.orders)) orders = ordersJson.orders;
+      else if (Array.isArray(ordersJson.data)) orders = ordersJson.data;
+      else if (Array.isArray(ordersJson)) orders = ordersJson;
+
+      setRecentOrders(orders);
+    } catch (err) {
+      console.error("Dashboard Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // --------------------------------------------------
+  // Listen for new orders (WebSocket)
+  // --------------------------------------------------
+  useEffect(() => {
+    const socket = io(BACKEND_URL);
+
+    socket.on("connect", () => {
+      console.log("Admin WS Connected:", socket.id);
+    });
+
+    socket.on("new-order", (order) => {
+      toast.success(`🆕 New Order Received: #${order._id} — ₹${order.total}`);
+
+      // OPTIONAL: Play a notification sound
+      new Audio("/new-order.mp3").play();
+
+      // Add new order instantly to list
+      setRecentOrders((prev) => [order, ...prev]);
+    });
+
+    return () => socket.disconnect();
+  }, []);
+
+  // --------------------------------------------------
+  // Load data on mount
+  // --------------------------------------------------
+  useEffect(() => {
     loadData();
   }, []);
 
-  // ❌ Remove cancelled orders for UI display
+  // --------------------------------------------------
+  // UI helpers
+  // --------------------------------------------------
+
   const nonCancelledOrders = recentOrders.filter(
     (o) => o.orderStatus !== "cancelled"
   );
 
-  // Sort recent *non-cancelled* orders by amount or date
   const sortedOrders = [...nonCancelledOrders].sort((a, b) => {
-    if (sortBy === "amount") {
-      return (b.total || 0) - (a.total || 0); // using order.total from your schema
-    }
-    if (sortBy === "date") {
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    }
-    return 0;
+    if (sortBy === "amount") return (b.total || 0) - (a.total || 0);
+    return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
-  const formatDate = (iso) => {
-    if (!iso) return "";
-    return new Date(iso).toLocaleString();
-  };
+  const formatDate = (iso) =>
+    iso ? new Date(iso).toLocaleString() : "Not Available";
 
-  // 👇 Use nonCancelledOrders length for total orders in the UI
-  const displayOrdersCount = nonCancelledOrders.length || stats.ordersCount;
+  const displayOrdersCount =
+    nonCancelledOrders.length || stats.ordersCount || 0;
+
+  // --------------------------------------------------
+  // RENDER UI
+  // --------------------------------------------------
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={3000} />
+
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
       {loading && (
@@ -131,10 +146,12 @@ export default function AdminDashboard() {
           <h2 className="text-gray-500 text-sm">Total Users</h2>
           <p className="text-3xl font-bold">{stats.usersCount}</p>
         </div>
+
         <div className="bg-white p-6 rounded shadow">
           <h2 className="text-gray-500 text-sm">Total Orders</h2>
           <p className="text-3xl font-bold">{displayOrdersCount}</p>
         </div>
+
         <div className="bg-white p-6 rounded shadow">
           <h2 className="text-gray-500 text-sm">Total Revenue</h2>
           <p className="text-3xl font-bold">
@@ -143,9 +160,9 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Charts Section */}
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* SALES LINE CHART */}
+        {/* Sales Line Chart */}
         <div className="bg-white p-6 rounded shadow h-72">
           <h2 className="text-lg font-semibold mb-3">📈 Sales Overview</h2>
           <ResponsiveContainer width="100%" height="100%">
@@ -164,7 +181,7 @@ export default function AdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* REVENUE BAR CHART */}
+        {/* Revenue Bar Chart */}
         <div className="bg-white p-6 rounded shadow h-72">
           <h2 className="text-lg font-semibold mb-3">💰 Revenue Chart</h2>
           <ResponsiveContainer width="100%" height="100%">
@@ -184,7 +201,6 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Recent Orders</h2>
 
-          {/* Sort Dropdown */}
           <select
             className="border px-3 py-1 rounded"
             value={sortBy}
@@ -195,7 +211,7 @@ export default function AdminDashboard() {
           </select>
         </div>
 
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-sm text-left">
           <thead>
             <tr className="border-b text-gray-600">
               <th className="py-2">Order ID</th>
@@ -205,17 +221,24 @@ export default function AdminDashboard() {
               <th className="py-2">Date</th>
             </tr>
           </thead>
+
           <tbody>
             {sortedOrders.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-gray-500">
+                <td
+                  colSpan={5}
+                  className="text-center text-gray-500 py-4"
+                >
                   No recent orders.
                 </td>
               </tr>
             )}
 
             {sortedOrders.map((order) => (
-              <tr key={order._id} className="border-b hover:bg-gray-50">
+              <tr
+                key={order._id}
+                className="border-b hover:bg-gray-50"
+              >
                 <td className="py-2 font-mono text-xs">{order._id}</td>
 
                 <td className="py-2">
@@ -224,17 +247,16 @@ export default function AdminDashboard() {
                   )}
                 </td>
 
-                {/* ✅ Show amount ONLY when payment is fully done & order not cancelled */}
                 <td className="py-2 font-semibold">
                   {order.paymentStatus === "paid" &&
                   order.orderStatus !== "cancelled"
-                    ? `₹${(order.total ?? 0).toLocaleString()}`
+                    ? `₹${order.total?.toLocaleString()}`
                     : "—"}
                 </td>
 
                 <td className="py-2">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-medium capitalize ${
+                    className={`px-2 py-1 rounded text-xs capitalize ${
                       order.orderStatus === "delivered"
                         ? "bg-green-50 text-green-600"
                         : order.orderStatus === "processing"
@@ -243,10 +265,10 @@ export default function AdminDashboard() {
                         ? "bg-blue-50 text-blue-600"
                         : order.orderStatus === "cancelled"
                         ? "bg-red-50 text-red-600"
-                        : "bg-gray-50 text-gray-600"
+                        : "bg-gray-100 text-gray-600"
                     }`}
                   >
-                    {order.orderStatus || "processing"}
+                    {order.orderStatus}
                   </span>
                 </td>
 

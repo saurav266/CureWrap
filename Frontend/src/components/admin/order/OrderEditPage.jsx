@@ -14,6 +14,8 @@ export default function OrderEditPage() {
   const [loading, setLoading] = useState(true);
   const [savingStatus, setSavingStatus] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
+  const [cancellingShipment, setCancellingShipment] = useState(false);
   const [error, setError] = useState("");
 
   // editable fields
@@ -127,6 +129,108 @@ export default function OrderEditPage() {
     }
   };
 
+  // ==================== Cancel order (admin) ====================
+ const handleCancelOrder = async () => {
+  if (!order) return;
+
+  const confirm = window.confirm(
+    "Cancel this order? Shiprocket shipment will be cancelled and refund will process automatically."
+  );
+
+  if (!confirm) return;
+
+  try {
+    setCancellingOrder(true);
+
+    const res = await fetch(`${BACKEND_URL}/api/orders/${id}/cancel`, {
+      method: "PUT",
+      headers: getAuthHeaders()
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to cancel order");
+    }
+
+    toast.success("Order fully cancelled.");
+    setOrder(data.order);
+
+  } catch (err) {
+    toast.error(err.message);
+  } finally {
+    setCancellingOrder(false);
+  }
+};
+
+
+  // ==================== Cancel Shiprocket shipment ====================
+  // NOTE: You need a backend endpoint to call Shiprocket's cancel API.
+  // This expects POST /api/shiprocket/cancel with { shipment_id, channel_order_id }
+  const cancelShiprocketShipment = async () => {
+    if (!order?.shiprocket?.shipment_id) {
+      return toast.error("No shipment present to cancel");
+    }
+
+    const confirmCancel = window.confirm(
+      "Cancel shipment on Shiprocket? This will attempt to cancel the courier pickup/booking."
+    );
+    if (!confirmCancel) return;
+
+    try {
+      setCancellingShipment(true);
+
+      const payload = {
+        shipment_id: order.shiprocket.shipment_id,
+        channel_order_id: order.shiprocket.channel_order_id,
+      };
+
+      const res = await fetch(`${BACKEND_URL}/api/shiprocket/cancel`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data.error || data.message || "Failed to cancel shipment"
+        );
+      }
+
+      toast.success("Shipment cancellation requested on Shiprocket");
+
+      // If backend returns updated shiprocket info, apply to order in UI
+      if (data.shiprocket) {
+        setOrder((prev) => ({
+          ...prev,
+          shiprocket: {
+            ...prev.shiprocket,
+            ...data.shiprocket,
+          },
+          // optionally mark order cancelled if backend did that
+          orderStatus: data.order?.orderStatus || prev.orderStatus,
+          paymentStatus: data.order?.paymentStatus || prev.paymentStatus,
+        }));
+      } else {
+        // best-effort: mark shiprocket.status as 'cancelled' in UI
+        setOrder((prev) => ({
+          ...prev,
+          shiprocket: {
+            ...(prev.shiprocket || {}),
+            status: "cancelled",
+          },
+        }));
+      }
+    } catch (err) {
+      console.error("cancelShiprocketShipment error:", err);
+      toast.error(err.message || "Failed to cancel shipment");
+    } finally {
+      setCancellingShipment(false);
+    }
+  };
+
   // ==================== Update shipping / contact ====================
   const handleContactSave = async () => {
     if (!shippingForm.fullName || !shippingForm.addressLine1) {
@@ -210,6 +314,10 @@ export default function OrderEditPage() {
     );
   }
 
+  const isCancelled = order.orderStatus === "cancelled";
+  const canCancelShipment =
+    !!order.shiprocket?.shipment_id && order.shiprocket.status !== "cancelled";
+
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-0 py-8">
       {/* Header */}
@@ -226,12 +334,32 @@ export default function OrderEditPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => navigate("/admin/orders")}
-          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800 text-sm hover:bg-gray-50"
-        >
-          ← Back to Orders
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate("/admin/orders")}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800 text-sm hover:bg-gray-50"
+          >
+            ← Back to Orders
+          </button>
+
+          {/* Cancel order button */}
+          <button
+            onClick={handleCancelOrder}
+            disabled={cancellingOrder || isCancelled}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              isCancelled
+                ? "bg-gray-200 text-gray-600 cursor-not-allowed"
+                : "bg-red-600 text-white hover:bg-red-700"
+            }`}
+            title={
+              isCancelled
+                ? "Order already cancelled"
+                : "Cancel order (will attempt refund if paid)"
+            }
+          >
+            {cancellingOrder ? "Cancelling..." : isCancelled ? "Cancelled" : "Cancel Order"}
+          </button>
+        </div>
       </div>
 
       {/* Main layout */}
@@ -276,6 +404,8 @@ export default function OrderEditPage() {
                         ? "bg-green-100 text-green-700"
                         : order.paymentStatus === "failed"
                         ? "bg-red-100 text-red-700"
+                        : order.paymentStatus === "refunded"
+                        ? "bg-purple-100 text-purple-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
@@ -301,9 +431,7 @@ export default function OrderEditPage() {
               <div>
                 <p className="text-gray-500">Shipping</p>
                 <p className="font-semibold">
-                  {order.shippingCharges
-                    ? currency(order.shippingCharges)
-                    : "Free"}
+                  {order.shippingCharges ? currency(order.shippingCharges) : "Free"}
                 </p>
               </div>
               <div>
@@ -341,10 +469,7 @@ export default function OrderEditPage() {
                         {item.name || "Product"}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Qty:{" "}
-                        <span className="font-medium">
-                          {item.quantity}
-                        </span>
+                        Qty: <span className="font-medium">{item.quantity}</span>
                       </p>
                     </div>
 
@@ -360,9 +485,7 @@ export default function OrderEditPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">
-                No items in this order.
-              </p>
+              <p className="text-sm text-gray-500">No items in this order.</p>
             )}
           </motion.div>
         </div>
@@ -379,9 +502,7 @@ export default function OrderEditPage() {
               Update Order Status
             </h2>
 
-            <label className="block text-sm text-gray-700 mb-1">
-              Status
-            </label>
+            <label className="block text-sm text-gray-700 mb-1">Status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -423,10 +544,7 @@ export default function OrderEditPage() {
                   type="text"
                   value={shippingForm.fullName}
                   onChange={(e) =>
-                    setShippingForm((prev) => ({
-                      ...prev,
-                      fullName: e.target.value,
-                    }))
+                    setShippingForm((prev) => ({ ...prev, fullName: e.target.value }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
@@ -440,10 +558,7 @@ export default function OrderEditPage() {
                   type="text"
                   value={shippingForm.phone}
                   onChange={(e) =>
-                    setShippingForm((prev) => ({
-                      ...prev,
-                      phone: e.target.value,
-                    }))
+                    setShippingForm((prev) => ({ ...prev, phone: e.target.value }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
@@ -470,10 +585,7 @@ export default function OrderEditPage() {
                   type="text"
                   value={shippingForm.addressLine1}
                   onChange={(e) =>
-                    setShippingForm((prev) => ({
-                      ...prev,
-                      addressLine1: e.target.value,
-                    }))
+                    setShippingForm((prev) => ({ ...prev, addressLine1: e.target.value }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
@@ -487,10 +599,7 @@ export default function OrderEditPage() {
                   type="text"
                   value={shippingForm.addressLine2}
                   onChange={(e) =>
-                    setShippingForm((prev) => ({
-                      ...prev,
-                      addressLine2: e.target.value,
-                    }))
+                    setShippingForm((prev) => ({ ...prev, addressLine2: e.target.value }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
@@ -505,10 +614,7 @@ export default function OrderEditPage() {
                     type="text"
                     value={shippingForm.city}
                     onChange={(e) =>
-                      setShippingForm((prev) => ({
-                        ...prev,
-                        city: e.target.value,
-                      }))
+                      setShippingForm((prev) => ({ ...prev, city: e.target.value }))
                     }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
@@ -521,10 +627,7 @@ export default function OrderEditPage() {
                     type="text"
                     value={shippingForm.state}
                     onChange={(e) =>
-                      setShippingForm((prev) => ({
-                        ...prev,
-                        state: e.target.value,
-                      }))
+                      setShippingForm((prev) => ({ ...prev, state: e.target.value }))
                     }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                   />
@@ -539,10 +642,7 @@ export default function OrderEditPage() {
                   type="text"
                   value={shippingForm.pincode}
                   onChange={(e) =>
-                    setShippingForm((prev) => ({
-                      ...prev,
-                      pincode: e.target.value,
-                    }))
+                    setShippingForm((prev) => ({ ...prev, pincode: e.target.value }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
@@ -571,20 +671,15 @@ export default function OrderEditPage() {
             {order.shiprocket?.awb_code ? (
               <>
                 <p className="text-sm text-gray-700 mb-2">
-                  <span className="font-semibold">AWB:</span>{" "}
-                  {order.shiprocket.awb_code}
+                  <span className="font-semibold">AWB:</span> {order.shiprocket.awb_code}
                 </p>
                 <p className="text-sm text-gray-700 mb-4">
-                  <span className="font-semibold">Courier:</span>{" "}
-                  {order.shiprocket.courier_name || "N/A"}
+                  <span className="font-semibold">Courier:</span> {order.shiprocket.courier_name || "N/A"}
                 </p>
 
                 <button
                   onClick={() =>
-                    window.open(
-                      `https://shiprocket.co/tracking/${order.shiprocket.awb_code}`,
-                      "_blank"
-                    )
+                    window.open(`https://shiprocket.co/tracking/${order.shiprocket.awb_code}`, "_blank")
                   }
                   className="w-full py-2.5 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
                 >
@@ -593,19 +688,31 @@ export default function OrderEditPage() {
 
                 {order.shiprocket.label_url && (
                   <button
-                    onClick={() =>
-                      window.open(order.shiprocket.label_url, "_blank")
-                    }
+                    onClick={() => window.open(order.shiprocket.label_url, "_blank")}
                     className="mt-3 w-full py-2.5 rounded-lg bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700"
                   >
                     Print Shipping Label
                   </button>
                 )}
+
+                {/* Shiprocket cancel */}
+                <button
+                  onClick={cancelShiprocketShipment}
+                  disabled={cancellingShipment || !canCancelShipment}
+                  className={`mt-3 w-full py-2.5 rounded-lg text-sm font-semibold ${
+                    canCancelShipment
+                      ? "bg-red-600 text-white hover:bg-red-700"
+                      : "bg-gray-200 text-gray-600 cursor-not-allowed"
+                  }`}
+                >
+                  {cancellingShipment ? "Cancelling shipment..." : canCancelShipment ? "Cancel Shipment (Shiprocket)" : "Shipment already cancelled"}
+                </button>
               </>
             ) : (
-              <p className="text-sm text-gray-500">
-                No AWB assigned yet. AWB will appear once courier is assigned.
-              </p>
+              <div>
+                <p className="text-sm text-gray-500">No AWB assigned yet. AWB will appear once courier is assigned.</p>
+                {/* If admin wants to create Shiprocket booking here you can add a button */}
+              </div>
             )}
           </motion.div>
         </div>

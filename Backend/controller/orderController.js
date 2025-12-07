@@ -3,14 +3,16 @@ import "dotenv/config";
 import crypto from "crypto";
 import Razorpay from "razorpay";
 import Order from "../model/orderSchema.js";
+import { io } from "../server.js";
 import {
   createShiprocketOrder,
   assignShiprocketAwb,
   generateShiprocketLabel,
   trackShipmentByAwb,
   trackShipment,
+  cancelShiprocketOrder,
+  shiprocketAuth,
 } from "../services/shiprocketService.js";
-import ShiprocketAuth from "../services/shiprocketService.js";
 
 const RETURN_WINDOW_DAYS = 7; // backend return window
 
@@ -105,6 +107,20 @@ export const placeOrder = async (req, res) => {
       returnStatus: "none",
     });
 
+    // Emit new order to admin dashboard (realtime)
+    try {
+      io.emit("new-order", {
+        _id: order._id,
+        total: order.total,
+        paymentStatus: order.paymentStatus,
+        orderStatus: order.orderStatus,
+        shippingAddress: order.shippingAddress,
+        createdAt: order.createdAt,
+      });
+    } catch (emitErr) {
+      console.error("Socket emit new-order failed:", emitErr);
+    }
+
     // SHIPROCKET (COD ONLY HERE)
     let shiprocketData = null;
     let awbData = null;
@@ -112,6 +128,7 @@ export const placeOrder = async (req, res) => {
 
     try {
       if (paymentMethod === "COD") {
+        // build payload
         const fullName = shippingAddress.name || "";
         const [firstName, ...restName] = fullName.split(" ");
         const lastName = restName.join(" ");
@@ -129,7 +146,7 @@ export const placeOrder = async (req, res) => {
           phone: shippingAddress.phone,
           items: normalizedItems.map((i) => ({
             name: i.name,
-            sku: i.product?.toString() || "NO-SKU",
+            sku: (i.product || "").toString(),
             quantity: i.quantity,
             price: i.price,
           })),
@@ -141,33 +158,68 @@ export const placeOrder = async (req, res) => {
           weight: 0.5,
         };
 
+        // 1) create SR order
         shiprocketData = await createShiprocketOrder(srPayload);
-        const shipmentId = shiprocketData?.shipment_id;
 
-        if (shipmentId) {
-          awbData = await assignShiprocketAwb(shipmentId);
-          labelData = await generateShiprocketLabel(shipmentId);
+        // Shiprocket may return shipment_id or order_id depending on response.
+        const shipmentId =
+          shiprocketData?.shipment_id ||
+          shiprocketData?.data?.shipment_id ||
+          shiprocketData?.response?.data?.shipment_id ||
+          null;
 
+        if (!shipmentId) {
+          // If Shiprocket didn't return shipment id now, still save partial info and continue.
+          console.warn("Shiprocket did not return shipment_id on create:", shiprocketData);
+          // Save basic Shiprocket info (if any) so later processes can retry
           order.shiprocket = {
-            order_id: shiprocketData.order_id,
-            channel_order_id: shiprocketData.channel_order_id,
-            shipment_id: shiprocketData.shipment_id,
-            status: shiprocketData.status,
-            awb_code:
-              awbData?.awb_code ||
-              awbData?.response?.data?.awb_code ||
-              null,
-            courier_company_id:
-              awbData?.courier_company_id ||
-              awbData?.response?.data?.courier_company_id ||
-              null,
-            courier_name:
-              awbData?.courier_name ||
-              awbData?.response?.data?.courier_name ||
-              null,
+            order_id: shiprocketData?.order_id || shiprocketData?.data?.order_id || null,
+            channel_order_id: shiprocketData?.channel_order_id || `WEB-${order._id}`,
+            status: shiprocketData?.status || shiprocketData?.data?.status || "created",
+          };
+          await order.save();
+        } else {
+          // 2) assign AWB
+          awbData = await assignShiprocketAwb(shipmentId);
+
+          // Depending on SR response shape, pick awb and courier fields
+          const awb_code =
+            awbData?.awb_code ||
+            awbData?.response?.data?.awb_code ||
+            awbData?.response?.data?.data?.awb_code ||
+            null;
+
+          const courier_name =
+            awbData?.courier_name ||
+            awbData?.response?.data?.courier_name ||
+            awbData?.response?.data?.data?.courier_name ||
+            null;
+
+          const courier_company_id =
+            awbData?.courier_company_id ||
+            awbData?.response?.data?.courier_company_id ||
+            awbData?.response?.data?.data?.courier_company_id ||
+            null;
+
+          // 3) generate label (optional)
+          try {
+            labelData = await generateShiprocketLabel(shipmentId);
+          } catch (labelErr) {
+            console.warn("Label generation warning:", labelErr?.response?.data || labelErr.message);
+          }
+
+          // SAVE everything into order.shiprocket (important: save shipment_id)
+          order.shiprocket = {
+            order_id: shiprocketData?.order_id || shiprocketData?.data?.order_id || null,
+            channel_order_id: shiprocketData?.channel_order_id || `WEB-${order._id}`,
+            shipment_id: Number(shipmentId),
+            status: shiprocketData?.status || "created",
+            awb_code,
+            courier_company_id,
+            courier_name,
             label_url:
               labelData?.label_url ||
-              labelData?.label_url_list?.[0] ||
+              (labelData?.label_url_list && labelData.label_url_list[0]) ||
               null,
           };
 
@@ -175,10 +227,8 @@ export const placeOrder = async (req, res) => {
         }
       }
     } catch (shipErr) {
-      console.error(
-        "Shiprocket error:",
-        shipErr.response?.data || shipErr.message
-      );
+      // log but don't fail the API - order has been created
+      console.error("Shiprocket error:", shipErr?.response?.data || shipErr?.message || shipErr);
     }
 
     return res.json({
@@ -210,6 +260,7 @@ export const markOrderPaid = async (req, res) => {
         order.orderStatus = "shipped";
       }
       await order.save();
+      io.emit("order-updated", { orderId: order._id, orderStatus: order.orderStatus });
     }
 
     res.json({ success: true, order });
@@ -332,6 +383,7 @@ export const verifyRazorpayPaymentAndMarkPaid = async (req, res) => {
     }
 
     await order.save();
+    io.emit("order-updated", { orderId: order._id, orderStatus: order.orderStatus });
 
     return res.json({ success: true, order });
   } catch (err) {
@@ -349,40 +401,37 @@ export const getAllOrders = async (req, res) => {
   try {
     const { filter, limit: limitStr } = req.query;
 
-    // base query = everything
     const query = {};
 
-    // FILTERS
+    // REMOVE FAILED ORDERS ALWAYS
+    query.paymentStatus = { $ne: "failed" };
+
     if (filter === "cancelled") {
-      // only cancelled orders
       query.orderStatus = "cancelled";
-    } else if (filter === "prepaid") {
-      // prepaid = paid + NOT COD
+    } 
+    else if (filter === "prepaid") {
       query.paymentStatus = "paid";
       query.paymentMethod = { $ne: "COD" };
-    } else if (filter === "cod") {
-      // cash on delivery
+    } 
+    else if (filter === "cod") {
       query.paymentMethod = "COD";
     }
-    // else: "all" → no extra conditions (all orders)
 
-    // Optional limit (for dashboard recent orders)
+    // limit support for dashboard
     const limit = limitStr ? parseInt(limitStr, 10) : null;
 
     let mongooseQuery = Order.find(query).sort({ createdAt: -1 });
-    if (!isNaN(limit) && limit > 0) {
-      mongooseQuery = mongooseQuery.limit(limit);
-    }
+    if (limit > 0) mongooseQuery = mongooseQuery.limit(limit);
 
     const orders = await mongooseQuery;
 
     return res.json({ success: true, orders });
+
   } catch (e) {
     console.error("getAllOrders error:", e);
     return res.status(500).json({ error: "Failed to fetch orders" });
   }
 };
-
 
 export const getOrderById = async (req, res) => {
   try {
@@ -412,7 +461,7 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
-// ✅ UPDATED: auto-refund on cancel for Razorpay-paid orders
+// ✅ UPDATED: auto-refund on cancel for Razorpay-paid orders (when status update endpoint used)
 export const updateOrderStatus = async (req, res) => {
   try {
     const orderId = req.params.id;
@@ -505,6 +554,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     await order.save();
+    io.emit("order-updated", { orderId: order._id, orderStatus: order.orderStatus });
     res.json({ success: true, order });
   } catch (e) {
     console.error("updateOrderStatus error:", e);
@@ -566,6 +616,7 @@ export const editOrder = async (req, res) => {
     });
 
     await order.save();
+    io.emit("order-updated", { orderId: order._id, orderStatus: order.orderStatus });
     res.json({ success: true, order });
   } catch (e) {
     console.error("editOrder error:", e);
@@ -578,35 +629,40 @@ export const editOrder = async (req, res) => {
 export const trackLiveShipment = async (req, res) => {
   try {
     const { awb } = req.params;
+
     if (!awb) {
-      return res
-        .status(400)
-        .json({ success: false, error: "AWB missing" });
+      return res.status(400).json({ success: false, error: "AWB missing" });
     }
 
-    // get shiprocket token (may throw)
-    const token = await ShiprocketAuth();
+    const token = await shiprocketAuth();
 
-    // call Shiprocket (may throw)
-    const trackingResult = await trackShipmentByAwb(awb, token);
+    let tracking;
+    try {
+      tracking = await trackShipmentByAwb(awb, token);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        return res.status(200).json({
+          success: false,
+          tracking: null,
+          error: "Tracking not available yet (AWB not activated)",
+          code: 404,
+        });
+      }
 
-    return res.json({ success: true, tracking: trackingResult });
-  } catch (e) {
-    console.error(
-      "trackLiveShipment error:",
-      e.response?.data || e.message
-    );
+      return res.status(200).json({
+        success: false,
+        tracking: null,
+        error: err.response?.data || err.message,
+      });
+    }
 
-    // 👉 IMPORTANT: do NOT crash the frontend with 500.
-    // Return success: false but status 200 so UI can just show "no updates yet".
-    return res.status(200).json({
+    return res.json({ success: true, tracking });
+  } catch (err) {
+    console.error("trackLiveShipment error:", err);
+    return res.status(500).json({
       success: false,
       tracking: null,
-      error:
-        e.response?.data?.message ||
-        e.response?.data ||
-        e.message ||
-        "Failed to track shipment",
+      error: "Internal tracking error",
     });
   }
 };
@@ -840,3 +896,141 @@ export const updateReturnStatusAdmin = async (req, res) => {
       .json({ success: false, error: "Failed to update return status" });
   }
 };
+
+/* ========== CANCEL ORDER (immediate response, background Shiprocket + refund) ========== */
+
+// controllers/orderController.js
+
+// ========================
+//  CANCEL ORDER (USER/ADMIN)
+//  WITH AUTOMATIC REFUND
+// ========================
+export const cancelOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+
+    // Already cancelled → return fast
+    if (order.orderStatus === "cancelled") {
+      return res.json({ success: true, order, message: "Order already cancelled" });
+    }
+
+    // STEP 1: update local DB immediately
+    order.orderStatus = "cancelled";
+    await order.save();
+
+    io.emit("order-cancelled", {
+      orderId: order._id,
+      message: "Order cancelled → processing Shiprocket/refund",
+    });
+
+    // STEP 2: Respond to frontend instantly
+    res.json({
+      success: true,
+      order,
+      message: "Cancellation started",
+    });
+
+    // STEP 3: Process Shiprocket + Refund in background
+    (async () => {
+      const orderIdSR = order.shiprocket?.order_id;
+      const shipmentIdSR = order.shiprocket?.shipment_id;
+
+      console.log("CANCEL DEBUG → SR order_id:", orderIdSR, "shipment_id:", shipmentIdSR);
+
+      // SHIPROCKET CANCEL
+      if (orderIdSR || shipmentIdSR) {
+        try {
+          const srCancel = await cancelShiprocketOrder({
+            orderId: orderIdSR,
+            shipmentId: shipmentIdSR,
+          });
+
+          console.log("Shiprocket Cancel Response:", srCancel);
+
+          const o2 = await Order.findById(order._id);
+          if (o2) {
+            o2.shiprocket = {
+              ...(o2.shiprocket || {}),
+              status: "cancelled",
+            };
+            await o2.save();
+
+            io.emit("shiprocket-cancelled", { orderId: o2._id });
+          }
+        } catch (err) {
+          console.error("Shiprocket cancel error:", err);
+        }
+      } else {
+        console.warn("⚠ No Shiprocket order_id or shipment_id saved → cannot cancel in SR");
+      }
+
+      // RAZORPAY REFUND`
+     // === RAZORPAY REFUND (IF PREPAID) ====================
+if (order.paymentMethod === "RAZORPAY" && order.paymentStatus === "paid") {
+  try {
+    const paymentId = order.paymentResult?.razorpay_payment_id;
+    if (!paymentId) throw new Error("Missing razorpay_payment_id");
+
+    const refundAmountPaise = Math.round(order.total * 100);
+
+    const refund = await razorpay.payments.refund(paymentId, {
+      amount: refundAmountPaise,
+      speed: "optimum",
+    });
+
+    // SAVE REFUND INFO INSIDE YOUR EXISTING SCHEMA
+    const o = await Order.findById(order._id);
+    if (o) {
+      o.paymentStatus = "refunded";
+
+      o.refundInfo = {
+        gateway: "razorpay",
+        refundId: refund.id,
+        amount: refund.amount / 100,
+        currency: refund.currency,
+        status: refund.status,      // e.g. processed / pending / failed
+        raw: refund                 // FULL razorpay refund object
+      };
+
+      await o.save();
+
+      io.emit("order-refunded", {
+        orderId: o._id,
+        refundId: refund.id,
+      });
+    }
+  } catch (refundErr) {
+    console.error("Refund error during cancel:", refundErr);
+
+    // SAVE FAILURE INFO INSIDE SAME FIELD (NO SCHEMA CHANGE)
+    const o = await Order.findById(order._id);
+    if (o) {
+      o.refundInfo = {
+        gateway: "razorpay",
+        refundId: null,
+        amount: order.total,
+        currency: "INR",
+        status: "failed",
+        raw: { error: refundErr.message } // store readable error
+      };
+
+      await o.save();
+    }
+  }
+}
+  })();
+
+  } catch (err) {
+    console.error("cancelOrder error:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to cancel order",
+    });
+  }
+};
+
+
+
