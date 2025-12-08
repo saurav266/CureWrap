@@ -164,10 +164,10 @@ export default function ContactUsPremium() {
                 {
                   type: "whatsapp",
                   title: "WhatsApp",
-                  desc: "+91-8420644354",
+                  desc: "+91-81213131143",
                   icon: <MessageCircle className="w-6 h-6 text-white" />,
                   bg: "bg-gradient-to-br from-[#25D366] to-[#128C7E]",
-                  href: "https://wa.me/8420644354",
+                  href: "https://wa.me/81213131143",
                 },
                 {
                   type: "email",

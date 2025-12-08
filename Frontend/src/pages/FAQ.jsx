@@ -93,7 +93,7 @@ export default function FAQ() {
             Contact Support
           </a>
           <p className="mt-4 text-gray-500 text-sm md:text-base">
-            Customer Care: +91-84206 44354
+            Customer Care: +91-81213 31143
           </p>
         </section>
       </main>

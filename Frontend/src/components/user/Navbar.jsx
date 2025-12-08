@@ -46,36 +46,28 @@ const Navbar = () => {
       try {
         setMegaLoading(true);
         setMegaError("");
-        // adjust query params as you want (limit, category, featured, etc.)
         const res = await fetch(`${backendUrl}/api/users/products?limit=5`);
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data?.message || "Failed to load products");
-        }
-
+        if (!res.ok) throw new Error(data?.message || "Failed to load products");
         const list = Array.isArray(data.products) ? data.products : [];
         setMegaProducts(list);
       } catch (err) {
-        console.error("Mega menu fetch error:", err);
         setMegaError("Failed to load products");
         setMegaProducts([]);
       } finally {
         setMegaLoading(false);
       }
     };
-
     fetchMegaProducts();
   }, []);
 
-  // ---------------- Cart syncing ----------------
+  // ---- Cart syncing ----
   useEffect(() => {
     const updateCartCount = () => {
-      const cart = JSON.parse(localStorage.getItem("cart")) || [];
-      const total = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const stored = JSON.parse(localStorage.getItem("cart")) || [];
+      const total = stored.reduce((sum, item) => sum + (item.quantity || 0), 0);
       setCartCount(total);
     };
-
     updateCartCount();
     window.addEventListener("cartUpdated", updateCartCount);
     return () => window.removeEventListener("cartUpdated", updateCartCount);
@@ -93,10 +85,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (
-        !e.target.closest(".mini-cart") &&
-        !e.target.closest("#cart-icon-btn")
-      ) {
+      if (!e.target.closest(".mini-cart") && !e.target.closest("#cart-icon-btn")) {
         setMiniCartOpen(false);
       }
     };
@@ -104,32 +93,26 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ---- Add To Cart (for mega menu products) ----
+  // ---- Add to cart ----
   const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-    const existing = cart.find(
+    let stored = JSON.parse(localStorage.getItem("cart")) || [];
+    const existing = stored.find(
       (item) => item.productId === product._id && !item.size && !item.color
     );
-
     if (existing) {
       existing.quantity += 1;
-      cart = cart.map((item) =>
-        item.productId === product._id && !item.size && !item.color
-          ? existing
-          : item
+      stored = stored.map((i) =>
+        i.productId === product._id && !i.size && !i.color ? existing : i
       );
     } else {
-      cart.push({
+      stored.push({
         ...product,
         productId: product._id,
         quantity: 1,
       });
     }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem("cart", JSON.stringify(stored));
     window.dispatchEvent(new Event("cartUpdated"));
-    // toast.success(`${product.name} added to cart`);
   };
 
   return (
@@ -157,14 +140,14 @@ const Navbar = () => {
         />
       </Link>
 
-      {/* Desktop Menu */}
-      <ul className="hidden sm:flex gap-16 text-lg items-center font-semibold tracking-wide">
+      {/* Desktop Menu (now visible only ≥ 1024px) */}
+      <ul className="hidden lg:flex gap-16 text-lg items-center font-semibold tracking-wide">
         <NavLink to="/" className={navLinkClass}>
           HOME
           <span className="absolute left-1/2 -bottom-1 h-0.5 w-0 bg-green-500 transition-all duration-300 group-hover:w-full group-hover:left-0"></span>
         </NavLink>
 
-        {/* PRODUCT WITH MEGA MENU */}
+        {/* PRODUCT + Mega Menu */}
         <li className="relative group">
           <NavLink to="/product" className={navLinkClass}>
             PRODUCT
@@ -178,33 +161,25 @@ const Navbar = () => {
               bg-white shadow-lg py-5 px-6 z-[999] rounded-md
 
               opacity-0 pointer-events-none translate-y-3
-              transition-all duration-300 ease-out
+              transition-all duration-300
 
               group-hover:opacity-100
               group-hover:translate-y-0
               group-hover:pointer-events-auto
-
               w-auto max-w-[90vw]
             "
           >
             {megaLoading ? (
-              <div className="text-gray-500 px-4 py-2 text-sm">
-                Loading products...
-              </div>
+              <div className="text-gray-500 px-4 py-2 text-sm">Loading products...</div>
             ) : megaError ? (
-              <div className="text-red-500 px-4 py-2 text-sm">
-                {megaError}
-              </div>
+              <div className="text-red-500 px-4 py-2 text-sm">{megaError}</div>
             ) : megaProducts.length === 0 ? (
-              <div className="text-gray-500 px-4 py-2 text-sm">
-                No products available
-              </div>
+              <div className="text-gray-500 px-4 py-2 text-sm">No products available</div>
             ) : (
               <div className="flex gap-4 flex-nowrap">
                 {megaProducts.map((p) => {
                   const price = p.sale_price || p.price || 0;
                   const img = getImageUrl(p.images?.[0]);
-
                   return (
                     <div
                       key={p._id}
@@ -216,35 +191,21 @@ const Navbar = () => {
                       onClick={() => navigate(`/product/${p._id}`)}
                     >
                       <div className="w-[40%] h-full">
-                        <img
-                          src={img}
-                          alt={p.name}
-                          className="w-full h-full object-cover rounded-md"
-                        />
+                        <img src={img} alt={p.name} className="w-full h-full object-cover rounded-md" />
                       </div>
-
                       <div className="w-[60%] flex flex-col justify-between">
                         <div>
                           <h3 className="font-semibold text-xs text-gray-900 leading-tight line-clamp-2">
                             {p.name}
                           </h3>
-                          <p className="text-green-600 font-bold text-xs mt-1">
-                            ₹{price.toLocaleString()}
-                          </p>
+                          <p className="text-green-600 font-bold text-xs mt-1">₹{price.toLocaleString()}</p>
                         </div>
-
                         <button
-                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             addToCart(p);
                           }}
-                          className="
-                            bg-green-600 text-white text-[11px]
-                            py-1 rounded-md w-full 
-                            hover:bg-green-700 transition
-                          "
-                          aria-label={`Add ${p.name} to cart`}
+                          className="bg-green-600 text-white text-[11px] py-1 rounded-md w-full hover:bg-green-700 transition"
                         >
                           Add to Cart
                         </button>
@@ -259,45 +220,29 @@ const Navbar = () => {
 
         <NavLink to="/about" className={navLinkClass}>
           ABOUT
-          <span className="absolute left-1/2 -bottom-1 h-0.5 w-0 bg-green-500 transition-all duration-300 group-hover:w-full group-hover:left-0"></span>
         </NavLink>
 
         <NavLink to="/contact" className={navLinkClass}>
           CONTACT
-          <span className="absolute left-1/2 -bottom-1 h-0.5 w-0 bg-green-500 transition-all duration-300 group-hover:w-full group-hover:left-0"></span>
         </NavLink>
       </ul>
 
       {/* Right Icons */}
       <div className="flex items-center gap-10">
         <Link to="/WatchList">
-          <RiPokerHeartsLine
-            className="
-            h-7 w-7 cursor-pointer 
-            transition-all duration-300 
-            hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
-            hover:drop-shadow-[0_4px_6px_rgba(34,197,94,0.35)]
-          "
-          />
+          <RiPokerHeartsLine className="h-7 w-7 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500 hover:-translate-y-0.5" />
         </Link>
 
-        {/* Profile Dropdown */}
+        {/* Profile */}
         <div className="relative group/profile inline-block">
-          <FiUser
-            className="
-            h-7 w-7 cursor-pointer 
-            transition-all duration-300 
-            hover:scale-125 hover:text-green-500 hover:-translate-y-0.5
-          "
-          />
-
+          <FiUser className="h-7 w-7 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500" />
           <div
             className="
               absolute right-0 top-full mt-1 w-44
               bg-white/90 backdrop-blur-md shadow-xl rounded-lg p-3 z-50
 
               opacity-0 translate-y-2 pointer-events-none
-              transition-all duration-300 ease-out
+              transition-all duration-300
 
               group-hover/profile:opacity-100 
               group-hover/profile:translate-y-0 
@@ -306,78 +251,46 @@ const Navbar = () => {
           >
             {isAuthenticated ? (
               <>
-                <Link
-                  to="/profile"
-                  className="hover:text-green-600 text-gray-600 py-1 block"
-                >
-                  Profile
-                </Link>
-                <Link
-                  to="/orders"
-                  className="hover:text-green-600 text-gray-600 py-1 block"
-                >
-                  Orders
-                </Link>
-                <button
-                  onClick={logout}
-                  className="hover:text-green-600 text-gray-600 py-1 block"
-                >
-                  Logout
-                </button>
+                <Link to="/profile" className="hover:text-green-600 text-gray-600 py-1 block">Profile</Link>
+                <Link to="/orders" className="hover:text-green-600 text-gray-600 py-1 block">Orders</Link>
+                <button onClick={logout} className="hover:text-green-600 text-gray-600 py-1 block">Logout</button>
               </>
             ) : (
-              <Link
-                to="/login"
-                className="hover:text-green-600 text-gray-600 py-1 block"
-              >
-                Login
-              </Link>
+              <Link to="/login" className="hover:text-green-600 text-gray-600 py-1 block">Login</Link>
             )}
           </div>
         </div>
 
         {/* Cart */}
         <div className="relative">
-          <button
-            id="cart-icon-btn"
-            onClick={() => setMiniCartOpen((prev) => !prev)}
-            className="relative"
-          >
-            <AiOutlineShoppingCart
-              className="h-7 w-7 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500"
-            />
+          <button id="cart-icon-btn" onClick={() => setMiniCartOpen((prev) => !prev)}>
+            <AiOutlineShoppingCart className="h-7 w-7 cursor-pointer transition-all duration-300 hover:scale-125 hover:text-green-500" />
             <span className="absolute -right-2 -bottom-2 w-5 h-5 rounded-full bg-black text-white text-xs flex items-center justify-center shadow-md">
               {cartCount}
             </span>
           </button>
 
-          {/* Mini Cart Component */}
-          <MiniCart
-            open={miniCartOpen}
-            cart={cart}
-            onClose={() => setMiniCartOpen(false)}
-          />
+          <MiniCart open={miniCartOpen} cart={cart} onClose={() => setMiniCartOpen(false)} />
         </div>
 
-        {/* Hamburger */}
+        {/* Hamburger (NOW visible on mobile + tablet) */}
         <button
-          className="sm:hidden text-2xl text-gray-700 hover:text-green-600"
+          className="lg:hidden text-2xl text-gray-700 hover:text-green-600"
           onClick={() => setMobileOpen(!mobileOpen)}
         >
           {mobileOpen ? <FaTimes /> : <FaBars />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile & Tablet Menu (visible <1024px) */}
       {mobileOpen && (
         <div
           className="
           absolute top-16 left-0 w-full 
           bg-white/95 backdrop-blur-md 
-          shadow-md flex flex-col items-center gap-6 py-6 sm:hidden
+          shadow-md flex flex-col items-center gap-6 py-6 lg:hidden
         "
         >
-          {/* Mobile links */}
           {["/", "/product", "/about", "/contact"].map((path, i) => {
             const labels = ["HOME", "PRODUCT", "ABOUT", "CONTACT"];
             return (
@@ -394,30 +307,18 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <>
-              <Link
-                to="/profile"
-                className="text-gray-600 hover:text-green-600"
-              >
+              <Link to="/profile" onClick={() => setMobileOpen(false)} className="text-gray-600 hover:text-green-600">
                 Profile
               </Link>
-              <Link
-                to="/orders"
-                className="text-gray-600 hover:text-green-600"
-              >
+              <Link to="/orders" onClick={() => setMobileOpen(false)} className="text-gray-600 hover:text-green-600">
                 Orders
               </Link>
-              <button
-                onClick={logout}
-                className="text-gray-600 hover:text-green-600"
-              >
+              <button onClick={logout} className="text-gray-600 hover:text-green-600">
                 Logout
               </button>
             </>
           ) : (
-            <Link
-              to="/login"
-              className="text-gray-600 hover:text-green-600"
-            >
+            <Link to="/login" onClick={() => setMobileOpen(false)} className="text-gray-600 hover:text-green-600">
               Login
             </Link>
           )}

@@ -242,7 +242,7 @@ export default function TermsOfService() {
                 www.curewrapplus.com
               </a>
             </p>
-            <p className="text-gray-700">Phone: +91-84206 44354</p>
+            <p className="text-gray-700">Phone: +91-81213 31143</p>
           </div>
         </section>
       </main>

@@ -5,7 +5,6 @@ import { RiSecurePaymentFill } from "react-icons/ri";
 import { MdVerified } from "react-icons/md";
 import { motion } from "framer-motion";
 
-// Brand colors
 const brandBlue = "#2F86D6";
 const brandGreen = "#63B46B";
 
@@ -47,7 +46,16 @@ export default function Features() {
         whileInView="show"
         viewport={{ once: true, amount: 0.25 }}
         transition={{ staggerChildren: 0.2 }}
-        className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 px-6 md:px-16"
+        className="
+          max-w-7xl mx-auto
+          grid
+          grid-cols-1 
+          sm:grid-cols-2 
+          md:grid-cols-2 
+          lg:grid-cols-4 
+          gap-8 sm:gap-10 lg:gap-12
+          px-6 md:px-12 lg:px-16
+        "
       >
         {items.map((item, index) => {
           const Icon = item.icon;
@@ -71,20 +79,21 @@ export default function Features() {
                 transition-all 
                 duration-400 
                 border border-white/40
+                flex flex-col items-center text-center
               "
             >
               {/* ICON */}
               <motion.div
                 whileHover={{
-                  scale: 1.3,
-                  rotate: 5,
+                  scale: 1.25,
+                  rotate: 4,
                   transition: { type: "spring", stiffness: 200 },
                 }}
                 className="
                   w-20 h-20 
                   flex items-center justify-center 
                   rounded-2xl 
-                  mx-auto mb-6
+                  mb-6
                   bg-gradient-to-br from-[#2F86D6] to-[#63B46B]
                   shadow-lg 
                   group-hover:shadow-2xl
@@ -94,24 +103,14 @@ export default function Features() {
                 <Icon className="text-white" size={32} />
               </motion.div>
 
-              {/* TITLE */}
-              <h4
-                className="
-                  text-lg font-semibold text-gray-900 
-                  mb-2 
-                  group-hover:text-[#2F86D6] 
-                  transition
-                "
-              >
+              <h4 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-[#2F86D6] transition">
                 {item.title}
               </h4>
 
-              {/* DESCRIPTION */}
               <p className="text-sm text-gray-600 leading-relaxed">
                 {item.description}
               </p>
 
-              {/* HOVER SHIMMER LINE */}
               <div
                 className="
                   absolute bottom-4 left-1/2 -translate-x-1/2 

@@ -12,7 +12,6 @@ import fallbackMain from "../assets/frontend_assets/curewrap/backPain.png";
 
 const backendUrl = "http://localhost:8000";
 
-/* 🔥 PROBLEM IMAGE DISPLAY */
 const problemImages = [
   problemKnee,
   problemRehab,
@@ -29,13 +28,12 @@ const problemTitles = [
   "Lumbar / Slip Disc",
 ];
 
-/* 🔥 PRODUCT ID MAPPING (WILL NEVER BREAK EVEN IF TITLES CHANGE) */
 const mappedProductIds = [
-  "69270418d8a75f130faf4d66", // MAIN LARGE
-  "692711b3c97c569366415213", // SMALL 1
-  "6929c183b6489355ea3c6b21", // SMALL 2
-  "6929aef0b6489355ea3c5a25", // SMALL 3
-  "6932ab49ac77b4f2a0ad736e", // SMALL 4
+  "69270418d8a75f130faf4d66",
+  "692711b3c97c569366415213",
+  "6929c183b6489355ea3c6b21",
+  "6929aef0b6489355ea3c5a25",
+  "6932ab49ac77b4f2a0ad736e",
 ];
 
 export default function UltimateSupportSection() {
@@ -43,26 +41,16 @@ export default function UltimateSupportSection() {
   const [products, setProducts] = useState({});
   const [showProblem, setShowProblem] = useState(true);
 
-  // Fetch each product by ID → store in index-based order
   useEffect(() => {
-    Promise.all(
-      mappedProductIds.map((id) =>
-        fetch(`${backendUrl}/api/users/products/${id}`).then((res) =>
-          res.json()
-        )
-      )
-    )
+    Promise.all(mappedProductIds.map((id) => fetch(`${backendUrl}/api/users/products/${id}`).then((res) => res.json())))
       .then((responses) => {
         const mapped = {};
-        responses.forEach((r, i) => {
-          mapped[i] = r.product || null;
-        });
+        responses.forEach((r, i) => (mapped[i] = r.product || null));
         setProducts(mapped);
       })
       .catch(() => setProducts({}));
   }, []);
 
-  // Auto toggle display every 4s
   useEffect(() => {
     const interval = setInterval(() => setShowProblem((p) => !p), 4000);
     return () => clearInterval(interval);
@@ -81,7 +69,7 @@ export default function UltimateSupportSection() {
 
   return (
     <section className="bg-white py-20 px-4 md:px-10">
-      {/* HEADER */}
+      {/* Header */}
       <div className="max-w-5xl mx-auto text-center mb-20">
         <motion.h2 className="text-4xl md:text-5xl font-bold text-gray-900">
           Ultimate Support You Need
@@ -95,11 +83,12 @@ export default function UltimateSupportSection() {
         <div className="w-24 h-1 bg-green-500 mx-auto mt-6 rounded-full" />
       </div>
 
-      {/* GRID */}
+      {/* MAIN GRID */}
       <div className="max-w-[1650px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* LARGE MAIN */}
+        
+        {/* Large Product */}
         <motion.div
-          className="relative overflow-hidden rounded-3xl shadow-2xl h-[760px] cursor-pointer"
+          className="relative overflow-hidden rounded-3xl shadow-2xl h-[600px] md:h-[720px] cursor-pointer"
           onClick={() => mainProduct && navigate(`/product/${mainProduct._id}`)}
         >
           <motion.img
@@ -110,36 +99,38 @@ export default function UltimateSupportSection() {
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
           />
-
-          {/* Overlay Text */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/30" />
           <div className="absolute bottom-6 left-6 bg-white/25 backdrop-blur-xl px-6 py-3 rounded-2xl text-white border border-white/40 shadow-lg">
             <p className="text-lg font-semibold">
               {showProblem ? problemTitles[0] : mainProduct?.name}
             </p>
-            <p className="text-xs text-white/80 mt-1">
-              Auto transform: Problem → Solution
-            </p>
+            <p className="text-xs text-white/80 mt-1">Auto transform: Problem → Solution</p>
           </div>
         </motion.div>
 
-        {/* 4 SMALL PRODUCTS */}
-        <div className="grid grid-cols-2 gap-6 h-[760px]">
+        {/* SMALL PRODUCTS (Mobile optimized) */}
+        <div
+          className="
+            grid 
+            grid-cols-1
+            sm:grid-cols-2
+            gap-5
+            md:gap-6
+            h-auto
+            md:h-[720px]
+          "
+        >
           {[0, 1, 2, 3].map((i) => {
             const product = smallProducts[i];
             return (
               <motion.div
                 key={i}
-                className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer"
+                className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-[260px] sm:h-[300px] md:h-auto"
                 onClick={() => product && navigate(`/product/${product._id}`)}
               >
                 <motion.img
                   key={showProblem ? `small-problem-${i}` : `small-solution-${i}`}
-                  src={
-                    showProblem
-                      ? problemImages[i + 1]
-                      : getProductImage(product)
-                  }
+                  src={showProblem ? problemImages[i + 1] : getProductImage(product)}
                   className="w-full h-full object-cover"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

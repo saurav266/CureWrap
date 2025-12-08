@@ -1,5 +1,5 @@
 import React from "react";
-import { FaWhatsapp, FaInstagram, FaYoutube, FaFacebook } from "react-icons/fa";
+import { FaWhatsapp, FaInstagram, FaFacebook } from "react-icons/fa";
 import { MdOutlineForwardToInbox } from "react-icons/md";
 import { CiLocationOn } from "react-icons/ci";
 import { Link } from "react-router-dom";
@@ -8,44 +8,45 @@ export default function Footer() {
   return (
     <footer className="relative text-white mt-20">
       {/* ======= MAIN FOOTER BG ======= */}
-      <div className="bg-gradient-to-br from-blue-500 to-green-500 pt-20 pb-14 px-6 md:px-20 shadow-xl">
+      <div className="bg-gradient-to-br from-blue-500 to-green-500 pt-16 pb-10 px-6 md:px-16 lg:px-24 shadow-xl">
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
+        {/* ========= GRID SECTION ========= */}
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
 
           {/* ================= COMPANY INFO ================= */}
-          <div>
-            <h1 className="text-3xl font-extrabold mb-4 tracking-wide">
+          <div className="space-y-4">
+            <h1 className="text-3xl font-extrabold tracking-wide">
               Cure<span className="text-white/90">Wrap</span>
             </h1>
 
-            <p className="text-sm mb-4 flex items-start gap-2 opacity-90 leading-relaxed">
+            <p className="text-sm flex items-start gap-2 opacity-90 leading-relaxed">
               <CiLocationOn className="text-xl mt-[2px]" />
-              Omm Kriyanash Mart LLP,
-              Flat B-901, DNR CasablangA,
-              Mahadevapura, Bangalore – 560048,
-              Karnataka, India
+              OMM KRIYANAS MART LLP <br />
+              B901 DNR Casablanca, <br />
+              Mahadevpura Main Road, <br />
+              Bangalore - 560048
             </p>
 
             <a
               href="mailto:support@curewrapplus.com"
-              className="text-sm mb-3 flex items-center gap-2 opacity-90 hover:opacity-100 hover:underline transition"
+              className="text-sm flex items-center gap-2 opacity-90 hover:opacity-100 hover:underline transition"
             >
               <MdOutlineForwardToInbox className="text-xl" />
               support@curewrapplus.com
             </a>
 
             <a
-              href="https://wa.me/8420644354"
+              href="https://wa.me/81213131143"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm mb-5 flex items-center gap-2 opacity-90 hover:opacity-100 hover:underline transition"
+              className="text-sm flex items-center gap-2 opacity-90 hover:opacity-100 hover:underline transition"
             >
               <FaWhatsapp className="text-xl" />
-              +91 8420644354
+              +91 81213131143
             </a>
 
             {/* Social Icons */}
-            <div className="flex gap-4 mt-2">
+            <div className="flex gap-4 mt-3">
               <a
                 href="https://www.instagram.com/curewrapplus/"
                 target="_blank"
@@ -54,12 +55,11 @@ export default function Footer() {
               >
                 <FaInstagram size={18} />
               </a>
-
               <a
                 href="https://www.facebook.com/profile.php?id=61561920090630"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-full bg-gradient-to-br from-red-500 to-red-700 shadow-lg cursor-pointer hover:scale-110 transition"
+                className="p-2 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg cursor-pointer hover:scale-110 transition"
               >
                 <FaFacebook size={18} />
               </a>
@@ -89,21 +89,18 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* COPYRIGHT */}
-        <div className="mt-12 border-t border-white/20 pt-6 flex items-center justify-center relative">
-          
-          {/* LEFT SIDE — Developer credit */}
-          <span className="absolute left-6 md:left-10 text-white/70 text-xs md:text-sm">
-            website is developed by TRIONEX INDIA
+        {/* ========= COPYRIGHT WITH RESPONSIVE ALIGNMENT ========= */}
+        <div className="mt-12 border-t border-white/20 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Developer credit */}
+          <span className="text-white/70 text-xs md:text-sm text-center md:text-left">
+            Website developed by <span className="font-medium">TRIONEX INDIA</span>
           </span>
 
-          {/* CENTER — Copyright */}
+          {/* Copyright */}
           <span className="text-white/90 text-sm text-center">
             © {new Date().getFullYear()} CureWrap. All Rights Reserved.
           </span>
-
         </div>
-
       </div>
     </footer>
   );
