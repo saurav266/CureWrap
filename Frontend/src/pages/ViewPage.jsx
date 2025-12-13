@@ -5,7 +5,7 @@ import { toast, Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
 
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 const FALLBACK_IMAGE = "/mnt/data/yoga-2587066_1280.jpg";
 
 export default function ProductViewPage() {

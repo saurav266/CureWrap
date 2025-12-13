@@ -19,7 +19,7 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:8000/api/users/register", {
+      await axios.post("/api/users/register", {
   name,
   email,
   phoneno: phoneno.replace(/\D/g, "").slice(-10),  // <-- FIX HERE
