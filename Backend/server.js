@@ -15,7 +15,7 @@ import User from "./model/user.js";
 import userRoute from "./route/userRoute.js";
 import cartRoute from "./route/cartRoute.js";
 import orderRoutes from "./route/orderRoute.js";
-import adminRoutes from "./route/adminROute.js";
+import adminRoutes from "./route/adminRoute.js";
 import paymentRoute from "./route/paymentRoute.js";
 import wishlistRoutes from "./route/wishlistRoutes.js";
 import contactRoute from "./route/contactRoute.js"
