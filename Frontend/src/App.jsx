@@ -12,7 +12,7 @@ import { useAuth } from "./context/AuthContext.jsx";
 
 // Lazy Loaded User Pages
 const Home = lazy(() => import("./pages/Homeuser.jsx"));
-const Product = lazy(() => import("./pages/Product.jsx"));
+const Product = lazy(() => import("./pages/product.jsx"));
 const About = lazy(() => import("./pages/about.jsx"));
 const Contact = lazy(() => import("./pages/contact.jsx"));
 const Login = lazy(() => import("./pages/login.jsx"));
