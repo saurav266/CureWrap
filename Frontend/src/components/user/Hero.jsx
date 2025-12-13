@@ -41,7 +41,7 @@ export default function HeroSection() {
           </p>
 
           <motion.a
-            href="/products"
+            href="/product"
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
             className="inline-block px-10 md:px-12 py-3.5 md:py-4 bg-green-600 text-white text-base md:text-lg font-semibold rounded-full shadow-lg tracking-wide transition-all duration-300"
