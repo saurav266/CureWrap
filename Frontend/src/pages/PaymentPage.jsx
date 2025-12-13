@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import StepProgress from "../components/StepProgress";
 import axios from "axios";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 
 export default function PaymentPage() {
   const navigate = useNavigate();

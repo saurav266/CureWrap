@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 // ====== CONFIG ======
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 
 // Shared nav link style (desktop)
 const navLinkClass = ({ isActive }) =>

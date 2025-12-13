@@ -17,7 +17,7 @@ import { io } from "socket.io-client";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({

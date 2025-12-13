@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast";
 
 const BACKEND_URL =
-  import.meta?.env?.VITE_BACKEND_URL || "http://localhost:8000";
+  import.meta?.env?.VITE_BACKEND_URL || "";
 
 /**
  * Read and parse user from localStorage in a safe way.

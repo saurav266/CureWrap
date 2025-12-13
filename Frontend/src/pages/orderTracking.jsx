@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 
 export default function OrderTrackingPage() {
   const { id } = useParams(); // order ID

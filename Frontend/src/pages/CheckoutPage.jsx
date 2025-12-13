@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StepProgress from "../components/StepProgress";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();

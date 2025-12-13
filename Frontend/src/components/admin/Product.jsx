@@ -3,7 +3,7 @@ import { toast } from "react-hot-toast";
 import { AiFillEdit, AiFillDelete, AiOutlineEye } from "react-icons/ai";
 import { useNavigate } from "react-router-dom";
 
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 
 export default function AdminProductPage() {
   const [products, setProducts] = useState([]);

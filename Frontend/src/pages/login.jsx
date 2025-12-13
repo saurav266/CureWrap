@@ -53,7 +53,7 @@ const LoginWithMobile = () => {
       const formatted = formatMobile(mobile);
 
       await axios.post(
-        "http://localhost:8000/api/users/login",
+        "/api/users/login",
         { phoneno: formatted },
         { withCredentials: true }
       );
@@ -79,7 +79,7 @@ const LoginWithMobile = () => {
     const formatted = formatMobile(mobile);
 
     const response = await axios.post(
-      "http://localhost:8000/api/users/verify-otp",
+      "/api/users/verify-otp",
       { phoneno: formatted, otp },
       { withCredentials: true }
     );

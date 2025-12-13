@@ -1,7 +1,7 @@
 // src/pages/admin/ReturnsManagement.jsx
 import React, { useEffect, useState } from "react";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 
 const statusColors = {
   requested: "bg-yellow-50 text-yellow-700",

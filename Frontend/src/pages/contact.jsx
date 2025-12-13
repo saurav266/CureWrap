@@ -15,7 +15,7 @@ const brandBlue = "#2F86D6";
 const brandGreen = "#63B46B";
 
 // BACKEND URL
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 
 export default function ContactUsPremium() {
   const [formData, setFormData] = useState({

@@ -18,7 +18,7 @@ const ProfilePage = () => {
     console.log("FETCH PROFILE USING USER ID:", userId);
 
     const res = await axios.get(
-      `http://localhost:8000/api/users/profile?userId=${userId}`
+      `/api/users/profile?userId=${userId}`
     );
 
     if (res.data.success) {
@@ -44,7 +44,7 @@ const ProfilePage = () => {
       const token = localStorage.getItem("token");
 
       const res = await axios.put(
-        "http://localhost:8000/api/users/profile",
+        "/api/users/profile",
         {
           name: profile.name,
           phoneno: profile.phoneno,

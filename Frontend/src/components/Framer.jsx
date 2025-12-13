@@ -10,7 +10,7 @@ import problemLigament from "../assets/frontend_assets/curewrap/backPain.png";
 import problemRehab from "../assets/frontend_assets/curewrap/rehabilitation_phase.png";
 import fallbackMain from "../assets/frontend_assets/curewrap/backPain.png";
 
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 
 /* 🔥 PROBLEM IMAGE DISPLAY */
 const problemImages = [

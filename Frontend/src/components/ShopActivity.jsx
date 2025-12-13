@@ -8,7 +8,7 @@ import postureImg from "../assets/frontend_assets/curewrap/frontPostureBelt.png"
 import housewife from "../assets/frontend_assets/curewrap/lsBelt.png";
 import rehabilitation from "../assets/frontend_assets/curewrap/kneeBrace.png";
 
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 
 const brandGradient = "bg-gradient-to-r from-[#2F86D6]/80 to-[#63B46B]/80";
 

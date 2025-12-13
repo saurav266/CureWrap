@@ -137,7 +137,7 @@ export default function AddProduct() {
         price: Number(product.price),
         sale_price: Number(product.sale_price || 0),
       };
-      await axios.post("http://localhost:8000/api/users/add-product", payload);
+      await axios.post("/api/users/add-product", payload);
       toast.success("Product added successfully!");
       navigate("/admin/products");
     } catch (err) {

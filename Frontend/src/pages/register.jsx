@@ -39,7 +39,7 @@ const Register = () => {
     e.preventDefault();
     try {
       const response = await axios.post(
-  "http://localhost:8000/api/users/verify-otp",
+  "/api/users/verify-otp",
   { 
     phoneno: phoneno.replace(/\D/g, "").slice(-10), // <-- FIX HERE
     otp 

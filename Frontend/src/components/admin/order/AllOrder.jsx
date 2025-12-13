@@ -1,7 +1,7 @@
 // src/components/admin/order/AllOrder.jsx
 import React, { useEffect, useMemo, useState } from "react";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 
 const statusOptions = [
   { value: "all", label: "All statuses" },

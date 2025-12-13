@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const BACKEND_URL = "http://localhost:8000"; // change if needed
+const BACKEND_URL = ""; // change if needed
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);

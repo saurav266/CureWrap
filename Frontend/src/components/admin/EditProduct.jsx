@@ -4,7 +4,7 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 
 const defaultImage = { url: "", alt_text: "", is_primary: true };
 const defaultColor = {

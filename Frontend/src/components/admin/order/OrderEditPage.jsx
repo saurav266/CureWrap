@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 
 export default function OrderEditPage() {
   const { id } = useParams(); // order id from route: /admin/orders/:id

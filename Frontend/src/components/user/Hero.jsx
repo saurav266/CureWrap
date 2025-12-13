@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
 import lsBelt from "../../assets/Frontend_assets/curewrap/lsBelt.png";
 
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 
 export default function HeroSection() {
   const [products, setProducts] = useState([]);
