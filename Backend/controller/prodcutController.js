@@ -90,7 +90,7 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// ==================== DELETE PRODUCT ====================
+
 
 
 // ==================== UPDATE PRODUCT ====================
@@ -140,7 +140,8 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-export const deleteProduct    = async (req, res) => {
+// ==================== DELETE PRODUCT ====================
+export const deleteProduct = async (req, res) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {

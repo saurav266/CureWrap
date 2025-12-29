@@ -13,6 +13,7 @@ const LoginWithMobile = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const BACKEND_URL = "http://localhost:8000"; // Adjust as needed
   // ↓↓↓ New format function — EXACT MATCH for backend DB format
   const formatMobile = (num) => {
     if (!num) return "";
@@ -53,7 +54,7 @@ const LoginWithMobile = () => {
       const formatted = formatMobile(mobile);
 
       await axios.post(
-        "/api/users/login",
+        `${BACKEND_URL}/api/users/login`,
         { phoneno: formatted },
         { withCredentials: true }
       );
@@ -79,7 +80,7 @@ const LoginWithMobile = () => {
     const formatted = formatMobile(mobile);
 
     const response = await axios.post(
-      "/api/users/verify-otp",
+      `${BACKEND_URL}/api/users/verify-otp`,
       { phoneno: formatted, otp },
       { withCredentials: true }
     );

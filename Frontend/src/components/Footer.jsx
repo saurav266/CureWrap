@@ -36,13 +36,13 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://wa.me/81213131143"
+              href="https://wa.me/8123131143"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm flex items-center gap-2 opacity-90 hover:opacity-100 hover:underline transition"
             >
               <FaWhatsapp className="text-xl" />
-              +91 81213131143
+              +91  81231 31143
             </a>
 
             {/* Social Icons */}
@@ -92,9 +92,9 @@ export default function Footer() {
         {/* ========= COPYRIGHT WITH RESPONSIVE ALIGNMENT ========= */}
         <div className="mt-12 border-t border-white/20 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Developer credit */}
-          <span className="text-white/70 text-xs md:text-sm text-center md:text-left">
+          {/* <span className="text-white/70 text-xs md:text-sm text-center md:text-left">
             Website developed by <span className="font-medium">TRIONEX INDIA</span>
-          </span>
+          </span> */}
 
           {/* Copyright */}
           <span className="text-white/90 text-sm text-center">

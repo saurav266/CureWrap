@@ -2,8 +2,48 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 
-const BACKEND_URL = "";
+const BACKEND_URL = "http://localhost:8000";
 const RETURN_WINDOW_DAYS = 7; // should match backend
+
+// 🔄 Animated Order Stepper
+const OrderStepper = ({ steps, activeIndex }) => {
+  return (
+    <div className="w-full flex items-center justify-between mb-8 relative">
+      {/* Line */}
+      <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10" />
+
+      {steps.map((step, idx) => {
+        const isDone = idx < activeIndex;
+        const isActive = idx === activeIndex;
+
+        return (
+          <div key={step.key} className="flex flex-col items-center flex-1">
+            <div
+              className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-bold text-sm
+                transition-all duration-500
+                ${
+                  isDone
+                    ? "bg-green-600 text-white"
+                    : isActive
+                    ? "bg-white border-2 border-green-600 text-green-600 scale-110 shadow-lg animate-pulse"
+                    : "bg-white border-2 border-gray-300 text-gray-400"
+                }`}
+            >
+              {isDone ? "✓" : idx + 1}
+            </div>
+            <span
+              className={`mt-2 text-[11px] sm:text-xs font-medium text-center
+                ${isDone || isActive ? "text-green-700" : "text-gray-400"}`}
+            >
+              {step.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 
 export default function OrderTrackingPage() {
   const { id } = useParams();
@@ -17,10 +57,11 @@ export default function OrderTrackingPage() {
   const [loadingTracking, setLoadingTracking] = useState(false);
 
   // Return / replacement UI state
-  const [returnReason, setReturnReason] = useState("");
-  const [returnType, setReturnType] = useState(null); // "refund" | "replacement"
-  const [submittingReturn, setSubmittingReturn] = useState(false);
-  const [returnMessage, setReturnMessage] = useState("");
+  const [returnOption, setReturnOption] = useState("");
+  const [issueImages, setIssueImages] = useState([]);
+  const [newSize, setNewSize] = useState("");
+  const [confirmSize, setConfirmSize] = useState(false);
+  const [confirmAddress, setConfirmAddress] = useState(false);
 
   // ----------------- Helpers -----------------
   const formatDate = (d) =>
@@ -325,6 +366,8 @@ export default function OrderTrackingPage() {
 
   const returnStatusLabel = order.returnStatus || "none";
 
+  
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
@@ -470,117 +513,185 @@ export default function OrderTrackingPage() {
             )}
 
             {/* Request return / replacement form */}
+            {/* Request return / replacement form */}
             {canRequestReturn && order.returnStatus === "none" && (
-              <div className="mt-3">
-                <p className="text-xs text-blue-900 mb-1">
+              <div className="mt-4 space-y-3">
+                <p className="text-xs text-blue-900">
                   You have{" "}
                   <span className="font-semibold">
-                    {daysLeftForReturn} day
-                    {daysLeftForReturn > 1 ? "s" : ""} left
+                    {daysLeftForReturn} day{daysLeftForReturn > 1 ? "s" : ""}
                   </span>{" "}
-                  to request a return or replacement.
+                  left to request a return or replacement.
                 </p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setReturnType("refund")}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                      returnType === "refund"
-                        ? "bg-green-600 text-white border-green-600"
-                        : "bg-white text-gray-800 border-gray-300"
-                    }`}
+
+                {/* 🔽 Return option dropdown */}
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    Select Return Type
+                  </label>
+                  <select
+                    value={returnOption}
+                    onChange={(e) => {
+                      setReturnOption(e.target.value);
+                      setReturnMessage("");
+                    }}
+                    className="w-full border rounded-lg px-3 py-2 text-xs"
                   >
-                    Refund to original payment
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReturnType("replacement")}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                      returnType === "replacement"
-                        ? "bg-green-600 text-white border-green-600"
-                        : "bg-white text-gray-800 border-gray-300"
-                    }`}
-                  >
-                    Replacement only
-                  </button>
+                    <option value="">-- Select an option --</option>
+                    <option value="incorrect">Return – Incorrect Product</option>
+                    <option value="damaged">Return – Damaged Product</option>
+                    <option value="size_replacement">
+                      One time Free Size Replacement
+                    </option>
+                  </select>
                 </div>
 
-                <textarea
-                  className="mt-3 w-full text-xs border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-500"
-                  rows={3}
-                  placeholder="Tell us why you want to return/replace this order..."
-                  value={returnReason}
-                  onChange={(e) => setReturnReason(e.target.value)}
-                />
+                {/* 📝 Description for incorrect/damaged */}
+                {(returnOption === "incorrect" || returnOption === "damaged") && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">
+                        Describe the issue
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={returnReason}
+                        onChange={(e) => setReturnReason(e.target.value)}
+                        className="w-full border rounded-lg px-3 py-2 text-xs"
+                        placeholder="Please describe the problem with the product..."
+                      />
+                    </div>
+
+                    {/* 📷 Upload images */}
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">
+                        Upload product images (max 3)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) =>
+                          setIssueImages(Array.from(e.target.files).slice(0, 3))
+                        }
+                        className="text-xs"
+                      />
+                      {issueImages.length > 0 && (
+                        <p className="text-[11px] text-gray-600 mt-1">
+                          {issueImages.length} image(s) selected
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* 📏 Size replacement section */}
+                {returnOption === "size_replacement" && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">
+                        Enter New Size
+                      </label>
+                      <input
+                        type="text"
+                        value={newSize}
+                        onChange={(e) => setNewSize(e.target.value)}
+                        placeholder="e.g., M, L, XL"
+                        className="w-full border rounded-lg px-3 py-2 text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={confirmSize}
+                          onChange={(e) => setConfirmSize(e.target.checked)}
+                        />
+                        I have confirmed the required size.
+                      </label>
+                      <label className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={confirmAddress}
+                          onChange={(e) => setConfirmAddress(e.target.checked)}
+                        />
+                        Delivery address will be the same as original order.
+                      </label>
+                    </div>
+                  </>
+                )}
 
                 {returnMessage && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {returnMessage}
-                  </p>
+                  <p className="text-xs text-red-600">{returnMessage}</p>
                 )}
 
                 <button
-                  onClick={handleSubmitReturn}
+                  onClick={() => {
+                    if (!returnOption) {
+                      setReturnMessage("Please select a return option.");
+                      return;
+                    }
+
+                    if (
+                      (returnOption === "incorrect" || returnOption === "damaged") &&
+                      !returnReason.trim()
+                    ) {
+                      setReturnMessage("Please describe the issue.");
+                      return;
+                    }
+
+                    if (
+                      returnOption === "size_replacement" &&
+                      (!newSize || !confirmSize || !confirmAddress)
+                    ) {
+                      setReturnMessage(
+                        "Please enter new size and confirm size & address."
+                      );
+                      return;
+                    }
+
+                    // map to backend type
+                    setReturnType(
+                      returnOption === "size_replacement"
+                        ? "replacement"
+                        : "refund"
+                    );
+
+                    handleSubmitReturn();
+                  }}
                   disabled={submittingReturn}
-                  className="mt-2 px-4 py-2 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-60"
+                  className="w-full mt-2 px-4 py-2 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-60"
                 >
                   {submittingReturn ? "Submitting..." : "Submit Request"}
                 </button>
               </div>
             )}
+
           </div>
         )}
       </div>
 
       {/* Order Status Timeline */}
+      {/* Order Status Timeline */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">
           Order Status
         </h2>
+
         <p className="text-sm text-gray-600 mb-4">
           Current status:{" "}
           <span className="font-semibold capitalize text-green-700">
-            {order.orderStatus?.replace(/_/g, " ") || "processing"}
+            {order.orderStatus?.replace(/_/g, " ")}
           </span>
         </p>
 
-        {/* Progress bar */}
-        <div className="relative mt-4 mb-6">
-          <div className="h-1 bg-gray-200 rounded-full" />
-          <div
-            className="absolute h-1 bg-green-500 rounded-full top-0 left-0 transition-all duration-700 ease-out"
-            style={{ width: `${progressPercent}%` }}
-          />
-          <div className="absolute inset-0 flex justify-between items-center">
-            {timelineSteps.map((step, idx) => {
-              const isActive = idx <= activeIndex;
-              const isCurrent = idx === activeIndex;
-              return (
-                <div
-                  key={step.key}
-                  className="flex flex-col items-center w-full"
-                >
-                  <div
-                    className={`h-4 w-4 rounded-full border-2 transition-all duration-500 ${
-                      isActive
-                        ? "bg-green-500 border-green-600"
-                        : "bg-white border-gray-300"
-                    } ${isCurrent ? "scale-110 shadow-lg" : ""}`}
-                  />
-                  <span
-                    className={`mt-2 text-[11px] md:text-xs font-medium text-center transition-colors duration-500 ${
-                      isActive ? "text-green-700" : "text-gray-400"
-                    }`}
-                  >
-                    {step.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <OrderStepper
+          steps={timelineSteps}
+          activeIndex={activeIndex}
+        />
 
-        <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center justify-between text-xs text-gray-500 mt-4">
           <span>Last updated: {formatDate(order.updatedAt)}</span>
           <button
             onClick={async () => {
@@ -589,10 +700,11 @@ export default function OrderTrackingPage() {
             }}
             className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
           >
-            Refresh now
+            Refresh
           </button>
         </div>
       </div>
+
 
       {/* Shipment details */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-6">
@@ -764,32 +876,53 @@ export default function OrderTrackingPage() {
         )}
       </div>
 
-      {/* Items list */}
+      {/* Items list (checkout-style) */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-10">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          Items ({order.items?.length || 0})
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Items in this Order
         </h2>
+
         {order.items?.length ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {order.items.map((item, idx) => (
               <div
                 key={idx}
-                className="flex justify-between items-center border rounded-lg px-3 py-2 bg-gray-50 text-sm"
+                className="flex gap-4 items-center border rounded-xl p-3 bg-gray-50"
               >
-                <div>
-                  <p className="font-semibold text-gray-900">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border"
+                />
+
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 text-sm sm:text-base">
                     {item.name}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    Qty: {item.quantity}
-                  </p>
+
+                  <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-600">
+                    {item.size && (
+                      <span>
+                        Size: <b>{item.size}</b>
+                      </span>
+                    )}
+                    {item.color && (
+                      <span>
+                        Color: <b>{item.color}</b>
+                      </span>
+                    )}
+                    <span>
+                      Qty: <b>{item.quantity}</b>
+                    </span>
+                  </div>
                 </div>
+
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-gray-900 text-sm">
                     {currency(item.price)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {currency(item.price * item.quantity)} total
+                    {currency(item.price * item.quantity)}
                   </p>
                 </div>
               </div>
@@ -801,6 +934,7 @@ export default function OrderTrackingPage() {
           </p>
         )}
       </div>
+
     </div>
   );
 }
