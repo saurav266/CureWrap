@@ -1,9 +1,11 @@
 // src/pages/CheckoutPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+
 import StepProgress from "../components/StepProgress";
 
-const BACKEND_URL = "";
+const BACKEND_URL = "http://localhost:8000"; // Adjust as needed
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -24,6 +26,43 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const getCartImage = (item) => {
+  if (item.image) {
+    return item.image.startsWith("http")
+      ? item.image
+      : `${BACKEND_URL}/${item.image.replace(/^\/+/, "")}`;
+  }
+
+  if (Array.isArray(item.images) && item.images.length > 0) {
+    const url = item.images[0].url;
+    return url?.startsWith("http")
+      ? url
+      : `${BACKEND_URL}/${url?.replace(/^\/+/, "")}`;
+  }
+
+  return "https://placehold.co/100x100?text=No+Image";
+};
+  // ---------- Cart item updates ----------
+  const updateCartItem = (index, updates) => {
+  const newCart = cart.map((item, i) =>
+    i === index ? { ...item, ...updates } : item
+  );
+  setCart(newCart);
+  localStorage.setItem("cart", JSON.stringify(newCart));
+};
+
+const changeQty = (index, delta) => {
+  const item = cart[index];
+  const newQty = Math.max(1, (item.quantity || 1) + delta);
+  updateCartItem(index, { quantity: newQty });
+};
+
+const changeSize = (index, newSize) => {
+  updateCartItem(index, { selectedSize: newSize });
+};
+
+
 
   const steps = [
     { key: "cart", label: "Cart" },
@@ -406,13 +445,25 @@ export default function CheckoutPage() {
     return null; // redirect already triggered
   }
 
+
+
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="max-w-7xl w-full mx-auto p-4 sm:p-6">
       <StepProgress steps={steps} current={1} />
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
         {/* LEFT: Shipping form */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border">
+        {/* LEFT: Shipping form */}
+        <div
+          className="
+            bg-white p-6 rounded-lg shadow-sm border
+            order-2 lg:order-1
+            lg:col-span-2
+            w-full
+          "
+        >
+
           <h2 className="text-xl font-semibold mb-4">Shipping Details</h2>
           <p className="text-sm text-gray-600 mb-4">
             Fill in your address to place your order.
@@ -514,77 +565,145 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* RIGHT: Order summary */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h2 className="text-lg font-semibold mb-3">Order Summary</h2>
+        {/* RIGHT: Confirm Your Size & Quantity */}
+        {/* RIGHT: Order Summary */}
+        <div
+          className="
+            bg-white p-5 sm:p-6 rounded-lg shadow-sm border
+            order-1 lg:order-2
+            lg:col-span-1
+            w-full
+            sticky top-24
+          "
+        >
 
-          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-            {cart.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex gap-3 border-b border-dashed pb-2 last:border-0"
-              >
-                {item.image && (
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-14 h-14 rounded object-cover border"
-                  />
-                )}
-                <div className="flex-1 text-sm">
-                  <p className="font-semibold line-clamp-1">
-                    {item.name || "Product"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {item.size && (
-                      <>
-                        Size: <span className="font-medium">{item.size}</span>{" "}
-                      </>
-                    )}
-                    {item.color && (
-                      <>
-                        • Colour:{" "}
-                        <span className="font-medium">{item.color}</span>
-                      </>
-                    )}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-0.5">
-                    Qty: {item.quantity || 1} ×{" "}
-                    {currency(item.sale_price || item.price || 0)}
-                  </p>
-                  <p className="text-xs font-semibold text-gray-800">
-                    Subtotal:{" "}
-                    {currency(
-                      (item.sale_price || item.price || 0) *
-                        (item.quantity || 1)
-                    )}
-                  </p>
-                </div>
+
+  <h2 className="text-lg sm:text-xl font-semibold mb-4">
+    Confirm Your Size & Quantity
+  </h2>
+
+  <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+    {cart.map((item, idx) => (
+      <div
+        key={idx}
+        className="flex gap-3 border-b border-dashed pb-3 last:border-0"
+      >
+        {/* Image */}
+        <img
+          src={getCartImage(item)}
+          alt={item.name || "Product"}
+          onClick={() =>
+            navigate(`/product/${item.productId}`)
+          }
+          className="w-20 h-20 rounded object-cover border cursor-pointer hover:opacity-80"
+        />
+
+        {/* Info */}
+        <div className="flex-1 text-sm">
+          {/* Name */}
+          <p
+            onClick={() =>
+              navigate(`/product/${item.productId}`)
+            }
+            className="font-semibold line-clamp-2 cursor-pointer hover:text-green-600"
+          >
+            {item.name || "Product"}
+          </p>
+          <p className="text-xs text-gray-600 mt-1">
+            Selected: <span className="font-semibold">{item.selectedSize}</span>
+          </p>
+
+
+          {/* ✅ Size selector – use product-specific sizes */}
+          {(() => {
+            const sizes =
+              Array.isArray(item.sizes) && item.sizes.length > 0
+                ? item.sizes
+                : ["S", "M", "L", "XL"]; // fallback for old cart items
+
+            return (
+              <div className="mt-1">
+                <label className="text-xs text-gray-600">Size</label>
+                <select
+                  value={item.selectedSize || ""}
+                  onChange={(e) => changeSize(idx, e.target.value)}
+                  className="mt-1 w-24 border rounded px-2 py-1 text-sm"
+                >
+                  <option value="" disabled>
+                    Select
+                  </option>
+                  {sizes.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
               </div>
-            ))}
+            );
+          })()}
+
+
+
+          {/* Quantity controls */}
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              onClick={() => changeQty(idx, -1)}
+              className="w-7 h-7 rounded border flex items-center justify-center hover:bg-gray-100"
+            >
+              −
+            </button>
+            <span className="text-sm font-semibold">
+              {item.quantity || 1}
+            </span>
+            <button
+              onClick={() => changeQty(idx, 1)}
+              className="w-7 h-7 rounded border flex items-center justify-center hover:bg-gray-100"
+            >
+              +
+            </button>
           </div>
 
-          <div className="mt-4 border-t pt-3 text-sm space-y-1">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal</span>
-              <span>{currency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Shipping</span>
-              <span>
-                {shippingCharges === 0 ? "Free" : currency(shippingCharges)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tax</span>
-              <span>{currency(tax)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-base mt-2">
-              <span>Total</span>
-              <span>{currency(total)}</span>
-            </div>
-          </div>
+          {/* Price */}
+          <p className="text-xs font-semibold text-gray-800 mt-1">
+            {currency(item.sale_price || item.price || 0)} ×{" "}
+            {item.quantity || 1} ={" "}
+            {currency(
+              (item.sale_price || item.price || 0) *
+                (item.quantity || 1)
+            )}
+          </p>
         </div>
+      </div>
+    ))}
+  </div>
+
+  {/* Totals */}
+  <div className="mt-5 border-t pt-4 text-sm space-y-1">
+    <div className="flex justify-between">
+      <span className="text-gray-600">Subtotal</span>
+      <span>{currency(subtotal)}</span>
+    </div>
+    <div className="flex justify-between">
+      <span className="text-gray-600">Shipping</span>
+      <span>
+        {shippingCharges === 0
+          ? "Free"
+          : currency(shippingCharges)}
+      </span>
+    </div>
+    <div className="flex justify-between">
+      <span className="text-gray-600">Tax</span>
+      <span>{currency(tax)}</span>
+    </div>
+    <div className="flex justify-between font-bold text-base mt-2">
+      <span>Total</span>
+      <span>{currency(total)}</span>
+    </div>
+  </div>
+</div>
+
+
+
       </div>
     </div>
   );

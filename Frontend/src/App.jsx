@@ -26,6 +26,7 @@ const OrderPlaced = lazy(() => import("./pages/OrderPlaced"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage.jsx"));
 import WishlistPage from "./components/user/wishlistPage.jsx";
 import ProfilePage from "./components/user/ProfilePage.jsx";
+// import ProductViewPage from "./pages/ProductViewpage.jsx";
 // plicy page
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import TermsAndConditions from "./pages/TermsOfService.jsx";
@@ -51,6 +52,8 @@ const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 const MemoNavbar = React.memo(Navbar);
 const MemoFooter = React.memo(Footer);
 const MemoCartDrawer = React.memo(CartDrawer);
+
+import ScrollToTop from "./components/ScrollToTop.jsx";
 
 function App() {
   const { user, isAuthenticated, authReady } = useAuth();
@@ -95,6 +98,8 @@ function App() {
   // ===========================================
   if (isAuthenticated && user?.email === ADMIN_EMAIL) {
     return (
+      <>
+      <ScrollToTop />
       <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
         <AdminNavbar />
         <Routes>
@@ -185,6 +190,7 @@ function App() {
 
         </Routes>
       </Suspense>
+      </>
     );
   }
 
@@ -195,7 +201,7 @@ function App() {
     <div className="min-h-screen flex flex-col">
       <MemoNavbar />
       <MemoCartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
-
+      <ScrollToTop />
       <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
         <Routes>
           <Route path="/" element={<Home />} />

@@ -4,13 +4,44 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
+import ProductReview from "../components/user/view/ProductReviews"
 
-const backendUrl = "";
+const backendUrl = "http://localhost:8000"; // Adjust as needed
 const FALLBACK_IMAGE = "/mnt/data/yoga-2587066_1280.jpg";
+
+const renderStars = (rating) =>
+  Array.from({ length: 5 }, (_, i) => (
+    <span
+      key={i}
+      className={`text-xl ${
+        i < (rating || 0) ? "text-yellow-400" : "text-gray-300"
+      }`}
+    >
+      ★
+    </span>
+  ));
+
+
 
 export default function ProductViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  // User location pincode state
+  const [pincode, setPincode] = useState(
+      () => localStorage.getItem("user_pincode") || ""
+    );
+    const [pincodeStatus, setPincodeStatus] = useState(null); 
+    // null | "checking" | "valid" | "invalid"
+    const [city, setCity] = useState("");
+    const [eta, setEta] = useState(null);
+    const [courierName, setCourierName] = useState(null);
+
+
+    useEffect(() => {
+      if (pincode) localStorage.setItem("user_pincode", pincode);
+    }, [pincode]);
+
+
 
   // ------------------------------ STATE ------------------------------
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -22,9 +53,6 @@ export default function ProductViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState("");
-  const [submittingReview, setSubmittingReview] = useState(false);
 
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [zoom, setZoom] = useState(false);
@@ -39,6 +67,30 @@ export default function ProductViewPage() {
   // WISHLIST
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  //review
+  // const [sortBy, setSortBy] = useState("newest");
+  // const [editingReview, setEditingReview] = useState(null);
+  // const userStr = localStorage.getItem("user");
+  // const currentUser = userStr ? JSON.parse(userStr) : null;
+
+  // const startEditReview = (review) => {
+  //   setEditingReview(review);
+  //   setReviewRating(review.rating);
+  //   setReviewComment(review.comment);
+  // };
+
+
+  // const sortedReviews = useMemo(() => {
+  //   if (!product?.reviews) return [];
+  //   const arr = [...product.reviews];
+  //   if (sortBy === "highest") {
+  //     return arr.sort((a, b) => b.rating - a.rating);
+  //   }
+  //   return arr.sort(
+  //     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  //   );
+  // }, [product, sortBy]);
+
 
   // ------------------------------ HELPERS ------------------------------
   const getCurrentUserAndId = () => {
@@ -79,91 +131,85 @@ export default function ProductViewPage() {
   };
 
   // ------------------------------ FETCH PRODUCT + RELATED + WISHLIST ------------------------------
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // PRODUCT
-        const res = await fetch(`${backendUrl}/api/users/products/${id}`);
-        const data = await res.json();
+  const fetchData = async () => {
+  setLoading(true);
+  try {
+    const res = await fetch(`${backendUrl}/api/users/products/${id}`);
+    const data = await res.json();
 
-        if (!res.ok || !data?.product) {
-          setError(data?.message || "Product not found");
-          setProduct(null);
+    if (!res.ok || !data?.product) {
+      setError(data?.message || "Product not found");
+      setProduct(null);
+    } else {
+      const p = data.product;
+      setProduct(p);
+
+      if (Array.isArray(p.colors) && p.colors.length > 0) {
+        setSelectedColorIndex(0);
+        const firstColor = p.colors[0];
+        if (Array.isArray(firstColor.sizes) && firstColor.sizes.length > 0) {
+          setSelectedVariant(firstColor.sizes[0]);
         } else {
-          const p = data.product;
-          setProduct(p);
-
-          // Default colour & size
-          if (Array.isArray(p.colors) && p.colors.length > 0) {
-            setSelectedColorIndex(0);
-            const firstColor = p.colors[0];
-            if (Array.isArray(firstColor.sizes) && firstColor.sizes.length > 0) {
-              setSelectedVariant(firstColor.sizes[0]);
-            } else {
-              setSelectedVariant(null);
-            }
-          } else if (Array.isArray(p.variants) && p.variants.length > 0) {
-            setSelectedVariant(p.variants[0]);
-          } else {
-            setSelectedVariant(null);
-          }
-
-          setGalleryIndex(0);
+          setSelectedVariant(null);
         }
-
-        // RELATED
-        try {
-          const relRes = await fetch(`${backendUrl}/api/users/products?limit=4`);
-          const relData = await relRes.json();
-          const arr = Array.isArray(relData.products)
-            ? relData.products.filter((p) => p._id !== id).slice(0, 4)
-            : [];
-          setRelated(arr);
-        } catch {
-          setRelated([]);
-        }
-
-        // AUTH
-        const { user: currentUser, userId, phone } = getCurrentUserAndId();
-        setIsLoggedIn(!!currentUser);
-
-        // WISHLIST STATUS
-        if ((userId || phone) && data.product?._id) {
-          try {
-            const idToSend = userId || phone;
-            const wlRes = await fetch(`${backendUrl}/api/wishlist/${idToSend}`);
-            const wlData = await wlRes.json();
-
-            if (wlRes.ok && wlData.success && Array.isArray(wlData.wishlist)) {
-              const inWishlist = wlData.wishlist.some((w) => {
-                const pid =
-                  w.product_id && typeof w.product_id === "object"
-                    ? w.product_id._id
-                    : w.product_id;
-                return pid === data.product._id;
-              });
-              setIsInWishlist(inWishlist);
-            }
-          } catch (err) {
-            console.error("Wishlist fetch error:", err);
-          }
-        }
-
-        // PURCHASE CHECK (local dummy)
-        const orders = JSON.parse(localStorage.getItem("orders")) || [];
-        const purchased = orders.some((order) =>
-          order.items?.some((item) => item.productId === id)
-        );
-        setHasPurchased(purchased);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load product.");
-      } finally {
-        setLoading(false);
+      } else if (Array.isArray(p.variants) && p.variants.length > 0) {
+        setSelectedVariant(p.variants[0]);
+      } else {
+        setSelectedVariant(null);
       }
-    };
 
+      setGalleryIndex(0);
+    }
+
+    // RELATED
+    try {
+      const relRes = await fetch(`${backendUrl}/api/users/products`);
+      const relData = await relRes.json();
+      const all = Array.isArray(relData.products) ? relData.products : [];
+      const others = all.filter((p) => p._id !== id);
+      setRelated(others.slice(0, 4));
+    } catch {
+      setRelated([]);
+    }
+
+    // AUTH
+    const { user: currentUser, userId, phone } = getCurrentUserAndId();
+    setIsLoggedIn(!!currentUser);
+
+    // WISHLIST
+    if ((userId || phone) && data.product?._id) {
+      try {
+        const idToSend = userId || phone;
+        const wlRes = await fetch(`${backendUrl}/api/wishlist/${idToSend}`);
+        const wlData = await wlRes.json();
+
+        if (wlRes.ok && wlData.success) {
+          const inWishlist = wlData.wishlist.some((w) => {
+            const pid =
+              typeof w.product_id === "object"
+                ? w.product_id._id
+                : w.product_id;
+            return pid === data.product._id;
+          });
+          setIsInWishlist(inWishlist);
+        }
+      } catch {}
+    }
+
+    // PURCHASE CHECK
+    const orders = JSON.parse(localStorage.getItem("orders")) || [];
+    const purchased = orders.some((order) =>
+      order.items?.some((item) => item.productId === id)
+    );
+    setHasPurchased(purchased);
+  } catch (err) {
+    console.error(err);
+    setError("Failed to load product.");
+  } finally {
+    setLoading(false);
+  }
+};
+  useEffect(() => {
     fetchData();
   }, [id]);
 
@@ -316,63 +362,39 @@ export default function ProductViewPage() {
 
   // ------------------------------ ADD TO CART ------------------------------
   const addToCart = () => {
-    if (hasColourSizeOptions && !selectedVariant) {
-      toast.error("Please select a size first.");
-      return;
-    }
+  if (hasColourSizeOptions && !selectedVariant) {
+    toast.error("Please select a size first.");
+    return;
+  }
 
-    const item = selectedVariant || product;
-    if (!item) return toast.error("No product selected.");
+  const item = selectedVariant || product;
+  if (!item) return toast.error("No product selected.");
 
-    if (quantity < 1) return toast.error("Quantity must be at least 1");
-    if (quantity > maxStock) return toast.error("Not enough stock");
+  if (quantity < 1) return toast.error("Quantity must be at least 1");
+  if (quantity > maxStock) return toast.error("Not enough stock");
 
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    const existing = cart.find(
-      (i) =>
-        i.productId === product._id &&
-        i.size === item.size &&
-        i.color === (selectedColor?.color || i.color)
+  const sizes = sizeOptions.map((v) => v.size); // 👈 all available sizes
+
+  const existing = cart.find(
+    (i) =>
+      i.productId === product._id &&
+      i.selectedSize === item.size &&
+      i.color === (selectedColor?.color || i.color)
+  );
+
+  if (existing) {
+    existing.quantity += quantity;
+    cart = cart.map((i) =>
+      i.productId === product._id &&
+      i.selectedSize === item.size &&
+      i.color === (selectedColor?.color || i.color)
+        ? existing
+        : i
     );
-
-    if (existing) {
-      existing.quantity += quantity;
-      cart = cart.map((i) =>
-        i.productId === product._id &&
-        i.size === item.size &&
-        i.color === selectedColor?.color
-          ? existing
-          : i
-      );
-    } else {
-      cart.push({
-        ...item,
-        productId: product._id,
-        color: selectedColor?.color || item.color,
-        quantity,
-      });
-    }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartUpdated"));
-    toast.success("Added to cart!");
-  };
-
-  const buyNow = () => {
-    if (hasColourSizeOptions && !selectedVariant) {
-      toast.error("Please select a size first.");
-      return;
-    }
-
-    const item = selectedVariant || product;
-    if (!item) return toast.error("No product selected.");
-
-    if (quantity < 1) return toast.error("Quantity must be at least 1");
-    if (quantity > maxStock) return toast.error("Not enough stock");
-
-    const cartItem = {
-      ...item,
+  } else {
+    cart.push({
       productId: product._id,
       name: product.name,
       price:
@@ -380,74 +402,144 @@ export default function ProductViewPage() {
         item.price ||
         product.sale_price ||
         product.price,
-      size: item.size,
+      sale_price: item.sale_price,
+      selectedSize: item.size,     // ✅ SAVE selected size
+      sizes,                       // ✅ SAVE all size options
       color: selectedColor?.color || item.color,
       quantity,
-      image:
-        selectedColor?.images?.[0]?.url ||
-        product.images?.[0]?.url ||
-        item.image ||
-        "",
-    };
+      stock: item.stock,
+      images:
+        selectedColor?.images?.length
+          ? selectedColor.images
+          : product.images || [],
+    });
+  }
 
-    localStorage.setItem("cart", JSON.stringify([cartItem]));
-    window.dispatchEvent(new Event("cartUpdated"));
+  localStorage.setItem("cart", JSON.stringify(cart));
+  window.dispatchEvent(new Event("cartUpdated"));
+  toast.success("Added to cart!");
+};
 
-    navigate("/checkout");
+
+  const buyNow = () => {
+  if (hasColourSizeOptions && !selectedVariant) {
+    toast.error("Please select a size first.");
+    return;
+  }
+
+  const item = selectedVariant || product;
+  if (!item) return toast.error("No product selected.");
+
+  if (quantity < 1) return toast.error("Quantity must be at least 1");
+  if (quantity > maxStock) return toast.error("Not enough stock");
+
+  const sizes = sizeOptions.map((v) => v.size);
+
+  const cartItem = {
+    productId: product._id,
+    name: product.name,
+    price:
+      item.sale_price ||
+      item.price ||
+      product.sale_price ||
+      product.price,
+    sale_price: item.sale_price,
+    selectedSize: item.size,   // ✅
+    sizes,                     // ✅
+    color: selectedColor?.color || item.color,
+    quantity,
+    stock: item.stock,
+    images:
+      selectedColor?.images?.length
+        ? selectedColor.images
+        : product.images || [],
   };
+
+  localStorage.setItem("cart", JSON.stringify([cartItem]));
+  window.dispatchEvent(new Event("cartUpdated"));
+  navigate("/checkout");
+};
+
+
 
   // ------------------------------ SUBMIT REVIEW ------------------------------
-  const submitReview = async () => {
-    if (!reviewComment.trim()) return toast.error("Comment required");
+//   const submitReview = async () => {
+//   const token = localStorage.getItem("token");
+//   const url = editingReview
+//     ? `${backendUrl}/api/users/products/${id}/review/${editingReview._id}`
+//     : `${backendUrl}/api/users/products/${id}/review`;
 
-    setSubmittingReview(true);
-    try {
-      const res = await fetch(
-        `${backendUrl}/api/users/products/${id}/review`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            rating: reviewRating,
-            comment: reviewComment,
-          }),
-        }
-      );
+//   const method = editingReview ? "PUT" : "POST";
 
-      const data = await res.json();
+//   const res = await fetch(url, {
+//     method,
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${token}`,
+//     },
+//     body: JSON.stringify({
+//       rating: reviewRating,
+//       comment: reviewComment,
+//     }),
+//   });
 
-      if (!res.ok) {
-        toast.error(data.message || "Review failed");
-      } else {
-        toast.success("Review submitted");
-        setProduct((prev) => ({
-          ...prev,
-          reviews: [...(prev.reviews || []), data.review],
-          total_reviews: (prev.total_reviews || 0) + 1,
-        }));
-        setReviewComment("");
-        setReviewRating(5);
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Error submitting review");
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
+//   const data = await res.json();
+//   if (!res.ok) return toast.error(data.message || "Failed");
+
+//   toast.success(editingReview ? "Review updated" : "Review added");
+
+//   await fetchProduct(); // refetch product
+//   setEditingReview(null);
+//   setReviewComment("");
+//   setReviewRating(5);
+// };
+ 
+//--------------delete review-----------------
+// const handleDeleteReview = async (reviewId) => {
+//   if (!window.confirm("Delete your review?")) return;
+
+//   const token = localStorage.getItem("token");
+
+//   const res = await fetch(
+//     `${backendUrl}/api/users/products/${id}/review/${reviewId}`,
+//     {
+//       method: "DELETE",
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//     }
+//   );
+
+//   const data = await res.json();
+//   if (!res.ok) return toast.error(data.message || "Delete failed");
+
+//   toast.success("Review deleted");
+//   await fetchProduct();
+// };
+
+
 
   // ------------------------------ STARS ------------------------------
-  const renderStars = (rating) =>
-    Array.from({ length: 5 }, (_, i) => (
-      <span
-        key={i}
-        className={`text-xl ${
-          i < (rating || 0) ? "text-yellow-400" : "text-gray-300"
-        }`}
-      >
-        ★
-      </span>
-    ));
+  // const renderStars = (rating) =>
+  //   Array.from({ length: 5 }, (_, i) => (
+  //     <span
+  //       key={i}
+  //       className={`text-xl ${
+  //         i < (rating || 0) ? "text-yellow-400" : "text-gray-300"
+  //       }`}
+  //     >
+  //       ★
+  //     </span>
+  //   ));
+
+  //   // ------------------------------ USER LOGIN STATUS ------------------------------
+  //   const myReview = useMemo(() => {
+  //     if (!product?.reviews || !currentUser) return null;
+  //     return product.reviews.find(
+  //       (r) => r.user_id === currentUser._id
+  //     );
+  //   }, [product, currentUser]);
+
 
   // ------------------------------ LOADING / ERROR ------------------------------
   if (loading) {
@@ -471,6 +563,109 @@ export default function ProductViewPage() {
       </div>
     );
   }
+
+  const canProceed = canBuy && (isLoggedIn || pincodeStatus === "valid");
+  //check pincode
+  const checkPincode = async () => {
+  if (!/^\d{6}$/.test(pincode)) {
+    toast.error("Enter a valid 6-digit pincode");
+    return;
+  }
+
+  try {
+    setPincodeStatus("checking");
+
+    const res = await fetch(`${backendUrl}/api/shipping/check-pincode`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pincode }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success && data.serviceable) {
+    setPincodeStatus("valid");
+
+    if (data.etaDays) {
+      const d = new Date();
+      d.setDate(d.getDate() + Number(data.etaDays));
+      setEta(
+        d.toLocaleDateString("en-IN", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+        })
+      );
+    } else {
+      setEta(null);
+    }
+
+    setCourierName("Shiprocket");
+
+    toast.success("Delivery available to your location");
+  } else {
+    setPincodeStatus("invalid");
+    setEta(null);
+    setCourierName(null);
+    toast.error("Delivery not available at this pincode");
+  }
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Could not verify pincode");
+    setPincodeStatus("invalid");
+  }
+};
+
+const detectLocation = () => {
+  if (!navigator.geolocation) {
+    toast.error("Geolocation not supported");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+        );
+        const data = await res.json();
+
+        const pin = data?.address?.postcode;
+        const cityName = data?.address?.city || data?.address?.town || "";
+
+        if (pin) {
+          setPincode(pin);
+          setCity(cityName);
+
+          // ✅ ADD THESE LINES HERE
+          setPincodeStatus("valid");
+          setCourierName("Shiprocket");
+
+          // simple fallback ETA (about 5 days)
+          const d = new Date();
+          d.setDate(d.getDate() + 5);
+          setEta(
+            d.toLocaleDateString("en-IN", {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+            })
+          );
+
+          toast.success(`Location detected: ${pin}`);
+        } else {
+          toast.error("Could not detect pincode");
+        }
+      } catch {
+        toast.error("Failed to fetch location details");
+      }
+    },
+    () => toast.error("Location permission denied")
+  );
+};
 
   // ------------------------------ PAGE UI ------------------------------
   return (
@@ -758,34 +953,86 @@ export default function ProductViewPage() {
             )}
 
             {/* Expected delivery */}
-            <div className="mt-2 text-xs sm:text-sm text-gray-600">
-              🚚 {getExpectedDeliveryText()}
-            </div>
+            {pincodeStatus === "valid" && (
+            <p className="mt-1 text-xs text-green-600">
+              ✔ Delivery available {city && `in ${city}`}
+              {eta && (
+                <span className="block text-gray-600 mt-0.5">
+                  🚚 Expected delivery by <b>{eta}</b> 
+                </span>
+              )}
+            </p>
+            )}
+            {/* Action buttons */}
+  <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
+    <button
+      onClick={addToCart}
+      disabled={!canProceed}
+      className={`flex-1 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base ${
+        canProceed
+          ? "bg-green-600 text-white hover:bg-green-700"
+          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+      }`}
+    >
+      {!canBuy
+        ? "Select size first"
+        : !isLoggedIn && pincodeStatus !== "valid"
+        ? "Enter pincode"
+        : "Add to Cart"}
+    </button>
 
-            <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <button
-                onClick={addToCart}
-                disabled={!canBuy}
-                className={`flex-1 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base ${
-                  canBuy
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                {canBuy ? "Add to Cart" : "Select size first"}
-              </button>
-              <button
-                onClick={buyNow}
-                disabled={!canBuy}
-                className={`flex-1 py-2.5 sm:py-3 border rounded-lg font-semibold text-sm sm:text-base ${
-                  canBuy
-                    ? "border-gray-300 hover:bg-gray-50"
-                    : "border-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
-              >
-                Buy Now
-              </button>
-            </div>
+    <button
+      onClick={buyNow}
+      disabled={!canProceed}
+      className={`flex-1 py-2.5 sm:py-3 border rounded-lg font-semibold text-sm sm:text-base ${
+        canProceed
+          ? "border-gray-300 hover:bg-gray-50"
+          : "border-gray-200 text-gray-400 cursor-not-allowed"
+      }`}
+    >
+      Buy Now
+    </button>
+  </div>
+            {pincodeStatus !== "valid" && (
+          <div className="mt-3">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Check delivery
+              </label>
+
+    <div className="flex gap-2">
+      <input
+        type="text"
+        value={pincode}
+        onChange={(e) => {
+          setPincode(e.target.value.replace(/\D/g, "").slice(0, 6));
+          setPincodeStatus(null);
+        }}
+        placeholder="Enter pincode"
+        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-green-600"
+      />
+
+      <button
+        onClick={checkPincode}
+        disabled={pincodeStatus === "checking"}
+        className="px-4 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700"
+      >
+        {pincodeStatus === "checking" ? "..." : "Check"}
+      </button>
+
+      <button
+        onClick={detectLocation}
+        title="Detect my location"
+        className="px-3 rounded-lg border text-sm hover:bg-gray-50"
+      >
+        📍
+      </button>
+    </div>
+
+
+  </div>
+)}
+
+
           </div>
         </div>
       </div>
@@ -848,7 +1095,11 @@ export default function ProductViewPage() {
         <ul className="mt-3 list-disc list-inside text-gray-700 text-sm space-y-1">
           <li>
             <span className="font-semibold">Easy returns within 7 days</span>{" "}
-            of delivery for eligible products.
+            of delivery for incorrect and damaged products.
+          </li>
+          <li>
+            <span className="font-semibold">one time free size</span>{" "}
+             exchange within 7 days of delivery.
           </li>
           <li>
             Product must be unused, unwashed, and in its{" "}
@@ -871,109 +1122,17 @@ export default function ProductViewPage() {
         </p>
       </div>
 
-      {/* REVIEWS */}
+      {/* ================= REVIEWS SECTION ================= */}
       <div className="mt-12 sm:mt-16">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4">
-          Customer Reviews
-        </h2>
-        {product.reviews?.length > 0 ? (
-          <div className="space-y-4">
-            {product.reviews.map((r, idx) => (
-              <div
-                key={idx}
-                className="border rounded-lg p-4 bg-gray-50 shadow-sm"
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-semibold text-sm sm:text-base">
-                    {r.user_id || "User"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <div className="flex">{renderStars(r.rating)}</div>
-                    <span className="text-gray-500 text-xs sm:text-sm">
-                      {r.created_at
-                        ? new Date(r.created_at).toLocaleDateString()
-                        : ""}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-gray-700 text-sm sm:text-base">
-                  {r.comment}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-sm sm:text-base">
-            No reviews yet.
-          </p>
-        )}
+
+        <ProductReview
+        product={product}
+        productId={id}
+        backendUrl={backendUrl}
+        hasPurchased={hasPurchased}
+        fetchProduct={fetchData}/>
       </div>
 
-      {/* WRITE REVIEW */}
-      <div className="mt-10 sm:mt-12 border rounded-lg p-4 sm:p-6 bg-white">
-        {!isLoggedIn && (
-          <p className="text-gray-600 text-sm sm:text-base">
-            ⭐{" "}
-            <span className="font-semibold text-red-500">
-              Login required
-            </span>{" "}
-            to write a review.
-          </p>
-        )}
-
-        {isLoggedIn && !hasPurchased && (
-          <p className="text-gray-600 text-sm sm:text-base">
-            ⭐ You can review this product only after{" "}
-            <span className="font-semibold text-blue-600">
-              purchasing
-            </span>{" "}
-            it.
-          </p>
-        )}
-
-        {isLoggedIn && hasPurchased && (
-          <>
-            <h3 className="text-lg sm:text-xl font-semibold mb-4">
-              Write a Review
-            </h3>
-
-            <label className="block text-sm mb-2 font-medium">
-              Rating
-            </label>
-            <select
-              value={reviewRating}
-              onChange={(e) =>
-                setReviewRating(Number(e.target.value))
-              }
-              className="w-full border rounded px-3 py-2 mb-3 text-sm sm:text-base"
-            >
-              {[5, 4, 3, 2, 1].map((r) => (
-                <option key={r} value={r}>
-                  {r} Star{r > 1 && "s"}
-                </option>
-              ))}
-            </select>
-
-            <label className="block text-sm mb-2 font-medium">
-              Comment
-            </label>
-            <textarea
-              rows={4}
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-4 text-sm sm:text-base"
-            />
-
-            <button
-              onClick={submitReview}
-              disabled={submittingReview}
-              className="w-full py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-300 text-sm sm:text-base"
-            >
-              {submittingReview ? "Submitting..." : "Submit Review"}
-            </button>
-          </>
-        )}
-      </div>
 
       {/* RELATED PRODUCTS */}
       {related?.length > 0 && (

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
 import lsBelt from "../../assets/Frontend_assets/curewrap/lsBelt.png";
 
-const backendUrl = "";
+const backendUrl = "http://localhost:8000";
 
 export default function HeroSection() {
   const [products, setProducts] = useState([]);
@@ -68,6 +68,7 @@ export default function HeroSection() {
           <Hotspot id="6932ab49ac77b4f2a0ad736e" p_name="Posture Corrector Belt" getProduct={getProduct} top="43%" left="11%" />
           <Hotspot id="69270418d8a75f130faf4d66" p_name="Hinged Knee" getProduct={getProduct} top="85%" left="0%" />
           <Hotspot id="692711b3c97c569366415213" p_name="Knee Brace" getProduct={getProduct} top="83%" left="60%" />
+          <Hotspot id="6929aef0b6489355ea3c5a25" p_name="LS Contoured Lumbar Belt" getProduct={getProduct} top="58%" left="6%" />
         </motion.div>
       </div>
     </section>

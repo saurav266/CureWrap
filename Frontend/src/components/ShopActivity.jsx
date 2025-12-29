@@ -8,7 +8,7 @@ import postureImg from "../assets/frontend_assets/curewrap/frontPostureBelt.png"
 import housewife from "../assets/frontend_assets/curewrap/lsBelt.png";
 import rehabilitation from "../assets/frontend_assets/curewrap/kneeBrace.png";
 
-const backendUrl = "";
+const backendUrl = "http://localhost:8000"; // Adjust as needed
 
 const brandGradient = "bg-gradient-to-r from-[#2F86D6]/80 to-[#63B46B]/80";
 
@@ -23,20 +23,21 @@ const activities = [
 const activityMap = {
   gym_workout: [
     "692711b3c97c569366415213", // Knee Brace
-    "69270418d8a75f130faf4d66", // Hinged Knee
+    "6929c183b6489355ea3c6b21", // LS Lumbar Belt
   ],
   pain_relief: [
     "6929c183b6489355ea3c6b21", // LS Lumbar Belt
     "6929aef0b6489355ea3c5a25", // LS Contoured Belt
     "692711b3c97c569366415213", // Knee Brace
+    "69270418d8a75f130faf4d66", // Hinged Knee
   ],
   office_posture: [
     "6932ab49ac77b4f2a0ad736e", // Posture Corrector Belt
-    "6929aef0b6489355ea3c5a25", // LS Contoured Belt
+     "6929c183b6489355ea3c6b21", // LS Lumbar Belt
   ],
   rehabilitation: [
     "69270418d8a75f130faf4d66", // Hinged Knee
-    "6929c183b6489355ea3c6b21", // LS Lumbar Belt
+    "6929aef0b6489355ea3c5a25", // LS Contoured Belt
   ],
 };
 

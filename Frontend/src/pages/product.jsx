@@ -17,10 +17,11 @@ export default function ProductSection() {
   const [quickView, setQuickView] = useState(null);
 
   // Filters
+
   const [category, setCategory] = useState("all");
   const [maxPrice, setMaxPrice] = useState(5000);
 
-  const backendUrl = "";
+  const backendUrl =  "http://localhost:8000";
 
   // ---------------- FETCH PRODUCTS ----------------
   const fetchProducts = async () => {
@@ -75,13 +76,12 @@ export default function ProductSection() {
   );
 
   // ---------------- FILTER OPTIONS ----------------
-  const categoryOptions = useMemo(() => {
-    const set = new Set();
-    products.forEach((p) => {
-      if (p.category) set.add(p.category);
-    });
-    return ["all", ...Array.from(set)];
-  }, [products]);
+  const categoryOptions = [
+  { label: "All products", value: "all" },
+  { label: "Knee Supports", value: "knee" },
+  { label: "Back Supports", value: "back" },
+  { label: "Posture Supports", value: "posture" },
+  ];
 
   const maxAvailablePrice = useMemo(() => {
     if (!products.length) return 5000;
@@ -91,19 +91,43 @@ export default function ProductSection() {
 
   // ---------------- APPLY FILTERS ----------------
   useEffect(() => {
-    let arr = [...products];
+  let arr = [...products];
 
-    if (category !== "all") {
-      arr = arr.filter((p) => p.category === category);
-    }
-
+  if (category !== "all") {
     arr = arr.filter((p) => {
-      const price = p.sale_price || p.price || 0;
-      return price <= maxPrice;
-    });
+      const name = (p.name || "").toLowerCase();
 
-    setFiltered(arr);
-  }, [products, category, maxPrice]);
+      if (category === "knee") {
+        return (
+          name.includes("knee") &&
+          (name.includes("brace") || name.includes("hinged"))
+        );
+      }
+
+      if (category === "back") {
+        return (
+          name.includes("ls") ||
+          name.includes("lumbar") ||
+          name.includes("contoured")
+        );
+      }
+
+      if (category === "posture") {
+        return name.includes("posture");
+      }
+
+      return true;
+    });
+  }
+
+  arr = arr.filter((p) => {
+    const price = p.sale_price || p.price || 0;
+    return price <= maxPrice;
+  });
+
+  setFiltered(arr);
+}, [products, category, maxPrice]);
+
 
   // ---------------- STARS ----------------
   const renderStars = (rating) =>
@@ -155,8 +179,8 @@ export default function ProductSection() {
                 className="border border-gray-200 rounded-full px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-green-500"
               >
                 {categoryOptions.map((c) => (
-                  <option key={c} value={c}>
-                    {c === "all" ? "All products" : c}
+                  <option key={c.value} value={c.value}>
+                    {c.label}
                   </option>
                 ))}
               </select>

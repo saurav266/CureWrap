@@ -15,7 +15,7 @@ const brandBlue = "#2F86D6";
 const brandGreen = "#63B46B";
 
 // BACKEND URL
-const BACKEND_URL = "";
+const BACKEND_URL = "http://localhost:8000"; // Adjust as needed
 
 export default function ContactUsPremium() {
   const [formData, setFormData] = useState({
@@ -126,13 +126,19 @@ export default function ContactUsPremium() {
             initial={{ y: 18, opacity: 0, scale: 0.97 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             transition={{ delay: 0.45 }}
-            className="flex items-center gap-5 bg-white/10 backdrop-blur-md px-6 py-4 rounded-full"
+            className="flex items-center gap-16 bg-white/10 backdrop-blur-md px-6 py-4 rounded-full"
           >
-            <img src={logoUrl} alt="logo" className="h-24 w-auto object-contain" />
+            {/* Contact text */}
             <h1 className="text-white text-3xl md:text-4xl font-semibold tracking-tight">
-              Contact <span style={{ color: brandBlue }}>Cure</span>
-              <span style={{ color: brandGreen }} className="ml-1">Wrap</span>
+              Contact
             </h1>
+
+            {/* Logo image */}
+            <img 
+              src={logoUrl} 
+              alt="logo" 
+              className="h-24 w-auto object-contain scale-153" 
+            />
           </motion.div>
         </div>
 

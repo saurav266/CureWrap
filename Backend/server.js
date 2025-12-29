@@ -19,6 +19,8 @@ import adminRoutes from "./route/adminRoute.js";
 import paymentRoute from "./route/paymentRoute.js";
 import wishlistRoutes from "./route/wishlistRoutes.js";
 import contactRoute from "./route/contactRoute.js"
+import shippingRoute from "./route/shippingRoute.js";
+import productRoute from "./route/productRoute.js";
 
 // ------------------ TWILIO CLIENT ------------------
 const client = twilio(
@@ -60,6 +62,9 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoute);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/contact", contactRoute);
+app.use("/api/shipping", shippingRoute);
+app.use("/api/users/products", productRoute);
+
 
 // ------------------ START SERVER USING app.listen ------------------
 const server = app.listen(PORT, () => {

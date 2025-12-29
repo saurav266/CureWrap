@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const BACKEND_URL = "http://localhost:8000"; // Adjust as needed
 const ProfilePage = () => {
   const [profile, setProfile] = useState({
     name: "",
@@ -18,7 +19,7 @@ const ProfilePage = () => {
     console.log("FETCH PROFILE USING USER ID:", userId);
 
     const res = await axios.get(
-      `/api/users/profile?userId=${userId}`
+      `${BACKEND_URL}/api/users/profile?userId=${userId}`
     );
 
     if (res.data.success) {
@@ -44,7 +45,7 @@ const ProfilePage = () => {
       const token = localStorage.getItem("token");
 
       const res = await axios.put(
-        "/api/users/profile",
+        `${BACKEND_URL}/api/users/profile`,
         {
           name: profile.name,
           phoneno: profile.phoneno,

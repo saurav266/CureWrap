@@ -1,4 +1,3 @@
-// FeaturedProductsCinematicSquareModal.jsx
 import React, { useRef, useState, useEffect } from "react";
 import {
   AiOutlineHeart,
@@ -21,6 +20,15 @@ const brandBlue = "#2F86D6";
 const brandGreen = "#63B46B";
 const backendUrl = "http://localhost:8000";
 
+// ✅ Only these product IDs will be featured
+const FEATURED_IDS = [
+  "69270418d8a75f130faf4d66",
+  "692711b3c97c569366415213",
+  "6929aef0b6489355ea3c5a25",
+  "6929c183b6489355ea3c6b21",
+  "6932ab49ac77b4f2a0ad736e",
+];
+
 // fallback (if backend fails)
 const fallbackProducts = [
   {
@@ -29,30 +37,6 @@ const fallbackProducts = [
     price: "₹25.00",
     img: lsBelt,
     discount: "-18%",
-    thumbs: [lsBelt],
-  },
-  {
-    id: 2,
-    title: "Curewrap Adjustable Knee Brace",
-    price: "₹35.00",
-    img: lsBelt,
-    discount: "-7%",
-    thumbs: [lsBelt],
-  },
-  {
-    id: 3,
-    title: "Curewrap Foot & Ankle Brace Support",
-    price: "₹40.00",
-    img: lsBelt,
-    discount: "-16%",
-    thumbs: [lsBelt],
-  },
-  {
-    id: 4,
-    title: "Curewrap Reinforced Back Brace",
-    price: "₹50.00",
-    img: lsBelt,
-    discount: "-25%",
     thumbs: [lsBelt],
   },
 ];
@@ -64,22 +48,32 @@ export default function FeaturedProductsCinematicSquareModal() {
   const [heartBurstId, setHeartBurstId] = useState(null);
   const cardRefs = useRef({});
 
-  // Fetch featured products
+  // ✅ Fetch only featured products by ID
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch(`${backendUrl}/api/users/products?limit=10`);
+        const res = await fetch(`${backendUrl}/api/users/products?limit=50`);
         const data = await res.json();
         const fetched = Array.isArray(data.products) ? data.products : [];
 
         if (!fetched.length) return;
 
-        const formatted = fetched.map((p) => {
+        // 🔥 Filter only required IDs
+        const filtered = fetched.filter((p) =>
+          FEATURED_IDS.includes(p._id)
+        );
+
+        if (!filtered.length) return;
+
+        const formatted = filtered.map((p) => {
           const base = Number(p.price) || 0;
           const sale = p.sale_price ?? null;
           const final = sale ?? base;
+
           const discount =
-            sale && base ? `-${Math.round(((base - sale) / base) * 100)}%` : "-0%";
+            sale && base
+              ? `-${Math.round(((base - sale) / base) * 100)}%`
+              : "-0%";
 
           const imgs = Array.isArray(p.images) ? p.images : [];
           const imgUrls = imgs.map((img) =>
@@ -101,10 +95,11 @@ export default function FeaturedProductsCinematicSquareModal() {
         });
 
         setProducts(formatted);
-      } catch {
-        console.error("Error fetching products");
+      } catch (err) {
+        console.error("Error fetching featured products", err);
       }
     };
+
     fetchProducts();
   }, []);
 
@@ -112,11 +107,13 @@ export default function FeaturedProductsCinematicSquareModal() {
   useEffect(() => {
     setWishlist(JSON.parse(localStorage.getItem("wishlist")) || []);
   }, []);
+
   useEffect(() => {
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
   }, [wishlist]);
 
   const isWishlisted = (id) => wishlist.includes(id);
+
   const triggerHeartBurst = (id) => {
     setHeartBurstId(id);
     setTimeout(() => setHeartBurstId(null), 900);
@@ -124,7 +121,9 @@ export default function FeaturedProductsCinematicSquareModal() {
 
   const toggleWishlist = (product) => {
     setWishlist((prev) => {
-      if (prev.includes(product.id)) return prev.filter((pid) => pid !== product.id);
+      if (prev.includes(product.id))
+        return prev.filter((pid) => pid !== product.id);
+
       triggerHeartBurst(product.id);
       toast.success("Added to wishlist");
       return [...prev, product.id];
@@ -168,17 +167,12 @@ export default function FeaturedProductsCinematicSquareModal() {
             Featured Products
           </h2>
 
-          {/* Ribbon Swiper */}
           <Swiper
             modules={[Autoplay, FreeMode, Pagination]}
             spaceBetween={20}
-            grabCursor={true}
-            freeMode={false}
+            grabCursor
             loop={products.length > 1}
-            autoplay={{
-              delay: 3100,
-              disableOnInteraction: false,
-            }}
+            autoplay={{ delay: 3100, disableOnInteraction: false }}
             pagination={{ clickable: true, dynamicBullets: true }}
             slidesPerView={1.15}
             breakpoints={{
@@ -193,12 +187,14 @@ export default function FeaturedProductsCinematicSquareModal() {
               <SwiperSlide key={p.id}>
                 <div className="relative h-[420px] lg:h-[480px] rounded-2xl bg-white/30 backdrop-blur-md shadow-xl overflow-hidden group cursor-pointer">
 
-                  {/* IMAGE click -> view page */}
                   <div onClick={() => navigate(`/product/${p.id}`)}>
-                    <img src={p.img} alt={p.title} className="w-full h-full object-cover" />
+                    <img
+                      src={p.img}
+                      alt={p.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
-                  {/* badge */}
                   <div className="absolute top-4 left-4">
                     <span
                       className="px-3 py-1 rounded-full text-xs font-semibold text-white"
@@ -210,7 +206,6 @@ export default function FeaturedProductsCinematicSquareModal() {
                     </span>
                   </div>
 
-                  {/* wishlist + view (eye now navigates to product page) */}
                   <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition">
                     <button
                       onClick={(e) => {
@@ -219,9 +214,11 @@ export default function FeaturedProductsCinematicSquareModal() {
                       }}
                       className="bg-white p-3 rounded-full shadow"
                     >
-                      {isWishlisted(p.id)
-                        ? <AiFillHeart className="text-red-500" size={18} />
-                        : <AiOutlineHeart className="text-gray-800" size={18} />}
+                      {isWishlisted(p.id) ? (
+                        <AiFillHeart className="text-red-500" size={18} />
+                      ) : (
+                        <AiOutlineHeart className="text-gray-800" size={18} />
+                      )}
                     </button>
 
                     <button
@@ -235,7 +232,6 @@ export default function FeaturedProductsCinematicSquareModal() {
                     </button>
                   </div>
 
-                  {/* Bottom Glass Label */}
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <div className="bg-white/25 backdrop-blur-xl border border-white/40 rounded-2xl shadow-xl px-4 py-3 flex items-center justify-between">
                       <div className="max-w-[180px]">
@@ -263,7 +259,10 @@ export default function FeaturedProductsCinematicSquareModal() {
                         }}
                         className="bg-white/70 backdrop-blur-xl border border-white/60 w-10 h-10 flex items-center justify-center rounded-full shadow hover:scale-110 transition"
                       >
-                        <AiOutlineShoppingCart size={18} className="text-green-700" />
+                        <AiOutlineShoppingCart
+                          size={18}
+                          className="text-green-700"
+                        />
                       </button>
                     </div>
                   </div>

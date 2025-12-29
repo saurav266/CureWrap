@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast";
 
-const BACKEND_URL =
+const BACKEND_URL ="http://localhost:8000" 
   import.meta?.env?.VITE_BACKEND_URL || "";
 
 /**

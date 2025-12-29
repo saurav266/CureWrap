@@ -1,10 +1,8 @@
-// src/pages/CartPage.jsx
 import React, { useEffect, useState } from "react";
-import CartDrawer from "../components/CartDrawer";
 
 export default function CartPage() {
   const [cart, setCart] = useState([]);
-  const [open, setOpen] = useState(true);
+
   const loadCart = () => {
     const cartData = JSON.parse(localStorage.getItem("cart")) || [];
     setCart(cartData);
@@ -60,6 +58,11 @@ export default function CartPage() {
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // ✅ Check if any item is missing size
+  const hasMissingSize = cart.some(
+    (item) => Array.isArray(item.sizes) && item.sizes.length > 0 && !item.selectedSize
+  );
+
   if (cart.length === 0)
     return (
       <div className="p-10 text-center text-gray-600 text-xl flex flex-col items-center">
@@ -72,11 +75,22 @@ export default function CartPage() {
     <div className="max-w-5xl mx-auto p-6">
       <h2 className="text-3xl font-bold mb-6">Your Cart</h2>
 
+      {hasMissingSize && (
+        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded text-sm">
+          Please select a size for all products before proceeding to checkout.
+        </div>
+      )}
+
       <div className="space-y-4">
         {cart.map((item) => {
           const maxStock = item.stock || item.stock_quantity || 100;
           const price = item.sale_price || item.price;
-          const sizes = ["S", "M", "L", "XL"];
+
+          // ✅ Use product-specific sizes
+          const sizes =
+            Array.isArray(item.sizes) && item.sizes.length > 0
+              ? item.sizes
+              : ["S", "M", "L", "XL"]; // fallback for old cart items
 
           return (
             <div
@@ -84,7 +98,10 @@ export default function CartPage() {
               className="flex gap-4 border p-4 rounded-lg items-center bg-white shadow-sm hover:shadow-md transition-shadow"
             >
               <img
-                src={item.images?.[0]?.url || "https://placehold.co/100x100?text=No+Image"}
+                src={
+                  item.images?.[0]?.url ||
+                  "https://placehold.co/100x100?text=No+Image"
+                }
                 alt={item.name || "Product image"}
                 className="w-24 h-24 object-cover rounded-md border"
               />
@@ -92,15 +109,22 @@ export default function CartPage() {
               <div className="flex-1">
                 <div className="font-semibold text-lg">{item.name}</div>
 
-                {/* Size Selector */}
+                {/* ✅ Size Selector */}
                 {sizes.length > 0 && (
                   <div className="mt-1">
-                    <label className="text-gray-500 text-sm mr-2">Size:</label>
+                    <label className="text-gray-500 text-sm mr-2">
+                      Size:
+                    </label>
                     <select
-                      value={item.selectedSize || sizes[0]}
-                      onChange={(e) => updateSize(item._id, e.target.value)}
+                      value={item.selectedSize || ""}
+                      onChange={(e) =>
+                        updateSize(item._id, e.target.value)
+                      }
                       className="border rounded px-2 py-1 text-sm"
                     >
+                      <option value="" disabled>
+                        Select
+                      </option>
                       {sizes.map((size) => (
                         <option key={size} value={size}>
                           {size}
@@ -110,31 +134,35 @@ export default function CartPage() {
                   </div>
                 )}
 
-                {item.attributes?.length > 0 && (
-                  <div className="text-sm text-gray-500 mt-1">
-                    {item.attributes.map((a) => `${a.key}: ${a.value}`).join(", ")}
-                  </div>
-                )}
-
-                <div className="text-sm text-gray-600 mt-1">₹{price.toLocaleString()}</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  ₹{price.toLocaleString()}
+                </div>
 
                 <div className="mt-3 flex items-center gap-3">
                   <button
-                    onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                    onClick={() =>
+                      updateQuantity(item._id, item.quantity - 1)
+                    }
                     disabled={item.quantity <= 1}
                     className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
                   >
                     −
                   </button>
-                  <div className="px-2 font-medium">{item.quantity}</div>
+                  <div className="px-2 font-medium">
+                    {item.quantity}
+                  </div>
                   <button
-                    onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                    onClick={() =>
+                      updateQuantity(item._id, item.quantity + 1)
+                    }
                     disabled={item.quantity >= maxStock}
                     className="px-3 py-1 border rounded hover:bg-gray-100"
                   >
                     +
                   </button>
-                  <span className="text-gray-500 ml-2">Max: {maxStock}</span>
+                  <span className="text-gray-500 ml-2">
+                    Max: {maxStock}
+                  </span>
                 </div>
               </div>
 
@@ -144,7 +172,11 @@ export default function CartPage() {
                 </div>
                 {item.sale_price && item.sale_price < item.price && (
                   <div className="text-sm text-red-500">
-                    Saved ₹{((item.price - item.sale_price) * item.quantity).toLocaleString()}
+                    Saved ₹
+                    {(
+                      (item.price - item.sale_price) *
+                      item.quantity
+                    ).toLocaleString()}
                   </div>
                 )}
                 <button
@@ -160,15 +192,32 @@ export default function CartPage() {
 
         <div className="mt-6 p-4 border rounded-lg flex flex-col md:flex-row justify-between items-center bg-white shadow-sm">
           <div className="mb-3 md:mb-0">
-            <div className="text-gray-600">Total Items: {totalItems}</div>
             <div className="text-gray-600">
-              Total Savings: ₹{calculateSavings().toLocaleString()}
+              Total Items: {totalItems}
+            </div>
+            <div className="text-gray-600">
+              Total Savings: ₹
+              {calculateSavings().toLocaleString()}
             </div>
             <div className="text-gray-600">Subtotal:</div>
-            <div className="text-2xl font-bold">₹{calculateSubtotal().toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              ₹{calculateSubtotal().toLocaleString()}
+            </div>
           </div>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
-            <a href="/checkout">Proceed to Checkout</a>
+
+          {/* ✅ Prevent checkout if size missing */}
+          <button
+            disabled={hasMissingSize}
+            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+              hasMissingSize
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700 text-white"
+            }`}
+            onClick={() => {
+              if (!hasMissingSize) window.location.href = "/checkout";
+            }}
+          >
+            Proceed to Checkout
           </button>
         </div>
       </div>
