@@ -8,7 +8,7 @@ import cors from "cors";
 import twilio from "twilio";
 import axios from "axios";
 import { connectDB } from "./db/db.js";
-
+import nodemailer from "nodemailer"
 import { Server } from "socket.io";
 
 import User from "./model/user.js";
@@ -52,6 +52,9 @@ app.use(
   })
 );
 
+
+
+console.log("✅ Email sent");
 app.use(express.json({ limit: "1mb" }));
 
 // ------------------ ROUTES ------------------

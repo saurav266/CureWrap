@@ -5,14 +5,17 @@ import 'dotenv/config.js';
 
 const router = express.Router();
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
   secure: process.env.SMTP_SECURE === "true",
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    pass: process.env.SMTP_PASS
   },
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 15000
 });
 
 router.post("/send-message", async (req, res) => {
@@ -43,5 +46,8 @@ router.post("/send-message", async (req, res) => {
     res.status(500).json({ success: false, message: "Mail failed" });
   }
 });
+
+
+
 
 export default router;
