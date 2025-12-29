@@ -20,7 +20,7 @@ export default function ProductSection() {
   const [category, setCategory] = useState("all");
   const [maxPrice, setMaxPrice] = useState(5000);
 
-  const backendUrl = "";
+  const backendUrl = "http://localhost:8000";
 
   // ---------------- FETCH PRODUCTS ----------------
   const fetchProducts = async () => {
