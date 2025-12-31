@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "";
 const RETURN_WINDOW_DAYS = 7; // should match backend
 
 // 🔄 Animated Order Stepper

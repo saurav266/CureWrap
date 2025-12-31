@@ -9,7 +9,7 @@ import ProductDescription from "../components/user/view/ProductDescription";
 import ProductReviews from "../components/user/view/ProductReviews";
 import RelatedProducts from "../components/user/view/RelatedProducts";
 
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 
 export default function ProductViewPage() {
   const { id } = useParams();

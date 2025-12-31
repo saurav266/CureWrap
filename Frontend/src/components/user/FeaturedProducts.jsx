@@ -18,7 +18,7 @@ import "swiper/css/pagination";
 
 const brandBlue = "#2F86D6";
 const brandGreen = "#63B46B";
-const backendUrl = "http://localhost:8000";
+const backendUrl = "";
 
 // ✅ Only these product IDs will be featured
 const FEATURED_IDS = [

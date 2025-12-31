@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
 import ProductReview from "../components/user/view/ProductReviews"
 
-const backendUrl = "http://localhost:8000"; // Adjust as needed
+const backendUrl = ""; // Adjust as needed
 const FALLBACK_IMAGE = "/mnt/data/yoga-2587066_1280.jpg";
 
 const renderStars = (rating) =>
