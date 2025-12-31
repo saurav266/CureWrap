@@ -1,7 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
+import { dummyReviewsByProduct } from "../../../data/dummyReviews";
+
+
 
 // ⭐ Star input
+
+
 const StarRatingInput = ({ value, onChange }) => (
   <div className="flex gap-1">
     {[1, 2, 3, 4, 5].map((star) => (
@@ -53,6 +58,11 @@ export default function ReviewsSection({
   fetchProduct,
   hasPurchased,   // ✅ NEW
 }) {
+    console.log("productId:", productId);
+  console.log(
+    "dummyReviews:",
+    dummyReviewsByProduct[String(productId)]
+  );
   const [sortBy, setSortBy] = useState("newest");
   const [editingReview, setEditingReview] = useState(null);
   const [reviewRating, setReviewRating] = useState(5);
@@ -64,22 +74,61 @@ export default function ReviewsSection({
   const token = localStorage.getItem("token");
 
   // 🧠 my review
-  const myReview = useMemo(() => {
-    if (!product?.reviews || !currentUser) return null;
-    return product.reviews.find(
-      (r) => r.user_id === currentUser._id
-    );
-  }, [product, currentUser]);
+const productDummyReviews = useMemo(() => {
+  const key = String(productId);
 
-  const sortedReviews = useMemo(() => {
-    if (!product?.reviews) return [];
-    const arr = [...product.reviews];
-    if (sortBy === "highest") return arr.sort((a, b) => b.rating - a.rating);
-    if (sortBy === "lowest") return arr.sort((a, b) => a.rating - b.rating);
-    return arr.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
-  }, [product, sortBy]);
+  if (
+    dummyReviewsByProduct &&
+    Object.prototype.hasOwnProperty.call(dummyReviewsByProduct, key) &&
+    Array.isArray(dummyReviewsByProduct[key])
+  ) {
+    return dummyReviewsByProduct[key];
+  }
+
+  return [];
+}, [productId]);
+
+
+
+const myReview = useMemo(() => {
+  if (!product?.reviews || !currentUser) return null;
+
+  return product.reviews.find(
+    (r) => String(r.user_id) === String(currentUser._id)
+  );
+}, [product, currentUser]);
+
+
+const sortedReviews = useMemo(() => {
+  const realReviews = product?.reviews || [];
+
+  // ✅ Merge dummy + real (real first)
+  const merged = [
+    ...realReviews,
+    ...productDummyReviews.filter(
+      (d) => !realReviews.some(
+        (r) => String(r.user_id) === String(d.user_id)
+      )
+    ),
+  ];
+
+  if (sortBy === "highest") {
+    return [...merged].sort((a, b) => b.rating - a.rating);
+  }
+
+  if (sortBy === "lowest") {
+    return [...merged].sort((a, b) => a.rating - b.rating);
+  }
+
+  return [...merged].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+}, [product, productDummyReviews, sortBy]);
+
+
+
+
+
 
   const startEditReview = (review) => {
     setEditingReview(review);
@@ -88,80 +137,85 @@ export default function ReviewsSection({
   };
 
   // ➕➖ submit / update
-  const submitReview = async () => {
-    if (!hasPurchased) {
-      toast.error("You can review only after purchasing this product.");
-      return;
-    }
+const submitReview = async () => {
+  if (!hasPurchased) {
+    toast.error("You can review only after purchasing this product.");
+    return;
+  }
 
-    if (!reviewComment.trim()) {
-      toast.error("Please write a comment.");
-      return;
-    }
+  if (!reviewComment.trim()) {
+    toast.error("Please write a comment.");
+    return;
+  }
 
-    if (!token) {
-      toast.error("Login required.");
-      return;
-    }
+  if (!token) {
+    toast.error("Login required.");
+    return;
+  }
 
-    const url = editingReview
-      ? `${backendUrl}/api/users/products/${productId}/review/${editingReview._id}`
-      : `${backendUrl}/api/users/products/${productId}/review`;
+  const url = editingReview
+    ? `${backendUrl}/api/review/products/${productId}/review/${editingReview._id}`
+    : `${backendUrl}/api/review/products/${productId}/review`;
 
-    const method = editingReview ? "PUT" : "POST";
+  const method = editingReview ? "PUT" : "POST";
 
-    setSubmittingReview(true);
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          rating: reviewRating,
-          comment: reviewComment.trim(),
-        }),
-      });
+  setSubmittingReview(true);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      }),
+    });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed");
 
-      toast.success(editingReview ? "Review updated" : "Review added");
-      await fetchProduct();
-      setEditingReview(null);
-      setReviewComment("");
-      setReviewRating(5);
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
+    toast.success(editingReview ? "Review updated" : "Review added");
+    await fetchProduct();
+
+    setEditingReview(null);
+    setReviewComment("");
+    setReviewRating(5);
+  } catch (err) {
+    toast.error(err.message);
+  } finally {
+    setSubmittingReview(false);
+  }
+};
+
 
   // 🗑️ delete
-  const handleDeleteReview = async (reviewId) => {
-    if (!window.confirm("Delete your review?")) return;
-    if (!token) return toast.error("Login required.");
+const handleDeleteReview = async (reviewId) => {
+  if (!window.confirm("Delete your review?")) return;
+  if (!token) return toast.error("Login required.");
 
-    try {
-      const res = await fetch(
-        `${backendUrl}/api/users/products/${productId}/review/${reviewId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+  try {
+    const res = await fetch(
+      `${backendUrl}/api/review/products/${productId}/review/${reviewId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Delete failed");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Delete failed");
 
-      toast.success("Review deleted");
-      await fetchProduct();
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
+    toast.success("Review deleted");
+    await fetchProduct();
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
+
 
   return (
     <div className="mt-12 sm:mt-16">
@@ -186,8 +240,12 @@ export default function ReviewsSection({
       {sortedReviews.length > 0 ? (
         <div className="space-y-4">
           {sortedReviews.map((r, idx) => {
-            const isMine =
-              currentUser && r.user_id === currentUser._id;
+const isMine =
+  currentUser &&
+  !r.isDummy &&
+  String(r.user_id) === String(currentUser._id);
+
+
 
             return (
               <div

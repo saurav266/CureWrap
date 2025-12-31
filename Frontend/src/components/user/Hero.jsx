@@ -64,11 +64,21 @@ export default function HeroSection() {
           />
 
           {/* HOTSPOTS (desktop & tablet position remains same) */}
-          <Hotspot id="6929c183b6489355ea3c6b21" p_name="LS Lumbar Belt" getProduct={getProduct} top="65%" left="4%" />
+<Hotspot
+  ids={[
+    "6929aef0b6489355ea3c5a25", // LS Contoured Lumbar Belt
+    "6929c183b6489355ea3c6b21"  // Second product
+  ]}
+  p_name="LS Contoured Lumbar Belt"
+  getProduct={getProduct}
+  top="58%"
+  left="6%"
+/>
+
           <Hotspot id="6932ab49ac77b4f2a0ad736e" p_name="Posture Corrector Belt" getProduct={getProduct} top="43%" left="11%" />
           <Hotspot id="69270418d8a75f130faf4d66" p_name="Hinged Knee" getProduct={getProduct} top="85%" left="0%" />
           <Hotspot id="692711b3c97c569366415213" p_name="Knee Brace" getProduct={getProduct} top="83%" left="60%" />
-          <Hotspot id="6929aef0b6489355ea3c5a25" p_name="LS Contoured Lumbar Belt" getProduct={getProduct} top="58%" left="6%" />
+        
         </motion.div>
       </div>
     </section>
@@ -78,69 +88,111 @@ export default function HeroSection() {
 /* ------------------------------------------------------------------
    HOTSPOT COMPONENT — Button removed in mobile only
 ------------------------------------------------------------------ */
-function Hotspot({ top, left, id, getProduct, p_name }) {
+function Hotspot({ top, left, id, ids, getProduct, p_name }) {
   const [show, setShow] = useState(false);
-  const product = getProduct(id);
 
-  const img = product?.images?.[0]?.url
-    ? product.images[0].url.startsWith("http")
-      ? product.images[0].url
-      : `${backendUrl}/${product.images[0].url}`
-    : lsBelt;
+  // ✅ SUPPORT SINGLE ID OR MULTIPLE IDS
+  const WAIST_IDS = [
+  "6929aef0b6489355ea3c5a25",
+  "6929c183b6489355ea3c6b21",
+];
 
-  const price = product?.sale_price
-    ? `₹${product.sale_price.toLocaleString()}`
-    : `₹${product?.price?.toLocaleString()}`;
+const isWaist =
+  ids?.some((pid) => WAIST_IDS.includes(pid)) ||
+  WAIST_IDS.includes(id);
+
+  const productList = ids
+    ? ids.map((pid) => getProduct(pid)).filter(Boolean)
+    : id
+    ? [getProduct(id)].filter(Boolean)
+    : [];
+
+  if (productList.length === 0) return null;
 
   const side = parseFloat(left) > 50 ? "left" : "right";
 
   return (
     <div
       className="absolute"
-      style={{ top, left }}
+     style={{
+  top: isWaist ? `calc(${top} + 30px)` : top,
+  left,
+}}
+
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}
     >
-      {/* 🔥 Hotspot button hidden only on mobile */}
+      {/* HOTSPOT BUTTON */}
       <motion.button
         whileHover={{ scale: 1.25 }}
         className="
-          hidden sm:flex          /* ❌ hidden only on <640px */
-          w-8 h-8 
-          rounded-full 
-          items-center justify-center 
-          bg-white/40 
-          backdrop-blur-xl 
-          border-[3px] border-white/80 
+        
+          hidden sm:flex
+          w-8 h-8
+          rounded-full
+          items-center justify-center
+          bg-white/40
+          backdrop-blur-xl
+          border-[3px] border-white/80
           animate-pulse
         "
       >
         <span className="text-green-700 text-xl font-extrabold">+</span>
       </motion.button>
 
-      {/* Popup (desktop only) */}
-      {show && product && (
+      {/* POPUP */}
+      {show && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className={`hidden md:flex absolute bg-white w-[300px] rounded-2xl shadow-2xl border border-gray-200 p-4 gap-4 z-50
-            top-[50%] -translate-y-1/2
-            ${side === "left" ? "-left-[320px]" : "left-[55px]"}`}
+          className={`hidden md:flex absolute bg-white w-[340px] rounded-2xl shadow-2xl
+          border border-gray-200 p-4 gap-3 z-50 flex-col
+          top-[50%] -translate-y-1/2
+          ${side === "left" ? "-left-[360px]" : "left-[55px]"}`}
         >
-          <img src={img} className="w-24 h-24 object-cover rounded-xl border border-gray-200" />
-          <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-gray-900 truncate">
-              {p_name || product?.short_name || product?.name}
-            </h3>
-            <p className="text-green-600 font-bold mt-1">{price}</p>
-            <Link
-              to={`/product/${product._id}`}
-              className="mt-2 px-4 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-full hover:bg-green-700 transition"
-            >
-              VIEW PRODUCT
-            </Link>
-          </div>
+          <h3 className="text-sm font-bold text-gray-900 mb-2">
+            {p_name}
+          </h3>
+
+          {productList.map((product) => {
+            const img = product?.images?.[0]?.url
+              ? product.images[0].url.startsWith("http")
+                ? product.images[0].url
+                : `${backendUrl}/${product.images[0].url}`
+              : lsBelt;
+
+            const price = product?.sale_price
+              ? `₹${product.sale_price.toLocaleString()}`
+              : `₹${product?.price?.toLocaleString()}`;
+
+            return (
+              <div
+                key={product._id}
+                className="flex gap-3 items-center border rounded-xl p-2"
+              >
+                <img
+                  src={img}
+                  className="w-16 h-16 object-cover rounded-lg border"
+                />
+                <div className="flex-1">
+                  <p className="text-xs font-semibold line-clamp-1">
+                    {product.name}
+                  </p>
+                  <p className="text-green-600 font-bold text-sm">
+                    {price}
+                  </p>
+                  <Link
+                    to={`/product/${product._id}`}
+                    className="inline-block mt-1 px-3 py-1 text-[11px]
+                    bg-green-600 text-white rounded-full hover:bg-green-700"
+                  >
+                    VIEW PRODUCT
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
         </motion.div>
       )}
     </div>

@@ -1,6 +1,9 @@
 // src/pages/CheckoutPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
+
 
 
 import StepProgress from "../components/StepProgress";
@@ -9,9 +12,11 @@ const BACKEND_URL = "http://localhost:8000"; // Adjust as needed
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+const { user, authReady } = useAuth();
+const isLoggedIn = Boolean(user);
 
   const [cart, setCart] = useState([]);
-  const [user, setUser] = useState(null);
+  
 
   // Shipping fields
   const [fullName, setFullName] = useState("");
@@ -20,6 +25,8 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [stateName, setStateName] = useState("");
   const [postalCode, setPostalCode] = useState("");
+
+
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState("COD"); // "COD" | "RAZORPAY"
@@ -92,32 +99,24 @@ const changeSize = (index, newSize) => {
   }, []);
 
   // ---------- Load user + cart ----------
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      navigate("/login", { state: { from: "/checkout" } });
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(userStr);
-      setUser(parsedUser);
-
-      if (parsedUser.name) setFullName(parsedUser.name);
-      if (parsedUser.phoneno) setPhone(parsedUser.phoneno);
-    } catch (err) {
-      console.error("Failed to parse user from localStorage:", err);
-      navigate("/login", { state: { from: "/checkout" } });
-      return;
-    }
-
-    const cartData = JSON.parse(localStorage.getItem("cart")) || [];
-    if (!cartData.length) {
-      navigate("/cart");
-      return;
-    }
+useEffect(() => {
+  const cartData = JSON.parse(localStorage.getItem("cart")) || [];
+  if (!cartData.length) {
+    navigate("/cart");
+  } else {
     setCart(cartData);
-  }, [navigate]);
+  }
+}, [navigate]);
+
+
+
+if (!authReady) {
+  return (
+    <div className="p-6 text-center text-gray-500">
+      Loading checkout…
+    </div>
+  );
+}
 
   // Subtotal from cart
   const subtotal = cart.reduce(
@@ -441,9 +440,7 @@ const changeSize = (index, newSize) => {
     }
   };
 
-  if (!user) {
-    return null; // redirect already triggered
-  }
+
 
 
 
@@ -551,17 +548,59 @@ const changeSize = (index, newSize) => {
             >
               Back
             </button>
-            <button
-              onClick={handlePlaceOrder}
-              disabled={loading}
-              className="py-2 px-5 bg-green-600 text-white rounded text-sm font-semibold disabled:opacity-60"
-            >
-              {loading
-                ? "Processing..."
-                : paymentMethod === "COD"
-                ? "Place Order (COD)"
-                : "Pay & Place Order"}
-            </button>
+<motion.button
+  whileHover={!loading ? { scale: 1.03 } : {}}
+  whileTap={!loading ? { scale: 0.96 } : {}}
+  animate={
+    loading
+      ? { opacity: 0.7 }
+      : { opacity: 1 }
+  }
+  transition={{ type: "spring", stiffness: 300 }}
+  disabled={loading}
+  onClick={() => {
+    if (!isLoggedIn) {
+      navigate("/login", { state: { from: "/checkout" } });
+      return;
+    }
+    handlePlaceOrder();
+  }}
+  className={`
+    relative w-full sm:w-auto
+    py-3 px-8 rounded-xl font-semibold text-base
+    flex items-center justify-center gap-2
+    shadow-md
+    ${
+      !isLoggedIn
+        ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+        : "bg-green-600 text-white hover:bg-green-700"
+    }
+    ${loading ? "cursor-wait" : ""}
+  `}
+>
+  {/* Loading spinner */}
+  {loading && (
+    <motion.span
+      className="absolute left-4 h-5 w-5 border-2 border-white border-t-transparent rounded-full"
+      animate={{ rotate: 360 }}
+      transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+    />
+  )}
+
+  {/* Button text */}
+  <span className={`${loading ? "opacity-80" : ""}`}>
+    {!isLoggedIn
+      ? "Login to Place Order"
+      : loading
+      ? "Placing Order..."
+      : "Place Order"}
+  </span>
+</motion.button>
+
+
+
+
+
           </div>
         </div>
 

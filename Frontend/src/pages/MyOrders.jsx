@@ -260,6 +260,12 @@ export default function MyOrders() {
       </div>
     );
   }
+const hasUserReviewedProduct = (product, reviews = []) => {
+  if (!user || !reviews.length) return false;
+  return reviews.some(
+    (r) => String(r.user_id) === String(user._id)
+  );
+};
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -402,35 +408,42 @@ export default function MyOrders() {
                       Order items:
                     </div>
                     <div className="grid gap-2 md:grid-cols-2">
-                      {order.items.slice(0, 3).map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-3 border border-gray-100 rounded-lg px-2 py-2 bg-gray-50"
-                        >
-                          {item.image && (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-12 h-12 rounded object-cover border"
-                            />
-                          )}
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold line-clamp-1">
-                              {item.name}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              Qty: {item.quantity} • Price:{" "}
-                              {currency(item.price)}
-                            </p>
-                            <p className="text-xs font-medium text-gray-700">
-                              Subtotal:{" "}
-                              {currency(
-                                (item.price || 0) * (item.quantity || 0)
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                    {order.items.slice(0, 3).map((item, idx) => (
+  <div
+    key={idx}
+    className="flex items-center gap-3 border border-gray-100 rounded-lg px-2 py-2 bg-gray-50"
+  >
+    {item.image && (
+      <img
+        src={item.image}
+        alt={item.name}
+        className="w-12 h-12 rounded object-cover border"
+      />
+    )}
+
+    <div className="flex-1">
+      <p className="text-sm font-semibold line-clamp-1">
+        {item.name}
+      </p>
+      <p className="text-xs text-gray-600">
+        Qty: {item.quantity} • Price: {currency(item.price)}
+      </p>
+
+      {/* ✅ ADD REVIEW BUTTON */}
+      {order.orderStatus === "delivered" && (
+        <button
+          onClick={() =>
+            navigate(`/product/${item.product}#reviews`)
+          }
+          className="mt-1 inline-flex items-center text-xs font-semibold text-green-600 hover:underline"
+        >
+          ⭐ Add Review
+        </button>
+      )}
+    </div>
+  </div>
+))}
+
                     </div>
                     {order.items.length > 3 && (
                       <div className="text-xs text-gray-500">

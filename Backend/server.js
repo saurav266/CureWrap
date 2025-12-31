@@ -21,6 +21,7 @@ import wishlistRoutes from "./route/wishlistRoutes.js";
 import contactRoute from "./route/contactRoute.js"
 import shippingRoute from "./route/shippingRoute.js";
 import productRoute from "./route/productRoute.js";
+import reviewRoute from "./route/reviewRoute.js"
 
 // ------------------ TWILIO CLIENT ------------------
 const client = twilio(
@@ -67,6 +68,7 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/contact", contactRoute);
 app.use("/api/shipping", shippingRoute);
 app.use("/api/users/products", productRoute);
+app.use("/api/review",reviewRoute)
 
 
 // ------------------ START SERVER USING app.listen ------------------

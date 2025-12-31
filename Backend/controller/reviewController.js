@@ -5,10 +5,14 @@ import Order from "../model/orderSchema.js";
 export const addReview = async (req, res) => {
   const { rating, comment } = req.body;
   const productId = req.params.id;
-  const user = req.user; // from auth middleware
+  const user = req.user;
 
   if (!rating || !comment) {
     return res.status(400).json({ message: "Rating and comment required" });
+  }
+
+  if (rating < 1 || rating > 5) {
+    return res.status(400).json({ message: "Rating must be between 1 and 5" });
   }
 
   try {
@@ -16,7 +20,7 @@ export const addReview = async (req, res) => {
     if (!product)
       return res.status(404).json({ message: "Product not found" });
 
-    // ✅ Already reviewed?
+    // ❌ already reviewed
     const already = product.reviews.find(
       (r) => r.user_id.toString() === user._id.toString()
     );
@@ -26,7 +30,7 @@ export const addReview = async (req, res) => {
         .json({ message: "You already reviewed this product" });
     }
 
-    // ✅ Check purchase (must be delivered)
+    // ✅ purchase check
     const hasPurchased = await Order.findOne({
       user: user._id,
       "items.product": productId,
@@ -39,26 +43,23 @@ export const addReview = async (req, res) => {
         .json({ message: "Purchase required to review this product" });
     }
 
-    const review = {
+    product.reviews.push({
       user_id: user._id,
       name: user.name || user.email,
-      rating: Number(rating),
+      rating,
       comment,
-    };
+      verified: true,
+    });
 
-    product.reviews.push(review);
-    product.total_reviews = product.reviews.length;
-    product.average_rating =
-      product.reviews.reduce((sum, r) => sum + r.rating, 0) /
-      product.reviews.length;
+    recalcRatings(product);
 
     await product.save();
 
     res.status(201).json({
       success: true,
-      review: product.reviews[product.reviews.length - 1],
+      review: product.reviews.at(-1),
       average_rating: product.average_rating,
-      total_reviews: product.total_reviews,
+      review_count: product.review_count,
     });
   } catch (err) {
     console.error("addReview error:", err);
@@ -66,11 +67,16 @@ export const addReview = async (req, res) => {
   }
 };
 
+
 // ✏️ Edit review
 export const updateReview = async (req, res) => {
   const { rating, comment } = req.body;
   const { id: productId, reviewId } = req.params;
   const userId = req.user._id.toString();
+
+  if (rating && (rating < 1 || rating > 5)) {
+    return res.status(400).json({ message: "Rating must be between 1 and 5" });
+  }
 
   try {
     const product = await Product.findById(productId);
@@ -84,21 +90,20 @@ export const updateReview = async (req, res) => {
     if (review.user_id.toString() !== userId)
       return res.status(403).json({ message: "Not allowed" });
 
-    review.rating = rating ?? review.rating;
-    review.comment = comment ?? review.comment;
+    if (rating !== undefined) review.rating = rating;
+    if (comment !== undefined) review.comment = comment;
 
-    product.average_rating =
-      product.reviews.reduce((s, r) => s + r.rating, 0) /
-      product.reviews.length;
+    recalcRatings(product);
 
     await product.save();
 
     res.json({ success: true, review });
   } catch (err) {
-    console.error(err);
+    console.error("updateReview error:", err);
     res.status(500).json({ message: "Failed to update review" });
   }
 };
+
 
 // 🗑 Delete review
 export const deleteReview = async (req, res) => {
@@ -119,17 +124,13 @@ export const deleteReview = async (req, res) => {
 
     review.deleteOne();
 
-    product.total_reviews = product.reviews.length;
-    product.average_rating = product.reviews.length
-      ? product.reviews.reduce((s, r) => s + r.rating, 0) /
-        product.reviews.length
-      : 0;
+    recalcRatings(product);
 
     await product.save();
 
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error("deleteReview error:", err);
     res.status(500).json({ message: "Failed to delete review" });
   }
 };
