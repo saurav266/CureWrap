@@ -15,6 +15,8 @@ import {
   shiprocketAuth,
 } from "../services/shiprocketService.js";
 
+import shipRocketStatusMap from "../utilis/shipRocketStatusMap.js"
+
 const RETURN_WINDOW_DAYS = 7; // backend return window
 
 // Razorpay client (for payments + refunds)
@@ -462,6 +464,8 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
+
+
 // ✅ UPDATED: auto-refund on cancel for Razorpay-paid orders (when status update endpoint used)
 export const updateOrderStatus = async (req, res) => {
   try {
@@ -630,31 +634,42 @@ export const editOrder = async (req, res) => {
 export const trackLiveShipment = async (req, res) => {
   try {
     const { awb } = req.params;
-
     if (!awb) {
       return res.status(400).json({ success: false, error: "AWB missing" });
     }
 
     const token = await shiprocketAuth();
+    const tracking = await trackShipmentByAwb(awb, token);
 
-    let tracking;
-    try {
-      tracking = await trackShipmentByAwb(awb, token);
-    } catch (err) {
-      if (err.response?.status === 404) {
-        return res.status(200).json({
-          success: false,
-          tracking: null,
-          error: "Tracking not available yet (AWB not activated)",
-          code: 404,
+    const activities =
+      tracking?.tracking_data?.shipment_track_activities || [];
+
+    const latestEvent = activities[0];
+
+    const mappedStatus = shipRocketStatusMap(
+      latestEvent?.activity || latestEvent?.current_status
+    );
+
+    // 🔥 UPDATE ORDER STATUS HERE
+    if (mappedStatus) {
+      const order = await Order.findOne({
+        "shiprocket.awb_code": awb,
+      });
+
+      if (order && order.orderStatus !== mappedStatus) {
+        order.orderStatus = mappedStatus;
+
+        if (mappedStatus === "delivered" && !order.deliveredAt) {
+          order.deliveredAt = new Date();
+        }
+
+        await order.save();
+
+        io.emit("order-updated", {
+          orderId: order._id,
+          orderStatus: order.orderStatus,
         });
       }
-
-      return res.status(200).json({
-        success: false,
-        tracking: null,
-        error: err.response?.data || err.message,
-      });
     }
 
     return res.json({ success: true, tracking });
@@ -667,6 +682,7 @@ export const trackLiveShipment = async (req, res) => {
     });
   }
 };
+
 
 // OPTIONAL: if you use this anywhere else
 export const getTrackingLive = async (req, res) => {
@@ -698,6 +714,10 @@ export const getTrackingLive = async (req, res) => {
     });
   }
 };
+
+
+//enhancement
+
 
 /* ========== 🔁 RETURN + REPLACEMENT FLOW ========== */
 
@@ -1029,6 +1049,53 @@ if (order.paymentMethod === "RAZORPAY" && order.paymentStatus === "paid") {
     return res.status(500).json({
       success: false,
       error: "Failed to cancel order",
+    });
+  }
+};
+
+//cancel return request
+// cancel return request
+export const cancelReturnRequest = async (req, res) => {
+  try {
+    const  { id }  = req.params; // ✅ FIXED
+
+    console.log("🔥 Cancel return HIT for order:", id);
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: "Order not found",
+      });
+    }
+
+    if (order.returnStatus !== "requested") {
+      return res.status(400).json({
+        success: false,
+        error: "Return request cannot be cancelled at this stage",
+      });
+    }
+
+    // reset return fields
+    order.returnStatus = "none";
+    order.returnType = null;
+    order.returnReason = null;
+    order.returnAdminNote = null;
+    order.refundInfo = null;
+    order.replacementOrderId = null;
+
+    await order.save();
+
+    return res.json({
+      success: true,
+      message: "Return request cancelled successfully",
+      order,
+    });
+  } catch (err) {
+    console.error("Cancel return error:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
     });
   }
 };

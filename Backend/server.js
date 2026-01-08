@@ -14,7 +14,7 @@ import { Server } from "socket.io";
 import User from "./model/user.js";
 import userRoute from "./route/userRoute.js";
 import cartRoute from "./route/cartRoute.js";
-import orderRoutes from "./route/orderRoute.js";
+import orderRoute from "./route/orderRoute.js";
 import adminRoutes from "./route/adminRoute.js";
 import paymentRoute from "./route/paymentRoute.js";
 import wishlistRoutes from "./route/wishlistRoutes.js";
@@ -57,7 +57,7 @@ app.use(express.json({ limit: "1mb" }));
 // ------------------ ROUTES ------------------
 app.use("/api/users", userRoute);
 app.use("/api/cart", cartRoute);
-app.use("/api/orders", orderRoutes);
+app.use("/api/orders", orderRoute);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoute);
 app.use("/api/wishlist", wishlistRoutes);

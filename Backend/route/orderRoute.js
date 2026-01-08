@@ -16,6 +16,7 @@ import {
   createRazorpayOrderForCod,
   verifyRazorpayPaymentAndMarkPaid,
   cancelOrder,
+  cancelReturnRequest
 } from "../controller/orderController.js";
 
 
@@ -24,50 +25,41 @@ const router = express.Router();
 /* ===================== ADMIN ROUTES (put BEFORE `/:id`) ===================== */
 
 // GET all orders (with filters done in controller)
-router.get("/admin/all", getAllOrders);
-
-// Edit order (shipping address etc.)
-router.put("/admin/:id/edit", editOrder);
-
-// Update order status (processing, shipped, delivered, cancelled...)
-router.put("/admin/:id/status", updateOrderStatus);
-
-// Returns list
-router.get("/admin/returns", getReturnOrders);
-
-// Admin approve / reject return
-router.put("/admin/returns/:id/status", updateReturnStatusAdmin);
-
 /* ===================== CUSTOMER / PAYMENT / TRACKING ===================== */
-
 
 // Place order
 router.post("/place", placeOrder);
 
 // Logged-in user orders
 router.get("/my-orders", getUserOrders);
-// for cancellation/refund tracking
+
+// Cancel order
 router.put("/:id/cancel", cancelOrder);
 
-// Mark COD as paid (manual)
+// Mark COD as paid
 router.put("/:id/mark-paid", markOrderPaid);
 
-// 🔁 COD → Razorpay order (NOTE: no extra `/orders` here)
+// Razorpay
 router.post("/:id/razorpay-order", createRazorpayOrderForCod);
-
-// Razorpay payment verify (COD → prepaid)
 router.post("/payments/razorpay/verify", verifyRazorpayPaymentAndMarkPaid);
 
-// Shiprocket tracking
+// Tracking
 router.get("/track/:awb", trackLiveShipment);
 router.get("/track-live/:awb", getTrackingLive);
 
-// User requests return / replacement
+// 🔁 User requests return
 router.post("/:id/return", requestOrderReturn);
 
-/* ===================== SINGLE ORDER (KEEP THIS LAST) ===================== */
+// 🔥🔥 CANCEL RETURN — MUST BE HERE (BEFORE `/:id`)
+router.put("/:id/return/cancel", cancelReturnRequest);
 
-// Get single order by ID
+/* ===================== SINGLE ORDER (KEEP LAST) ===================== */
+
+// Get single order
 router.get("/:id", getOrderById);
+
+
+//cancel return request
+
 
 export default router;

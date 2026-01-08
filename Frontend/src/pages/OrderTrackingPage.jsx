@@ -6,14 +6,20 @@ const BACKEND_URL = "http://localhost:8000";
 const RETURN_WINDOW_DAYS = 7; // should match backend
 
 // 🔄 Animated Order Stepper
-const OrderStepper = ({ steps, activeIndex }) => {
+const OrderStepper = ({ steps, activeIndex,order }) => {
   return (
     <div className="w-full flex items-center justify-between mb-8 relative">
       {/* Line */}
       <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10" />
 
       {steps.map((step, idx) => {
-        const isDone = idx < activeIndex;
+        const isDone =
+        idx < activeIndex ||
+        (step.key === "delivered" && order?.orderStatus === "delivered") ||
+        (step.key === "return" &&
+          ["approved", "completed"].includes(order?.returnStatus));
+
+
         const isActive = idx === activeIndex;
 
         return (
@@ -63,6 +69,12 @@ export default function OrderTrackingPage() {
   const [confirmSize, setConfirmSize] = useState(false);
   const [confirmAddress, setConfirmAddress] = useState(false);
 
+  //
+  const [returnType, setReturnType] = useState("");
+  const [returnReason, setReturnReason] = useState("");
+  const [returnMessage, setReturnMessage] = useState("");
+  const [submittingReturn, setSubmittingReturn] = useState(false);
+
   // ----------------- Helpers -----------------
   const formatDate = (d) =>
     d ? new Date(d).toLocaleString("en-IN") : "N/A";
@@ -72,25 +84,48 @@ export default function OrderTrackingPage() {
       maximumFractionDigits: 2,
     })}`;
 
-  const timelineSteps = useMemo(
-    () => [
+  const timelineSteps = useMemo(() => {
+    const baseSteps = [
       { key: "processing", label: "Processing" },
       { key: "packed", label: "Packed" },
       { key: "shipped", label: "Shipped" },
       { key: "out_for_delivery", label: "Out for Delivery" },
       { key: "delivered", label: "Delivered" },
-      { key: "cancelled", label: "Cancelled" },
-    ],
-    []
-  );
+    ];
+
+    // ❌ Cancelled path (only if NOT delivered)
+    if (order?.orderStatus === "cancelled") {
+      return [...baseSteps, { key: "cancelled", label: "Cancelled" }];
+    }
+
+    // 🔁 Return path (only AFTER delivered)
+    if (order?.orderStatus === "delivered") {
+      return [...baseSteps, { key: "return", label: "Return" }];
+    }
+
+    return baseSteps;
+  }, [order]);
+
 
   const activeIndex = useMemo(() => {
-    if (!order?.orderStatus) return 0;
-    const idx = timelineSteps.findIndex(
-      (s) => s.key === order.orderStatus
+    if (!order) return 0;
+
+    if (order.orderStatus === "cancelled") {
+      return timelineSteps.findIndex(s => s.key === "cancelled");
+    }
+
+    if (
+      order.orderStatus === "delivered" &&
+      order.returnStatus !== "none"
+    ) {
+      return timelineSteps.findIndex(s => s.key === "return");
+    }
+
+    return timelineSteps.findIndex(
+      s => s.key === order.orderStatus
     );
-    return idx === -1 ? 0 : idx;
   }, [order, timelineSteps]);
+
 
   const progressPercent = useMemo(() => {
     if (timelineSteps.length <= 1) return 0;
@@ -256,49 +291,50 @@ export default function OrderTrackingPage() {
     navigate("/checkout");
   };
 
-  const handleSubmitReturn = async () => {
-    if (!order || !returnType) {
-      setReturnMessage("Please choose refund or replacement.");
-      return;
-    }
-    if (!returnReason.trim()) {
-      setReturnMessage("Please enter a reason for return.");
-      return;
-    }
+  const handleSubmitReturn = async ({ type, reason }) => {
+  if (!order || !type) {
+    setReturnMessage("Please choose refund or replacement.");
+    return;
+  }
 
-    try {
-      setSubmittingReturn(true);
-      setReturnMessage("");
-      const res = await fetch(
-        `${BACKEND_URL}/api/orders/${order._id}/return`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: returnType,
-            reason: returnReason.trim(),
-          }),
-        }
-      );
+  if (!reason.trim()) {
+    setReturnMessage("Please enter a reason for return.");
+    return;
+  }
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        console.error("Return request error:", data);
-        setReturnMessage(
-          data.error || "Failed to submit return request."
-        );
-        return;
+  try {
+    setSubmittingReturn(true);
+    setReturnMessage("");
+
+    const res = await fetch(
+      `${BACKEND_URL}/api/orders/${order._id}/return`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          reason,
+        }),
       }
+    );
 
-      setOrder(data.order);
-      setReturnMessage("Return request submitted successfully.");
-    } catch (err) {
-      console.error("Submit return error:", err);
-      setReturnMessage("Something went wrong. Please try again.");
-    } finally {
-      setSubmittingReturn(false);
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      setReturnMessage(data.error || "Failed to submit return request.");
+      return;
     }
-  };
+
+    setOrder(data.order);
+    setReturnMessage("Return request submitted successfully.");
+  } catch (err) {
+    console.error(err);
+    setReturnMessage("Something went wrong. Please try again.");
+  } finally {
+    setSubmittingReturn(false);
+  }
+};
+
 
   // Initial load + auto-refresh
   useEffect(() => {
@@ -365,6 +401,38 @@ export default function OrderTrackingPage() {
     : null;
 
   const returnStatusLabel = order.returnStatus || "none";
+
+  //cancel function after applying return 
+  const handleCancelReturn = async () => {
+  const confirmed = window.confirm(
+    "Are you sure you want to cancel the return request?"
+  );
+  if (!confirmed) return;
+
+  try {
+    setReturnMessage("");
+
+    const res = await fetch(
+      `${BACKEND_URL}/api/orders/${order._id}/return/cancel`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      setReturnMessage(data.error || "Failed to cancel return.");
+      return;
+    }
+
+    setOrder(data.order); // 🔥 refresh order
+    setReturnMessage("Return request cancelled.");
+  } catch (err) {
+    setReturnMessage("Something went wrong.");
+  }
+};
 
   
 
@@ -461,6 +529,14 @@ export default function OrderTrackingPage() {
                   {order.returnStatus}
                 </span>
               )}
+              {order.returnStatus === "requested" && (
+              <button
+                onClick={handleCancelReturn}
+                className="mt-2 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700"
+              >
+                Cancel Return Request
+              </button>
+            )}
             </div>
 
             {/* Already requested / processed */}
@@ -628,11 +704,13 @@ export default function OrderTrackingPage() {
 
                 <button
                   onClick={() => {
+                    // 1️⃣ Validate option
                     if (!returnOption) {
                       setReturnMessage("Please select a return option.");
                       return;
                     }
 
+                    // 2️⃣ Refund flow
                     if (
                       (returnOption === "incorrect" || returnOption === "damaged") &&
                       !returnReason.trim()
@@ -641,24 +719,32 @@ export default function OrderTrackingPage() {
                       return;
                     }
 
-                    if (
-                      returnOption === "size_replacement" &&
-                      (!newSize || !confirmSize || !confirmAddress)
-                    ) {
-                      setReturnMessage(
-                        "Please enter new size and confirm size & address."
-                      );
-                      return;
+                    // 3️⃣ Size replacement flow
+                    if (returnOption === "size_replacement") {
+                      if (!newSize.trim()) {
+                        setReturnMessage("Please enter new size.");
+                        return;
+                      }
+                      if (!confirmSize) {
+                        setReturnMessage("Please confirm the required size.");
+                        return;
+                      }
+                      if (!confirmAddress) {
+                        setReturnMessage("Please confirm delivery address.");
+                        return;
+                      }
                     }
 
-                    // map to backend type
-                    setReturnType(
-                      returnOption === "size_replacement"
-                        ? "replacement"
-                        : "refund"
-                    );
+                    // 4️⃣ Decide backend payload DIRECTLY (no state race)
+                    const payload = {
+                      type: returnOption === "size_replacement" ? "replacement" : "refund",
+                      reason:
+                        returnOption === "size_replacement"
+                          ? `Requested size: ${newSize}`
+                          : returnReason.trim(),
+                    };
 
-                    handleSubmitReturn();
+                    handleSubmitReturn(payload);
                   }}
                   disabled={submittingReturn}
                   className="w-full mt-2 px-4 py-2 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-60"
@@ -689,7 +775,9 @@ export default function OrderTrackingPage() {
         <OrderStepper
           steps={timelineSteps}
           activeIndex={activeIndex}
+          order={order}
         />
+
 
         <div className="flex items-center justify-between text-xs text-gray-500 mt-4">
           <span>Last updated: {formatDate(order.updatedAt)}</span>

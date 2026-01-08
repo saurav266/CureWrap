@@ -1,6 +1,6 @@
-// models/orderSchema.js
 import mongoose from "mongoose";
 
+/* ================= ADDRESS ================= */
 const AddressSchema = new mongoose.Schema(
   {
     name: String,
@@ -15,6 +15,7 @@ const AddressSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/* ================= ORDER ITEM ================= */
 const OrderItemSchema = new mongoose.Schema(
   {
     product: {
@@ -32,12 +33,40 @@ const OrderItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/* ================= RETURN HISTORY (NEW) ================= */
+const ReturnHistorySchema = new mongoose.Schema(
+  {
+    action: {
+      type: String,
+      enum: [
+        "requested",
+        "approved",
+        "rejected",
+        "cancelled_by_user",
+        "completed",
+      ],
+    },
+    by: {
+      type: String, // user | admin | system
+    },
+    note: String,
+    at: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
+/* ================= MAIN ORDER ================= */
 const OrderSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: false }, // allow guest
+    userId: { type: String }, // allow guest
+
     items: [OrderItemSchema],
     shippingAddress: AddressSchema,
 
+    /* ================= PAYMENT ================= */
     paymentMethod: {
       type: String,
       enum: ["COD", "STRIPE", "RAZORPAY"],
@@ -45,16 +74,17 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "failed", "refunded"], // 🔁 added refunded
+      enum: ["pending", "paid", "failed", "refunded"],
       default: "pending",
     },
-    paymentResult: { type: Object },
+    paymentResult: Object,
 
-    subtotal: { type: Number, required: true },
+    subtotal: Number,
     shippingCharges: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
-    total: { type: Number, required: true },
+    total: Number,
 
+    /* ================= ORDER STATUS ================= */
     orderStatus: {
       type: String,
       enum: [
@@ -68,41 +98,53 @@ const OrderSchema = new mongoose.Schema(
       default: "processing",
     },
 
-    // used for return window calculation
-    deliveredAt: { type: Date },
+    deliveredAt: Date,
 
+    /* ================= SHIPROCKET ================= */
     shiprocket: {
-      order_id: { type: Number },
-      channel_order_id: { type: String },
-      shipment_id: { type: Number },
-      status: { type: String },
-      awb_code: { type: String },
-      courier_company_id: { type: String },
-      courier_name: { type: String },
-      label_url: { type: String },
+      order_id: Number,
+      channel_order_id: String,
+      shipment_id: Number,
+      status: String,
+      awb_code: String,
+      courier_company_id: String,
+      courier_name: String,
+      label_url: String,
+
+      // 🔁 Reverse pickup (NEW – optional)
+      reverse_pickup_id: String,
     },
 
-    /* 🔁 RETURN + REPLACEMENT FIELDS */
-    // none | requested | approved | rejected | completed
+    /* ================= RETURN / REPLACEMENT ================= */
     returnStatus: {
       type: String,
-      enum: ["none", "requested", "approved", "rejected", "completed"],
+      enum: [
+        "none",        // default
+        "requested",   // user submitted
+        "approved",    // admin approved
+        "rejected",    // admin rejected
+        "completed",   // refund/replacement done
+      ],
       default: "none",
     },
-    // refund | replacement
+
     returnType: {
       type: String,
       enum: ["refund", "replacement", null],
       default: null,
     },
-    returnReason: { type: String },
-    returnRequestedAt: { type: Date },
-    returnResolvedAt: { type: Date },
-    returnAdminNote: { type: String },
 
-    // 🔁 Refund info (for online payments)
+    returnReason: String,
+    returnRequestedAt: Date,
+    returnResolvedAt: Date,
+    returnAdminNote: String,
+
+    // 🔁 Return lifecycle log (NEW)
+    returnHistory: [ReturnHistorySchema],
+
+    /* ================= REFUND INFO ================= */
     refundInfo: {
-      gateway: String, // e.g. "razorpay"
+      gateway: String,
       refundId: String,
       amount: Number,
       currency: String,
@@ -110,7 +152,7 @@ const OrderSchema = new mongoose.Schema(
       raw: Object,
     },
 
-    // 🔁 Replacement order linkage
+    /* ================= REPLACEMENT LINK ================= */
     replacementOrderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
@@ -119,5 +161,4 @@ const OrderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Order = mongoose.model("Order", OrderSchema);
-export default Order;
+export default mongoose.model("Order", OrderSchema);
