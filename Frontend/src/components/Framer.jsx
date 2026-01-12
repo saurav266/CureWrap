@@ -10,7 +10,7 @@ import problemLigament from "../assets/frontend_assets/curewrap/backPain.png";
 import problemRehab from "../assets/frontend_assets/curewrap/rehabilitation_phase.png";
 import fallbackMain from "../assets/frontend_assets/curewrap/backPain.png";
 
-const backendUrl = "";
+const backendUrl = ""; // Adjust as needed
 
 /* 🔥 PROBLEM IMAGE DISPLAY */
 const problemImages = [
@@ -118,7 +118,7 @@ export default function UltimateSupportSection() {
               {showProblem ? problemTitles[0] : mainProduct?.name}
             </p>
             <p className="text-xs text-white/80 mt-1">
-              Auto transform: Problem → Solution
+             
             </p>
           </div>
         </motion.div>
@@ -148,7 +148,7 @@ export default function UltimateSupportSection() {
 
                 <div className="absolute bottom-3 left-3 right-3 bg-black/40 backdrop-blur-sm rounded-xl px-3 py-2">
                   <p className="text-xs text-green-300 uppercase tracking-wide">
-                    {showProblem ? "Problem" : "Solution"}
+                    {showProblem ? "" : ""}
                   </p>
                   <p className="text-sm text-white font-semibold truncate">
                     {showProblem ? problemTitles[i + 1] : product?.name}

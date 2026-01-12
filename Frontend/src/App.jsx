@@ -224,7 +224,7 @@ function App() {
               isAuthenticated ? (
                 <WishlistPage />
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/login" replace state={{ from: location }} />
               )
             }
           />
@@ -233,7 +233,11 @@ function App() {
           <Route
             path="/orders"
             element={
-              isAuthenticated ? <MyOrders /> : <Navigate to="/login" replace />
+              isAuthenticated ? (
+                <MyOrders />
+              ) : (
+                <Navigate to="/login" replace state={{ from: location }} />
+              )
             }
           />
           <Route
@@ -242,14 +246,18 @@ function App() {
               isAuthenticated ? (
                 <OrderTrackingPage />
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/login" replace state={{ from: location }} />
               )
             }
           />
           <Route
             path="/profile"
             element={
-              isAuthenticated ? <ProfilePage /> : <Navigate to="/login" replace />
+              isAuthenticated ? (
+                <ProfilePage />
+              ) : (
+                <Navigate to="/login" replace state={{ from: location }} />
+              )
             }
           />
 

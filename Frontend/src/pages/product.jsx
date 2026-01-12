@@ -21,7 +21,7 @@ export default function ProductSection() {
   const [category, setCategory] = useState("all");
   const [maxPrice, setMaxPrice] = useState(5000);
 
-  const backendUrl =  "";
+  const backendUrl =  ""; // Adjust as needed
 
   // ---------------- FETCH PRODUCTS ----------------
   const fetchProducts = async () => {

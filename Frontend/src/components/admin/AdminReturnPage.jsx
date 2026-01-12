@@ -1,13 +1,15 @@
 // src/pages/admin/ReturnsManagement.jsx
 import React, { useEffect, useState } from "react";
 
-const BACKEND_URL = "";
+const BACKEND_URL = ""; // Adjust as needed
 
 const statusColors = {
   requested: "bg-yellow-50 text-yellow-700",
-  approved: "bg-green-50 text-green-700",
+  processing: "bg-blue-50 text-blue-700",
+  completed: "bg-green-50 text-green-700",
   rejected: "bg-red-50 text-red-700",
 };
+
 
 const typeColors = {
   refund: "bg-blue-50 text-blue-700",
@@ -19,6 +21,8 @@ export default function ReturnsManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
+
+
 
   // ---------- Helpers ----------
   const formatDate = (d) =>
@@ -62,45 +66,43 @@ export default function ReturnsManagement() {
     loadReturns();
   }, []);
 
-  const handleUpdateStatus = async (orderId, status) => {
-    const note =
-      status === "rejected"
-        ? window.prompt("Reason for rejection?", "") || ""
-        : status === "approved"
-        ? window.prompt("Any note for approval? (optional)", "") || ""
-        : "";
+const handleUpdateStatus = async (orderId, action) => {
+  const note =
+    action === "rejected"
+      ? window.prompt("Reason for rejection?", "") || ""
+      : action === "approved"
+      ? window.prompt("Any note for approval? (optional)", "") || ""
+      : "";
 
-    setUpdatingId(orderId);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${BACKEND_URL}/api/orders/admin/${orderId}/return-status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-          body: JSON.stringify({ status, note }),
-        }
-      );
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        console.error("updateReturnStatus error:", data);
-        alert(data.error || "Failed to update return status");
-        return;
+  setUpdatingId(orderId);
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(
+      `${BACKEND_URL}/api/orders/admin/return/${orderId}/status`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({ action, note }), // ✅ FIXED
       }
+    );
 
-      // Refresh list
-      await loadReturns();
-    } catch (err) {
-      console.error("handleUpdateStatus error:", err);
-      alert("Failed to update return status");
-    } finally {
-      setUpdatingId(null);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      alert(data.error || "Failed to update return status");
+      return;
     }
-  };
+
+    await loadReturns();
+  } catch (err) {
+    alert("Failed to update return status");
+  } finally {
+    setUpdatingId(null);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -143,8 +145,11 @@ export default function ReturnsManagement() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => {
-                const isRequested = order.returnStatus === "requested";
+             {orders.map((order) => {
+  const isRequested = order.returnStatus === "requested";
+  const isActionDisabled =
+    updatingId === order._id || order.returnStatus !== "requested";
+
                 const refundAmount =
                   order.refundInfo?.amount ?? order.total ?? 0;
                 const refundStatus = order.refundInfo?.status;
@@ -210,15 +215,35 @@ export default function ReturnsManagement() {
                     </td>
 
                     <td className="py-2 px-3">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium capitalize ${
-                          statusColors[order.returnStatus] ||
-                          "bg-gray-50 text-gray-700"
-                        }`}
-                      >
-                        {order.returnStatus || "none"}
-                      </span>
-                    </td>
+  <span
+    className={`px-2 py-1 rounded text-xs font-medium capitalize ${
+      statusColors[order.returnStatus] ||
+      "bg-gray-50 text-gray-700"
+    }`}
+  >
+    {order.returnStatus || "none"}
+  </span>
+
+  {/* 🚚 Return AWB */}
+  {order.returnPickup?.awb && (
+    <div className="mt-1 text-[11px] text-gray-500">
+      Return AWB: {order.returnPickup.awb}
+    </div>
+  )}
+   {order.replacementOrderId && (
+    <div className="mt-1">
+      <a
+        href={`/admin/orders/${order.replacementOrderId}`}
+        className="text-blue-600 underline text-[11px]"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        View replacement order
+      </a>
+    </div>
+  )}
+</td>
+
 
                     <td className="py-2 px-3 text-xs capitalize">
                       {order.orderStatus || "-"}
@@ -229,30 +254,25 @@ export default function ReturnsManagement() {
                     </td>
 
                     <td className="py-2 px-3">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          disabled={updatingId === order._id || !isRequested}
-                          onClick={() =>
-                            handleUpdateStatus(order._id, "approved")
-                          }
-                          className="px-2 py-1 rounded bg-green-600 text-white text-xs disabled:opacity-50"
-                        >
-                          {updatingId === order._id && isRequested
-                            ? "Saving..."
-                            : "Approve"}
-                        </button>
+  <div className="flex flex-wrap gap-2">
+    <button
+      disabled={isActionDisabled}
+      onClick={() => handleUpdateStatus(order._id, "approved")}
+      className="px-2 py-1 rounded bg-green-600 text-white text-xs disabled:opacity-50"
+    >
+      {updatingId === order._id && isRequested ? "Saving..." : "Approve"}
+    </button>
 
-                        <button
-                          disabled={updatingId === order._id || !isRequested}
-                          onClick={() =>
-                            handleUpdateStatus(order._id, "rejected")
-                          }
-                          className="px-2 py-1 rounded bg-red-600 text-white text-xs disabled:opacity-50"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </td>
+    <button
+      disabled={isActionDisabled}
+      onClick={() => handleUpdateStatus(order._id, "rejected")}
+      className="px-2 py-1 rounded bg-red-600 text-white text-xs disabled:opacity-50"
+    >
+      Reject
+    </button>
+  </div>
+</td>
+
                   </tr>
                 );
               })}

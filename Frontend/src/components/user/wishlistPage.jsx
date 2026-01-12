@@ -1,9 +1,9 @@
 // src/pages/WishlistPage.jsx
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast";
 
-const BACKEND_URL ="http://localhost:8000" 
+const BACKEND_URL ="" 
   import.meta?.env?.VITE_BACKEND_URL || "";
 
 /**
@@ -73,6 +73,7 @@ const getImageUrl = (img) => {
 
 export default function WishlistPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [user, setUser] = useState(null);
   const [wishlist, setWishlist] = useState([]);
@@ -221,6 +222,7 @@ export default function WishlistPage() {
         </p>
         <Link
           to="/login"
+          state={{ from: location }}
           className="inline-block px-6 py-2.5 bg-green-600 text-white rounded-md font-semibold hover:bg-green-700"
         >
           Go to Login

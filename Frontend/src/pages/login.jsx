@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link ,useLocation} from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -12,6 +12,13 @@ const LoginWithMobile = () => {
   const [cooldown, setCooldown] = useState(0);
   const { login } = useAuth();
   const navigate = useNavigate();
+const location = useLocation();
+
+const from =
+  location.state?.from?.pathname
+    ? location.state.from.pathname + location.state.from.search
+    : "/";
+
 
   const BACKEND_URL = ""; // Adjust as needed
   // ↓↓↓ New format function — EXACT MATCH for backend DB format
@@ -98,7 +105,7 @@ const LoginWithMobile = () => {
     // Update Auth Context
     login(user, token);
 
-    navigate("/");
+   navigate(from, { replace: true });
   } catch (err) {
     setError(err.response?.data?.message || "Invalid OTP");
   } finally {

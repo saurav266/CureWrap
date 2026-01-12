@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
 import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -8,6 +8,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
   const navLinkClass = ({ isActive }) =>
     `relative group transition-all duration-300 font-semibold tracking-wide
@@ -63,7 +64,7 @@ const Navbar = () => {
                 <button onClick={logout} className="hover:text-green-600 text-gray-600 py-1 text-left">Logout</button>
               </>
             ) : (
-              <Link to="/login" className="hover:text-green-600 text-gray-600 py-1">Login</Link>
+              <Link to="/login" state={{ from: location }} className="hover:text-green-600 text-gray-600 py-1">Login</Link>
             )}
           </div>
         </div>
@@ -92,7 +93,7 @@ const Navbar = () => {
               <button onClick={() => { logout(); setMobileOpen(false); }} className="hover:text-green-600 text-gray-600">Logout</button>
             </>
           ) : (
-            <Link to="/login" className="hover:text-green-600 text-gray-600" onClick={() => setMobileOpen(false)}>Login</Link>
+            <Link to="/login" state={{ from: location }} className="hover:text-green-600 text-gray-600" onClick={() => setMobileOpen(false)}>Login</Link>
           )}
         </div>
       )}

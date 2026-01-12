@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { assets } from "../../assets/frontend_assets/assets.js";
 import MiniCart from "./MiniCart.jsx";
 import { FaBars, FaTimes } from "react-icons/fa";
@@ -33,6 +33,7 @@ const getImageUrl = (img) => {
 const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useAuth();
+  const location = useLocation();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -332,11 +333,12 @@ const Navbar = () => {
               </>
             ) : (
               <Link
-                to="/login"
-                className="hover:text-green-600 text-gray-600 py-1 block"
-              >
-                Login
-              </Link>
+                  to="/login"
+                  state={{ from: location }}
+                  className="hover:text-green-600 text-gray-600 py-1 block"
+                >
+                  Login
+                </Link>
             )}
           </div>
         </div>
@@ -421,6 +423,7 @@ const Navbar = () => {
           ) : (
             <Link
               to="/login"
+              state={{ from: location }}
               className="text-gray-600 hover:text-green-600"
             >
               Login

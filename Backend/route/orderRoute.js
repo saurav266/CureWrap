@@ -16,8 +16,10 @@ import {
   createRazorpayOrderForCod,
   verifyRazorpayPaymentAndMarkPaid,
   cancelOrder,
+  cancelReturnRequest,
+  requestReturn
 } from "../controller/orderController.js";
-
+import { adminReturnDecision } from "../controller/adminController.js";
 
 const router = express.Router();
 
@@ -28,6 +30,11 @@ router.get("/admin/all", getAllOrders);
 
 // Edit order (shipping address etc.)
 router.put("/admin/:id/edit", editOrder);
+router.put(
+  "/admin/return/:orderId/status",
+  adminReturnDecision
+);
+
 
 // Update order status (processing, shipped, delivered, cancelled...)
 router.put("/admin/:id/status", updateOrderStatus);
@@ -36,7 +43,7 @@ router.put("/admin/:id/status", updateOrderStatus);
 router.get("/admin/returns", getReturnOrders);
 
 // Admin approve / reject return
-router.put("/admin/returns/:id/status", updateReturnStatusAdmin);
+
 
 /* ===================== CUSTOMER / PAYMENT / TRACKING ===================== */
 
@@ -54,7 +61,10 @@ router.put("/:id/mark-paid", markOrderPaid);
 
 // 🔁 COD → Razorpay order (NOTE: no extra `/orders` here)
 router.post("/:id/razorpay-order", createRazorpayOrderForCod);
-
+// Request return (customer)
+router.post("/:id/request-return", requestReturn);
+// Cancel return request
+router.put("/:id/cancel-return", cancelReturnRequest);
 // Razorpay payment verify (COD → prepaid)
 router.post("/payments/razorpay/verify", verifyRazorpayPaymentAndMarkPaid);
 

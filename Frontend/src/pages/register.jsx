@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const Register = () => {
@@ -12,6 +12,7 @@ const Register = () => {
   const [step, setStep] = useState("register");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ----------------------
   // STEP 1: Register user
@@ -149,7 +150,7 @@ const Register = () => {
         {/* Login Link */}
         <p className="mt-4 text-center text-sm text-gray-600">
           Already have an account?{" "}
-          <Link to="/login" className="text-green-500 hover:underline">
+          <Link to="/login" state={{ from: location }} className="text-green-500 hover:underline">
             Login here
           </Link>
         </p>

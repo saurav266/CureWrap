@@ -1,7 +1,7 @@
 // src/components/admin/order/AllOrder.jsx
 import React, { useEffect, useMemo, useState } from "react";
 
-const BACKEND_URL = "";
+const BACKEND_URL = ""; // Adjust as needed
 
 const statusOptions = [
   { value: "all", label: "All statuses" },

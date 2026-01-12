@@ -1,16 +1,23 @@
 // components/ProtectedRoute.jsx
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const ProtectedRoute = ({ children, adminEmail }) => {
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation(); // 👈 capture current route
 
-  // If not logged in → redirect to login
+  // 🔐 Not logged in → redirect to login with return path
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location }} // 👈 save page user wanted
+      />
+    );
   }
 
-  // If adminEmail is passed → check against user.email
+  // 🔒 Admin-only route check
   if (adminEmail && user?.email !== adminEmail) {
     return <Navigate to="/" replace />;
   }

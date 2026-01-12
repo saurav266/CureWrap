@@ -1,6 +1,6 @@
 // src/pages/CheckoutPage.jsx
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate,useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 
@@ -12,6 +12,9 @@ const BACKEND_URL = ""; // Adjust as needed
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  
 const { user, authReady } = useAuth();
 const isLoggedIn = Boolean(user);
 
@@ -559,10 +562,13 @@ if (!authReady) {
   transition={{ type: "spring", stiffness: 300 }}
   disabled={loading}
   onClick={() => {
-    if (!isLoggedIn) {
-      navigate("/login", { state: { from: "/checkout" } });
-      return;
-    }
+   if (!isLoggedIn) {
+  navigate("/login", {
+    state: { from: location } // ✅ FULL LOCATION OBJECT
+  });
+  return;
+}
+
     handlePlaceOrder();
   }}
   className={`

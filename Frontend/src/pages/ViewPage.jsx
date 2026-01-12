@@ -970,7 +970,7 @@ const detectLocation = () => {
       disabled={!canProceed}
       className={`flex-1 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base ${
         canProceed
-          ? "bg-green-600 text-white hover:bg-green-700"
+          ? "border-gray-300 hover:bg-gray-50"
           : "bg-gray-300 text-gray-500 cursor-not-allowed"
       }`}
     >
@@ -986,7 +986,7 @@ const detectLocation = () => {
       disabled={!canProceed}
       className={`flex-1 py-2.5 sm:py-3 border rounded-lg font-semibold text-sm sm:text-base ${
         canProceed
-          ? "border-gray-300 hover:bg-gray-50"
+          ? "bg-green-600 text-white hover:bg-green-700"
           : "border-gray-200 text-gray-400 cursor-not-allowed"
       }`}
     >

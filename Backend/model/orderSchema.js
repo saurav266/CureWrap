@@ -45,7 +45,7 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "failed", "refunded"], // 🔁 added refunded
+      enum: ["pending","cod_collected", "paid", "failed", "refunded"], // 🔁 added refunded
       default: "pending",
     },
     paymentResult: { type: Object },
@@ -83,38 +83,72 @@ const OrderSchema = new mongoose.Schema(
     },
 
     /* 🔁 RETURN + REPLACEMENT FIELDS */
-    // none | requested | approved | rejected | completed
-    returnStatus: {
-      type: String,
-      enum: ["none", "requested", "approved", "rejected", "completed"],
-      default: "none",
-    },
-    // refund | replacement
-    returnType: {
-      type: String,
-      enum: ["refund", "replacement", null],
-      default: null,
-    },
-    returnReason: { type: String },
-    returnRequestedAt: { type: Date },
-    returnResolvedAt: { type: Date },
-    returnAdminNote: { type: String },
 
-    // 🔁 Refund info (for online payments)
-    refundInfo: {
-      gateway: String, // e.g. "razorpay"
-      refundId: String,
-      amount: Number,
-      currency: String,
-      status: String,
-      raw: Object,
-    },
+// none → requested → processing → approved → completed
+//                      ↓
+//                   rejected
+returnStatus: {
+  type: String,
+  enum: ["none", "requested", "processing", "approved", "rejected", "completed"],
+  default: "none",
+},
 
-    // 🔁 Replacement order linkage
-    replacementOrderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Order",
-    },
+// refund | replacement
+returnType: {
+  type: String,
+  enum: ["refund", "replacement"],
+},
+
+returnReason: String,
+
+returnRequestedAt: Date,
+returnApprovedAt: Date,
+returnResolvedAt: Date,
+
+returnAdminNote: String,
+
+// 🔁 Refund info (Razorpay)
+refundInfo: {
+  gateway: { type: String, default: "razorpay" },
+  paymentId: String,
+  refundId: String,
+  amount: Number,
+  status: String, // created | processed | failed
+  raw: Object,
+},
+
+// 🔁 COD Refund destination (UPI / Bank)
+refundDetails: {
+  method: {
+    type: String,
+    enum: ["UPI", "BANK"],
+  },
+
+  // UPI refund
+  upiId: String,
+
+  // Bank refund
+  accountHolder: String,
+  accountNumber: String,
+  ifsc: String,
+
+  // Razorpay Fund Account (created once)
+  fundAccountId: String,
+},
+
+// 🔁 Replacement order linkage
+replacementOrderId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Order",
+},
+
+// 🔁 Shiprocket return pickup
+returnPickup: {
+  awb: String,
+  courier: String,
+  status: String, // pickup_scheduled | picked | delivered
+},
+
   },
   { timestamps: true }
 );

@@ -9,7 +9,7 @@ import ProductDescription from "../components/user/view/ProductDescription";
 import ProductReviews from "../components/user/view/ProductReviews";
 import RelatedProducts from "../components/user/view/RelatedProducts";
 
-const backendUrl = "";
+const backendUrl = ""; // Adjust as needed
 
 export default function ProductViewPage() {
   const { id } = useParams();

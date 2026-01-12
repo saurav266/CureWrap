@@ -1032,3 +1032,182 @@ if (order.paymentMethod === "RAZORPAY" && order.paymentStatus === "paid") {
     });
   }
 };
+export const requestReturn = async (req, res) => {
+  const { type, reason } = req.body;
+
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    return res.status(404).json({ error: "Order not found" });
+  }
+
+  if (order.orderStatus !== "delivered") {
+    return res.status(400).json({ error: "Order not delivered yet" });
+  }
+
+  if (order.returnStatus !== "none") {
+    return res.status(400).json({ error: "Return already requested" });
+  }
+
+  order.returnType = type; // refund | replacement
+  order.returnReason = reason;
+  order.returnStatus = "requested";
+  order.returnRequestedAt = new Date();
+
+  await order.save();
+
+  res.json({ success: true, order });
+};
+
+export const cancelReturnRequest = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+
+    // ❌ Only allow cancel if return is still requested
+    if (order.returnStatus !== "requested") {
+      return res.status(400).json({
+        success: false,
+        error: "Return request cannot be cancelled",
+      });
+    }
+
+    // 🔄 Reset return fields
+    order.returnStatus = "none";
+    order.returnType = null;
+    order.returnReason = null;
+    order.returnAdminNote = null;
+    order.refundInfo = null;
+
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "Return request cancelled successfully",
+      order,
+    });
+  } catch (err) {
+    console.error("Cancel return error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to cancel return request",
+    });
+  }
+};
+
+
+export async function replacementFlow(originalOrder) {
+  // 🔐 Prevent duplicate replacement
+  if (originalOrder.replacementOrderId) return;
+
+  /* ---------------------------
+     1️⃣ CREATE REPLACEMENT ORDER
+  --------------------------- */
+  const replacementOrder = await Order.create({
+    userId: originalOrder.userId,
+    items: originalOrder.items, // same items
+    shippingAddress: originalOrder.shippingAddress,
+
+    paymentMethod: "COD",
+    paymentStatus: "paid", // replacement is free
+
+    subtotal: originalOrder.subtotal,
+    shippingCharges: 0,
+    tax: 0,
+    total: 0, // free replacement
+
+    orderStatus: "processing",
+  });
+
+  /* ---------------------------
+     2️⃣ LINK TO ORIGINAL ORDER
+  --------------------------- */
+  originalOrder.replacementOrderId = replacementOrder._id;
+
+  /* ---------------------------
+     3️⃣ CREATE SHIPROCKET FORWARD SHIPMENT
+  --------------------------- */
+  try {
+    const address = replacementOrder.shippingAddress;
+    const fullName = address.name || "Customer";
+    const [firstName, ...rest] = fullName.split(" ");
+    const lastName = rest.join(" ");
+
+    const srPayload = {
+      channel_order_id: `REPL-${replacementOrder._id}`,
+
+      customer_name: firstName,
+      customer_last_name: lastName,
+      address: address.addressLine1,
+      city: address.city,
+      pincode: String(address.postalCode),
+      state: address.state,
+      country: address.country || "India",
+      email: "noemail@example.com",
+      phone: address.phone,
+
+      items: replacementOrder.items.map((i) => ({
+        name: i.name,
+        sku: i.product?.toString() || "SKU",
+        quantity: i.quantity,
+        price: i.price,
+      })),
+
+      payment_method: "Prepaid", // free replacement
+      total: 0,
+      length: 10,
+      breadth: 10,
+      height: 5,
+      weight: 0.5,
+    };
+
+    const shipOrder = await createShiprocketOrder(srPayload);
+    const shipmentId = shipOrder?.shipment_id;
+
+    if (shipmentId) {
+      const awbData = await assignShiprocketAwb(shipmentId);
+      const labelData = await generateShiprocketLabel(shipmentId);
+
+      replacementOrder.shiprocket = {
+        order_id: shipOrder.order_id,
+        channel_order_id: shipOrder.channel_order_id,
+        shipment_id: shipOrder.shipment_id,
+        status: shipOrder.status,
+        awb_code:
+          awbData?.awb_code ||
+          awbData?.response?.data?.awb_code ||
+          null,
+        courier_company_id:
+          awbData?.courier_company_id ||
+          awbData?.response?.data?.courier_company_id ||
+          null,
+        courier_name:
+          awbData?.courier_name ||
+          awbData?.response?.data?.courier_name ||
+          null,
+        label_url:
+          labelData?.label_url ||
+          labelData?.label_url_list?.[0] ||
+          null,
+      };
+
+      await replacementOrder.save();
+    }
+  } catch (err) {
+    console.error(
+      "Replacement Shiprocket error:",
+      err.response?.data || err.message
+    );
+    // IMPORTANT: replacement order still exists even if SR fails
+  }
+
+  /* ---------------------------
+     4️⃣ FINALIZE ORIGINAL ORDER
+  --------------------------- */
+  originalOrder.returnStatus = "completed";
+  originalOrder.returnResolvedAt = new Date();
+  await originalOrder.save();
+}

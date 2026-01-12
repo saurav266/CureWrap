@@ -6,14 +6,20 @@ const BACKEND_URL = "";
 const RETURN_WINDOW_DAYS = 7; // should match backend
 
 // 🔄 Animated Order Stepper
-const OrderStepper = ({ steps, activeIndex }) => {
+const OrderStepper = ({ steps, activeIndex,order }) => {
   return (
     <div className="w-full flex items-center justify-between mb-8 relative">
       {/* Line */}
       <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10" />
 
       {steps.map((step, idx) => {
-        const isDone = idx < activeIndex;
+        const isDone =
+        idx < activeIndex ||
+        (step.key === "delivered" && order?.orderStatus === "delivered") ||
+        (step.key === "return" &&
+          ["approved", "completed"].includes(order?.returnStatus));
+
+
         const isActive = idx === activeIndex;
 
         return (
@@ -63,6 +69,19 @@ export default function OrderTrackingPage() {
   const [confirmSize, setConfirmSize] = useState(false);
   const [confirmAddress, setConfirmAddress] = useState(false);
 
+  //
+  const [returnType, setReturnType] = useState("");
+  const [returnReason, setReturnReason] = useState("");
+  const [returnMessage, setReturnMessage] = useState("");
+  const [submittingReturn, setSubmittingReturn] = useState(false);
+const [refundMode, setRefundMode] = useState(""); // UPI | BANK
+const [upiId, setUpiId] = useState("");
+const [bankDetails, setBankDetails] = useState({
+  accountHolder: "",
+  accountNumber: "",
+  ifsc: "",
+});
+
   // ----------------- Helpers -----------------
   const formatDate = (d) =>
     d ? new Date(d).toLocaleString("en-IN") : "N/A";
@@ -72,25 +91,48 @@ export default function OrderTrackingPage() {
       maximumFractionDigits: 2,
     })}`;
 
-  const timelineSteps = useMemo(
-    () => [
+  const timelineSteps = useMemo(() => {
+    const baseSteps = [
       { key: "processing", label: "Processing" },
       { key: "packed", label: "Packed" },
       { key: "shipped", label: "Shipped" },
       { key: "out_for_delivery", label: "Out for Delivery" },
       { key: "delivered", label: "Delivered" },
-      { key: "cancelled", label: "Cancelled" },
-    ],
-    []
-  );
+    ];
+
+    // ❌ Cancelled path (only if NOT delivered)
+    if (order?.orderStatus === "cancelled") {
+      return [...baseSteps, { key: "cancelled", label: "Cancelled" }];
+    }
+
+    // 🔁 Return path (only AFTER delivered)
+    if (order?.orderStatus === "delivered") {
+      return [...baseSteps, { key: "return", label: "Return" }];
+    }
+
+    return baseSteps;
+  }, [order]);
+
 
   const activeIndex = useMemo(() => {
-    if (!order?.orderStatus) return 0;
-    const idx = timelineSteps.findIndex(
-      (s) => s.key === order.orderStatus
+    if (!order) return 0;
+
+    if (order.orderStatus === "cancelled") {
+      return timelineSteps.findIndex(s => s.key === "cancelled");
+    }
+
+    if (
+      order.orderStatus === "delivered" &&
+      order.returnStatus !== "none"
+    ) {
+      return timelineSteps.findIndex(s => s.key === "return");
+    }
+
+    return timelineSteps.findIndex(
+      s => s.key === order.orderStatus
     );
-    return idx === -1 ? 0 : idx;
   }, [order, timelineSteps]);
+
 
   const progressPercent = useMemo(() => {
     if (timelineSteps.length <= 1) return 0;
@@ -256,49 +298,52 @@ export default function OrderTrackingPage() {
     navigate("/checkout");
   };
 
-  const handleSubmitReturn = async () => {
-    if (!order || !returnType) {
-      setReturnMessage("Please choose refund or replacement.");
-      return;
-    }
-    if (!returnReason.trim()) {
-      setReturnMessage("Please enter a reason for return.");
-      return;
-    }
+const handleSubmitReturn = async ({ type, reason, refundDetails }) => {
+  if (!order || !type) {
+    setReturnMessage("Please choose refund or replacement.");
+    return;
+  }
 
-    try {
-      setSubmittingReturn(true);
-      setReturnMessage("");
-      const res = await fetch(
-        `${BACKEND_URL}/api/orders/${order._id}/return`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: returnType,
-            reason: returnReason.trim(),
-          }),
-        }
-      );
+  if (!reason.trim()) {
+    setReturnMessage("Please enter a reason for return.");
+    return;
+  }
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        console.error("Return request error:", data);
-        setReturnMessage(
-          data.error || "Failed to submit return request."
-        );
-        return;
+  try {
+    setSubmittingReturn(true);
+    setReturnMessage("");
+
+    const res = await fetch(
+      `${BACKEND_URL}/api/orders/${order._id}/return`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          reason,
+          refundDetails, // ✅ NOW SENT
+        }),
       }
+    );
 
-      setOrder(data.order);
-      setReturnMessage("Return request submitted successfully.");
-    } catch (err) {
-      console.error("Submit return error:", err);
-      setReturnMessage("Something went wrong. Please try again.");
-    } finally {
-      setSubmittingReturn(false);
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      setReturnMessage(data.error || "Failed to submit return request.");
+      return;
     }
-  };
+
+    setOrder(data.order);
+    setReturnMessage("Return request submitted successfully.");
+  } catch (err) {
+    console.error(err);
+    setReturnMessage("Something went wrong. Please try again.");
+  } finally {
+    setSubmittingReturn(false);
+  }
+};
+
+
 
   // Initial load + auto-refresh
   useEffect(() => {
@@ -365,6 +410,42 @@ export default function OrderTrackingPage() {
     : null;
 
   const returnStatusLabel = order.returnStatus || "none";
+
+  //cancel function after applying return 
+const handleCancelReturn = async () => {
+  if (!order) return;
+
+  const confirmed = window.confirm(
+    "Are you sure you want to cancel the return request?"
+  );
+  if (!confirmed) return;
+
+  try {
+    setError("");
+
+    const res = await fetch(
+      `${BACKEND_URL}/api/orders/${order._id}/cancel-return`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      setError(data.error || "Failed to cancel return request");
+      return;
+    }
+
+    setOrder(data.order); // ✅ backend source of truth
+  } catch (err) {
+    console.error(err);
+    setError("Unable to cancel return. Please try again.");
+  }
+};
+
+
 
   
 
@@ -461,6 +542,14 @@ export default function OrderTrackingPage() {
                   {order.returnStatus}
                 </span>
               )}
+              {order.returnStatus === "requested" && (
+              <button
+                onClick={handleCancelReturn}
+                className="mt-2 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700"
+              >
+                Cancel Return Request
+              </button>
+            )}
             </div>
 
             {/* Already requested / processed */}
@@ -563,25 +652,22 @@ export default function OrderTrackingPage() {
                     </div>
 
                     {/* 📷 Upload images */}
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">
-                        Upload product images (max 3)
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) =>
-                          setIssueImages(Array.from(e.target.files).slice(0, 3))
-                        }
-                        className="text-xs"
-                      />
-                      {issueImages.length > 0 && (
-                        <p className="text-[11px] text-gray-600 mt-1">
-                          {issueImages.length} image(s) selected
-                        </p>
-                      )}
-                    </div>
+                    {/* 📧 Email instruction instead of image upload */}
+<div className="mt-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+  <p className="text-xs text-yellow-800 font-semibold">
+    Image verification required
+  </p>
+  <p className="text-[11px] text-yellow-700 mt-1">
+    Please email clear images of the product showing the issue to:
+  </p>
+  <p className="text-[11px] font-semibold text-yellow-900 mt-1">
+    support@curewrapplus.com
+  </p>
+  <p className="text-[11px] text-yellow-700 mt-1">
+    Mention your <b>Order ID</b> in the email subject for faster approval.
+  </p>
+</div>
+
                   </>
                 )}
 
@@ -621,6 +707,63 @@ export default function OrderTrackingPage() {
                     </div>
                   </>
                 )}
+                {/* 💰 COD Refund Details */}
+{order.paymentMethod === "COD" &&
+ (returnOption === "incorrect" || returnOption === "damaged") && (
+  <div className="border rounded-lg p-3 bg-white">
+    <p className="text-xs font-semibold mb-2">
+      Refund Details (Required for COD)
+    </p>
+
+    <select
+      value={refundMode}
+      onChange={(e) => setRefundMode(e.target.value)}
+      className="w-full border rounded px-3 py-2 text-xs mb-2"
+    >
+      <option value="">Select refund method</option>
+      <option value="UPI">UPI</option>
+      <option value="BANK">Bank Transfer</option>
+    </select>
+
+    {/* UPI */}
+    {refundMode === "UPI" && (
+      <input
+        type="text"
+        value={upiId}
+        onChange={(e) => setUpiId(e.target.value)}
+        placeholder="example@upi"
+        className="w-full border rounded px-3 py-2 text-xs"
+      />
+    )}
+
+    {/* Bank */}
+    {refundMode === "BANK" && (
+      <div className="space-y-2">
+        <input
+          placeholder="Account Holder Name"
+          className="w-full border rounded px-3 py-2 text-xs"
+          onChange={(e) =>
+            setBankDetails({ ...bankDetails, accountHolder: e.target.value })
+          }
+        />
+        <input
+          placeholder="Account Number"
+          className="w-full border rounded px-3 py-2 text-xs"
+          onChange={(e) =>
+            setBankDetails({ ...bankDetails, accountNumber: e.target.value })
+          }
+        />
+        <input
+          placeholder="IFSC Code"
+          className="w-full border rounded px-3 py-2 text-xs"
+          onChange={(e) =>
+            setBankDetails({ ...bankDetails, ifsc: e.target.value })
+          }
+        />
+      </div>
+    )}
+  </div>
+)}
 
                 {returnMessage && (
                   <p className="text-xs text-red-600">{returnMessage}</p>
@@ -628,11 +771,13 @@ export default function OrderTrackingPage() {
 
                 <button
                   onClick={() => {
+                    // 1️⃣ Validate option
                     if (!returnOption) {
                       setReturnMessage("Please select a return option.");
                       return;
                     }
 
+                    // 2️⃣ Refund flow
                     if (
                       (returnOption === "incorrect" || returnOption === "damaged") &&
                       !returnReason.trim()
@@ -640,25 +785,76 @@ export default function OrderTrackingPage() {
                       setReturnMessage("Please describe the issue.");
                       return;
                     }
+                    // 🔐 COD refund validation
+if (
+  order.paymentMethod === "COD" &&
+  (returnOption === "incorrect" || returnOption === "damaged")
+) {
+  if (!refundMode) {
+    setReturnMessage("Please select refund method (UPI or Bank).");
+    return;
+  }
 
-                    if (
-                      returnOption === "size_replacement" &&
-                      (!newSize || !confirmSize || !confirmAddress)
-                    ) {
-                      setReturnMessage(
-                        "Please enter new size and confirm size & address."
-                      );
-                      return;
+  if (refundMode === "UPI" && !upiId.trim()) {
+    setReturnMessage("Please enter valid UPI ID.");
+    return;
+  }
+
+  if (
+    refundMode === "BANK" &&
+    (!bankDetails.accountHolder ||
+      !bankDetails.accountNumber ||
+      !bankDetails.ifsc)
+  ) {
+    setReturnMessage("Please fill all bank details.");
+    return;
+  }
+}
+
+                    // 3️⃣ Size replacement flow
+                    if (returnOption === "size_replacement") {
+                      if (!newSize.trim()) {
+                        setReturnMessage("Please enter new size.");
+                        return;
+                      }
+                      if (!confirmSize) {
+                        setReturnMessage("Please confirm the required size.");
+                        return;
+                      }
+                      if (!confirmAddress) {
+                        setReturnMessage("Please confirm delivery address.");
+                        return;
+                      }
                     }
 
-                    // map to backend type
-                    setReturnType(
-                      returnOption === "size_replacement"
-                        ? "replacement"
-                        : "refund"
-                    );
+                    // 4️⃣ Decide backend payload DIRECTLY (no state race)
+                   const payload = {
+  type: returnOption === "size_replacement" ? "replacement" : "refund",
+  reason:
+    returnOption === "size_replacement"
+      ? `Requested size: ${newSize}`
+      : returnReason.trim(),
 
-                    handleSubmitReturn();
+  // 💰 COD refund destination
+  refundDetails:
+    order.paymentMethod === "COD" &&
+    (returnOption === "incorrect" || returnOption === "damaged")
+      ? refundMode === "UPI"
+        ? {
+            method: "UPI",
+            upiId: upiId.trim(),
+          }
+        : {
+            method: "BANK",
+            accountHolder: bankDetails.accountHolder,
+            accountNumber: bankDetails.accountNumber,
+            ifsc: bankDetails.ifsc,
+          }
+      : null,
+};
+
+
+                    handleSubmitReturn(payload);
                   }}
                   disabled={submittingReturn}
                   className="w-full mt-2 px-4 py-2 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-60"
@@ -689,7 +885,9 @@ export default function OrderTrackingPage() {
         <OrderStepper
           steps={timelineSteps}
           activeIndex={activeIndex}
+          order={order}
         />
+
 
         <div className="flex items-center justify-between text-xs text-gray-500 mt-4">
           <span>Last updated: {formatDate(order.updatedAt)}</span>

@@ -270,3 +270,39 @@ export const refundPayment = async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
+
+export async function onlineRefundFlow(order) {
+  if (order.paymentStatus === "refunded") return;
+
+  const paymentId = order.paymentResult?.razorpay_payment_id;
+  if (!paymentId) throw new Error("Payment ID missing");
+
+  const refund = await razorpay.payments.refund(paymentId, {
+    amount: Math.round(order.total * 100),
+  });
+
+  order.refundInfo = {
+    gateway: "razorpay",
+    paymentId,
+    refundId: refund.id,
+    amount: order.total,
+    status: refund.status,
+    raw: refund,
+  };
+
+  order.paymentStatus = "refunded";
+}
+
+
+export async function codRefundFlow(order) {
+  if (order.paymentStatus === "refunded") return;
+
+  order.refundInfo = {
+    gateway: "manual",
+    amount: order.total,
+    status: "initiated",
+    destination: order.refundDetails, // UPI / Bank
+  };
+
+  order.paymentStatus = "refunded";
+}
